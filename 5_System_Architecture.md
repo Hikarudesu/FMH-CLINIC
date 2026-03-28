@@ -72,7 +72,7 @@ flowchart TB
     end
     
     subgraph External["External Services"]
-        AI_API["🤖 AI Diagnostic API"]
+        AI_API["🤖 GROQ AI API<br/>(llama-3.3-70b)"]
         EMAIL_SVC["📧 Email Service<br/>(SMTP)"]
         PAYMENT["💳 Payment Gateway<br/>(GCash, Maya)"]
     end
@@ -202,7 +202,7 @@ flowchart LR
     subgraph Core["Core Modules"]
         ACC["accounts<br/>━━━━━━━━<br/>User<br/>Role<br/>Module<br/>Permission"]
         BRA["branches<br/>━━━━━━━━<br/>Branch"]
-        SET["settings<br/>━━━━━━━━<br/>SystemSetting<br/>ClinicProfile<br/>CMS Models"]
+        SET["settings<br/>━━━━━━━━<br/>SystemSetting<br/>ClinicProfile<br/>CMS Models<br/>ClinicalStatus<br/>ReasonForVisit"]
         UTIL["utils<br/>━━━━━━━━<br/>SoftDeleteModel<br/>Base Classes"]
     end
     
@@ -221,7 +221,7 @@ flowchart LR
     
     subgraph HR["HR Modules"]
         EMP["employees<br/>━━━━━━━━<br/>StaffMember<br/>VetSchedule<br/>RecurringSchedule"]
-        PAY["payroll<br/>━━━━━━━━<br/>PayrollPeriod<br/>Payslip<br/>AuditLog"]
+        PAY["payroll<br/>━━━━━━━━<br/>PayrollPeriod<br/>Payslip<br/>AuditLog<br/>StatutoryTable<br/>EmailLog"]
     end
     
     subgraph Support["Support Modules"]
@@ -470,7 +470,7 @@ database "Storage" #E0E0E0 {
 
 ' External Services
 cloud "External Services" #E1F5FE {
-    [AI Diagnostic API] as AI
+    [GROQ AI API] as AI
     [Email Service] as EMAIL
     [Payment Gateway] as PAY_GW
 }
@@ -522,7 +522,7 @@ SVC --> PAY_GW
 | **Icons** | Boxicons | 2.x | Icon library |
 | **WSGI** | Gunicorn | - | Production server |
 | **Proxy** | Nginx | - | Reverse proxy, SSL |
-| **Cache** | Redis | - | Session cache, queues |
+| **GROQ AI** | LLM API | llama-3.3-70b | Diagnostic assistance |
 
 ---
 
@@ -567,6 +567,8 @@ FMHANIMALCLINIC/
 │   ├── pet_photos/
 │   └── profiles/
 │
+├── logs/                      # Application logs
+│
 ├── manage.py                  # Django CLI
 ├── requirements.txt           # Dependencies
 └── .env                       # Environment variables
@@ -585,4 +587,6 @@ FMHANIMALCLINIC/
 | **Multi-Branch Design** | Branch-scoped data, independent operations |
 | **Signal-Based Events** | Loose coupling, automatic sync (e.g., pet status updates) |
 | **SQLite for Dev** | Zero-config development, easy reset |
-| **PostgreSQL for Prod** | Robust, scalable, ACID compliance |
+| **GROQ AI Integration** | GROQ's llama-3.3-70b-versatile model for AI diagnostics |
+| **Dynamic Configuration** | ClinicalStatus and ReasonForVisit as admin-configurable lookup tables |
+| **CMS System** | SectionContent, HeroStat, CoreValue for landing page management |

@@ -95,6 +95,7 @@ erDiagram
     Pet {
         int id PK
         int owner_id FK
+        int clinical_status_id FK
         string name
         string species
         string breed
@@ -107,6 +108,26 @@ erDiagram
         string guest_owner_name
         string guest_owner_phone
         string guest_owner_email
+        text guest_owner_address
+        boolean is_active
+    }
+    
+    ClinicalStatus {
+        int id PK
+        string name
+        string code UK
+        text description
+        string color
+        int order
+        boolean is_active
+    }
+    
+    ReasonForVisit {
+        int id PK
+        string name
+        string code UK
+        text description
+        int order
         boolean is_active
     }
     
@@ -117,17 +138,24 @@ erDiagram
         int branch_id FK
         int preferred_vet_id FK
         int sale_id FK
+        int reason_for_visit_id FK
         string owner_name
         string owner_email
         string owner_phone
+        text owner_address
         string pet_name
         string pet_species
+        string pet_breed
+        string pet_sex
+        string pet_color
+        string pet_dob
         text pet_symptoms
         date appointment_date
         time appointment_time
         string reason
         string source
         string status
+        boolean is_returning_customer
         text notes
     }
     
@@ -177,8 +205,10 @@ erDiagram
         json recommended_tests
         json warning_signs
         text summary
+        json raw_response
         boolean is_reviewed
         datetime reviewed_at
+        text review_notes
     }
     
     %% ═══════════════════════════════════════════════════════════════
@@ -428,19 +458,54 @@ erDiagram
         decimal base_salary
         int days_worked
         int days_absent
+        decimal overtime_hours
         decimal overtime_pay
         decimal holiday_pay
         decimal bonus
+        decimal allowance
         decimal staff_allowance
+        decimal thirteenth_month_pay
         decimal sss
         decimal philhealth
         decimal pagibig
         decimal tax
         decimal cash_advance
+        decimal late_deduction
+        decimal absent_deduction
+        decimal other_deductions
+        decimal clinic_sss
+        decimal clinic_philhealth
+        decimal clinic_pagibig
         decimal gross_pay
+        decimal total_allowances
         decimal total_deductions
+        decimal total_clinic_contributions
         decimal net_pay
         string status
+        datetime released_at
+        boolean received_by_employee
+        text notes
+    }
+    
+    StatutoryDeductionTable {
+        int id PK
+        string deduction_type
+        decimal min_salary
+        decimal max_salary
+        decimal employee_rate
+        decimal employer_rate
+        decimal fixed_amount
+        date effective_date
+        date end_date
+    }
+    
+    PayslipEmailLog {
+        int id PK
+        int payslip_id FK
+        string recipient_email
+        datetime sent_at
+        string status
+        text error_message
     }
     
     PayrollAuditLog {
@@ -523,6 +588,53 @@ erDiagram
         string phone
         text address
         string tagline
+        string license_number
+    }
+    
+    SectionContent {
+        string section_type PK
+        string title
+        string subtitle
+        text description
+        image image
+        boolean is_active
+    }
+    
+    HeroStat {
+        int id PK
+        string value
+        string label
+        int order
+        boolean is_active
+    }
+    
+    CoreValue {
+        int id PK
+        string title
+        string icon
+        text description
+        int order
+        boolean is_active
+    }
+    
+    LandingService {
+        int id PK
+        string title
+        text description
+        string icon
+        image image
+        int order
+        boolean is_active
+    }
+    
+    LandingVeterinarian {
+        int id PK
+        string name
+        string title
+        text bio
+        image photo
+        int order
+        boolean is_active
     }
     
     %% ═══════════════════════════════════════════════════════════════
@@ -553,6 +665,10 @@ erDiagram
     
     %% Pet & Owner
     Pet }o--o| User : "owned_by"
+    Pet }o--o| ClinicalStatus : "has_status"
+    
+    %% Clinical Settings
+    Appointment }o--o| ReasonForVisit : "has_reason"
     
     %% Appointment Relations
     Appointment }o--o| Pet : "for_pet"
@@ -610,6 +726,7 @@ erDiagram
     PayrollPeriod ||--o{ Payslip : "contains"
     PayrollPeriod }o--o| User : "released_by"
     Payslip }o--|| StaffMember : "for_employee"
+    Payslip ||--o{ PayslipEmailLog : "has_emails"
     PayrollAuditLog }o--o| User : "performed_by"
     PayrollAuditLog }o--o| PayrollPeriod : "for_period"
     PayrollAuditLog }o--o| Payslip : "for_payslip"
@@ -642,8 +759,10 @@ erDiagram
 
 | Entity | Description | Key Relationships |
 |--------|-------------|-------------------|
-| **Pet** | Animal patient record with owner info and clinical status | Owned by User, has Appointments, MedicalRecords |
-| **Appointment** | Scheduled visit with date, time, reason, and status | For Pet, at Branch, assigned to Vet |
+| **Pet** | Animal patient record with owner info and clinical status | Owned by User, has Appointments, MedicalRecords, links to ClinicalStatus |
+| **Appointment** | Scheduled visit with date, time, reason, and status | For Pet, at Branch, assigned to Vet, links to ReasonForVisit |
+| **ClinicalStatus** | Dynamic lookup table for pet clinical status options | Used by Pet |
+| **ReasonForVisit** | Dynamic lookup table for appointment reasons | Used by Appointment |
 
 ### Medical Record Entities
 
@@ -686,8 +805,10 @@ erDiagram
 | Entity | Description | Key Relationships |
 |--------|-------------|-------------------|
 | **PayrollPeriod** | Monthly payroll batch | Contains Payslips |
-| **Payslip** | Individual employee pay record | For StaffMember in PayrollPeriod |
+| **Payslip** | Individual employee pay record with allowances and deductions | For StaffMember in PayrollPeriod |
 | **PayrollAuditLog** | Audit trail for payroll actions | References Period, Payslip, User |
+| **StatutoryDeductionTable** | SSS/PhilHealth/PAG-IBIG/Tax bracket tables | Referenced during payslip calculation |
+| **PayslipEmailLog** | Tracks payslip email distribution | For Payslip |
 
 ### Notification Entities
 
@@ -695,6 +816,20 @@ erDiagram
 |--------|-------------|-------------------|
 | **Notification** | User notification with type and read status | For User |
 | **FollowUp** | Scheduled follow-up visit | From Appointment |
+
+### Settings & CMS Entities
+
+| Entity | Description | Key Relationships |
+|--------|-------------|-------------------|
+| **SystemSetting** | Key-value system configuration | Global settings |
+| **ClinicProfile** | Clinic branding and contact info (singleton) | Global profile |
+| **SectionContent** | Landing page section content (hero, mission, etc.) | CMS content |
+| **HeroStat** | Landing page statistics display | CMS content |
+| **CoreValue** | Company core values for landing page | CMS content |
+| **LandingService** | Services displayed on landing page | CMS content |
+| **LandingVeterinarian** | Veterinarian profiles for landing page | CMS content |
+| **ClinicalStatus** | Dynamic pet status options | Lookup table |
+| **ReasonForVisit** | Dynamic appointment reason options | Lookup table |
 
 ---
 
@@ -715,4 +850,8 @@ erDiagram
 2. **Audit Trails**: UserActivity, ActivityLog, PayrollAuditLog track all changes
 3. **RBAC**: Role → ModulePermission → Module hierarchy for fine-grained access
 4. **Multi-Branch**: All major entities are branch-scoped
-5. **Hybrid Customers**: Pet model supports both registered users and walk-in guests
+5. **Hybrid Customers**: Pet model supports both registered users and walk-in guests (source field)
+6. **Dynamic Lookup Tables**: ClinicalStatus and ReasonForVisit allow admin-configurable options
+7. **CMS System**: SectionContent, HeroStat, CoreValue, LandingService, LandingVeterinarian for landing page management
+8. **Payroll**: Full statutory deduction support with clinic-paid and employee-paid benefit tracking
+9. **Denormalization**: Appointments store snapshot of pet/owner data for historical accuracy

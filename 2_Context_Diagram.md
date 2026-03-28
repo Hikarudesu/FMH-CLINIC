@@ -20,7 +20,7 @@ flowchart TB
         REC[("💼 Receptionist")]
         BA[("👔 Branch Admin")]
         SA[("🔐 Superadmin")]
-        AI[("🤖 AI Diagnostic<br/>Service")]
+        AI[("🤖 GROQ AI<br/>Diagnostic API")]
         EMAIL[("📧 Email<br/>Service")]
         BANK[("🏦 Payment<br/>Gateway")]
     end
@@ -104,7 +104,7 @@ ENTITY(BranchAdmin, "👔") <<Branch Admin>>
 ENTITY(Superadmin, "🔐") <<Superadmin>>
 
 ' External Services
-EXTERNAL(AI, "🤖") <<AI Diagnostic Service>>
+EXTERNAL(AI, "🤖") <<GROQ AI Diagnostic API>>
 EXTERNAL(Email, "📧") <<Email Service>>
 EXTERNAL(Payment, "🏦") <<Payment Gateway>>
 
@@ -154,6 +154,7 @@ FMH <--> Payment : Payment Processing
 | **Pet Owner** | Portal User | Registered pet owners who use the customer portal | IN: Registration, Pet info, Appointments<br/>OUT: Confirmations, Records, Notifications |
 | **Walk-in Guest** | Guest | Unregistered visitors seeking services | IN: Walk-in requests, Payments<br/>OUT: Receipts, Service info |
 | **Veterinarian** | Staff | Licensed veterinarians providing medical care | IN: Medical records, Diagnoses, AI requests<br/>OUT: Schedules, AI suggestions, Payslips |
+| **Vet Assistant** | Staff | Support staff assisting veterinarians | IN: Medical records, Patient prep<br/>OUT: Schedules, Task assignments |
 | **Receptionist** | Staff | Front desk staff handling bookings & sales | IN: Appointments, Customer info, Sales<br/>OUT: Schedules, Inventory, Receipts |
 | **Branch Admin** | Manager | Branch managers overseeing operations | IN: Staff data, Inventory, Payroll<br/>OUT: Reports, Analytics, Alerts |
 | **Superadmin** | Admin | System administrators with full access | IN: System config, Users, Branches, Roles<br/>OUT: All data, System reports, Audit logs |
@@ -162,7 +163,7 @@ FMH <--> Payment : Payment Processing
 
 | Entity | Type | Description | Data Flows |
 |--------|------|-------------|------------|
-| **AI Diagnostic Service** | External API | AI-powered diagnostic suggestion engine | IN: Symptoms, History<br/>OUT: Diagnoses, Recommendations |
+| **AI Diagnostic Service** | External API | GROQ AI-powered diagnostic suggestion engine (llama-3.3-70b model) | IN: Symptoms, History<br/>OUT: Diagnoses, Recommendations |
 | **Email Service** | External API | Email delivery service (SMTP/API) | OUT: Notifications, Payslips, Statements |
 | **Payment Gateway** | External API | E-payment processing (GCash, Maya, Cards) | IN/OUT: Payment transactions, Confirmations |
 
@@ -212,20 +213,21 @@ The FMH Animal Clinic Management System encompasses:
 1. **Patient Management** - Pet registration, profiles, medical history
 2. **Appointment System** - Scheduling, confirmations, follow-ups
 3. **Medical Records** - Consultation records, treatments, prescriptions
-4. **AI Diagnostics** - Integration with AI diagnostic engine
+4. **AI Diagnostics** - Integration with GROQ AI diagnostic engine
 5. **Point of Sale** - Sales transactions, payments, receipts
-6. **Inventory Management** - Stock tracking, transfers, alerts
+6. **Inventory Management** - Stock tracking, transfers, alerts, reservations
 7. **Employee Management** - Staff profiles, schedules, payroll
-8. **Billing & Statements** - Customer accounts, statements
+8. **Billing & Statements** - Customer accounts, statements of account
 9. **Notifications** - Alerts, reminders, communications
 10. **Reporting & Analytics** - Business intelligence, dashboards
 11. **User & Access Control** - RBAC, authentication, authorization
 12. **Multi-Branch Support** - Branch-specific data management
+13. **Content Management** - Landing page content, clinic profile
 
 ### External Integrations
-- AI Diagnostic Service (API)
-- Email Service (SMTP/API)
-- Payment Gateway (GCash, Maya, Banks)
+- GROQ AI Diagnostic Service (API - llama-3.3-70b-versatile model)
+- Email Service (Django Email Backend - SMTP/API)
+- Payment Gateway (GCash, Maya, Banks - ready for integration)
 
 ---
 

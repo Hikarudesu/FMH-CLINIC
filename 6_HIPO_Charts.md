@@ -76,6 +76,8 @@ flowchart TB
     M12 --> M12_1["12.1 Branch Management"]
     M12 --> M12_2["12.2 System Settings"]
     M12 --> M12_3["12.3 Content Management"]
+    M12 --> M12_4["12.4 Clinical Status Mgmt"]
+    M12 --> M12_5["12.5 Reason for Visit Mgmt"]
 ```
 
 ---
@@ -272,6 +274,12 @@ flowchart TB
 |-------|---------|--------|
 | PayrollPeriod ID<br/>Release confirmation | 1. Validate all payslips approved<br/>2. Set period status = RELEASED<br/>3. Set payslip status = RELEASED<br/>4. Send email to each employee<br/>5. Log release action | Released PayrollPeriod<br/>Released Payslips<br/>Email notifications<br/>Audit log |
 
+#### 9.4 Payslip Email Distribution
+
+| Input | Process | Output |
+|-------|---------|--------|
+| Payslip ID or Period ID<br/>Recipient email | 1. Retrieve payslip data<br/>2. Compose email with payslip details<br/>3. Send via SMTP<br/>4. Log send status<br/>5. Create PayslipEmailLog | Email sent<br/>PayslipEmailLog record<br/>Status tracking |
+
 ---
 
 ### 2.10 Notifications (Module 10.0)
@@ -332,6 +340,18 @@ flowchart TB
 |-------|---------|--------|
 | Section type (HERO, MISSION, etc.)<br/>Content (title, subtitle, description, image) | 1. Retrieve SectionContent<br/>2. Update fields<br/>3. Upload image (if changed)<br/>4. Set is_active | Updated landing page content |
 
+#### 12.4 Clinical Status Management
+
+| Input | Process | Output |
+|-------|---------|--------|
+| Status data (name, code, color, description)<br/>Order preference | 1. Validate unique code<br/>2. Create/Update ClinicalStatus<br/>3. Set color for UI display<br/>4. Set is_active flag | ClinicalStatus record<br/>Available in pet status dropdown |
+
+#### 12.5 Reason for Visit Management
+
+| Input | Process | Output |
+|-------|---------|--------|
+| Reason data (name, code, description)<br/>Order preference | 1. Validate unique code<br/>2. Create/Update ReasonForVisit<br/>3. Set display order<br/>4. Set is_active flag | ReasonForVisit record<br/>Available in appointment reason dropdown |
+
 ---
 
 ## 3. Summary Hierarchy Table
@@ -347,7 +367,7 @@ flowchart TB
 | | 6.0 Point of Sale | 6.1 Sales, 6.2 Payment, 6.3 Drawer, 6.4 Refund |
 | | 7.0 Inventory Mgmt | 7.1 Products, 7.2 Adjustment, 7.3 Transfer, 7.4 Reservation |
 | | 8.0 Employee Mgmt | 8.1 Staff, 8.2 Schedule, 8.3 License |
-| | 9.0 Payroll Mgmt | 9.1 Generation, 9.2 Payslip, 9.3 Release |
+| | 9.0 Payroll Mgmt | 9.1 Generation, 9.2 Payslip, 9.3 Release, 9.4 Email |
 | | 10.0 Notifications | 10.1 Generation, 10.2 Email |
 | | 11.0 Reports | 11.1 Sales, 11.2 Inventory, 11.3 Payroll |
-| | 12.0 Administration | 12.1 Branches, 12.2 Settings, 12.3 CMS |
+| | 12.0 Administration | 12.1 Branches, 12.2 Settings, 12.3 CMS, 12.4 Clinical Status, 12.5 Reasons |

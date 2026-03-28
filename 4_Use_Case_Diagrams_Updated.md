@@ -50,15 +50,31 @@ flowchart TB
         %% Receptionist Use Cases
         UC13[Manage Billing]
         UC14[Point of Sales]
+        UC14A[Open Cash Drawer]
+        UC14B[Process Payment]
+        UC14C[Close Cash Drawer]
         UC15[Manage Staff Schedule]
         UC16[Manage Inventory]
+        UC16A[Process Reservations]
+        UC16B[Request Stock Transfer]
         UC17[Manage Client Record]
+        UC17A[Generate Statement of Account]
         
         %% Admin Use Cases
         UC18[Manage Users]
         UC19[Manage Products]
         UC20[Manage Reports]
         UC21[Manage System Settings]
+        UC22[Manage CMS Content]
+        UC23[Manage Clinical Settings]
+        UC24[Manage Branches]
+        UC25[Approve Stock Transfers]
+        UC26[Approve Refunds]
+        UC27[Manage Payroll]
+        UC27A[Generate Payroll]
+        UC27B[Approve Payslips]
+        UC27C[Release Payroll]
+        UC27D[Email Payslips]
     end
     
     %% Client User Connections
@@ -106,11 +122,29 @@ flowchart TB
     RECEPT --> UC16
     RECEPT --> UC17
     
+    UC14 -.includes.-> UC14A
+    UC14 -.includes.-> UC14B
+    UC14 -.extends.-> UC14C
+    UC16 -.extends.-> UC16A
+    UC16 -.extends.-> UC16B
+    UC17 -.extends.-> UC17A
+    
     %% Admin Connections
     ADMIN -->|1..*| UC18
     ADMIN --> UC19
     ADMIN --> UC20
     ADMIN --> UC21
+    ADMIN --> UC22
+    ADMIN --> UC23
+    ADMIN --> UC24
+    ADMIN --> UC25
+    ADMIN --> UC26
+    ADMIN --> UC27
+    
+    UC27 -.includes.-> UC27A
+    UC27 -.extends.-> UC27B
+    UC27 -.extends.-> UC27C
+    UC27 -.extends.-> UC27D
 ```
 
 ---
@@ -138,16 +172,22 @@ flowchart TB
 
 ### Receptionist
 14. Manage Billing
-15. Point of Sales
+15. Point of Sales (includes: Open Cash Drawer, Process Payment; extends: Close Cash Drawer)
 16. Manage Staff Schedule
-17. Manage Inventory
-18. Manage Client Record
+17. Manage Inventory (extends: Process Reservations, Request Stock Transfer)
+18. Manage Client Record (extends: Generate Statement of Account)
 
 ### Admin
 19. Manage Users
 20. Manage Products
 21. Manage Reports
 22. Manage System Settings
+23. Manage CMS Content
+24. Manage Clinical Settings (ClinicalStatus, ReasonForVisit)
+25. Manage Branches
+26. Approve Stock Transfers
+27. Approve Refunds
+28. Manage Payroll (includes: Generate Payroll; extends: Approve Payslips, Release Payroll, Email Payslips)
 
 ### External System
 - **Artificial Intelligence**: Provides diagnostic assistance to veterinarians
@@ -156,41 +196,52 @@ flowchart TB
 
 ## Additional Use Cases Not in Original Diagram (Based on System Analysis)
 
-### Client User (Missing from diagram)
+### Client User (Implemented in system)
 - View Notifications
 - Update Profile
 - View Appointment History
 - Cancel Appointment
 - Request Follow-up Appointment
+- View Own Statements of Account
 
-### Veterinarian (Missing from diagram)
+### Veterinarian (Implemented in system)
 - Record Consultation/Treatment
 - Prescribe Medication
-- Request Diagnostics
+- Request AI Diagnostics
 - Review AI Suggestions
 - View Daily Appointments
+- View Own Payslips
 
-### Vet Assistant (Missing from diagram)
+### Vet Assistant (Implemented in system)
 - Assist in Consultation
 - Prepare Treatment Room
 - Manage Supplies
 - View Appointment Queue
 
-### Receptionist (Missing from diagram)
+### Receptionist (Implemented in system)
 - Process Walk-in Appointments
-- Process Payments
+- Process Payments (Cash, Card, E-wallet)
 - Process Refunds
-- Manage Cash Drawer
+- Open/Close Cash Drawer
 - Check-in Patients
 - Generate Receipt
+- Generate Statement of Account
+- Release Statement to Customer
+- Process Product Reservations
 
-### Admin (Missing from diagram)
+### Admin (Implemented in system)
 - Manage Branches
 - Manage Roles & Permissions
 - View Activity Logs
-- Manage Payroll
+- Generate Payroll
+- Approve/Release Payslips
+- Email Payslips to Staff
 - Manage Employee Records
 - Manage Content Management System
+- Manage Clinical Status Options
+- Manage Reason for Visit Options
+- Approve Stock Transfers
+- Approve Refunds
 
 ---
 
@@ -202,13 +253,13 @@ If you want to add the missing use cases to make the diagram comprehensive, here
 - Client User: 11 use cases
 - Veterinarian: 11 use cases
 - Vet Assistant: 5 use cases
-- Receptionist: 11 use cases
-- Admin: 10 use cases
+- Receptionist: 15 use cases
+- Admin: 16 use cases
 
 **Key Relationships:**
 - `<<includes>>`: Mandatory sub-use cases that are always executed
 - `<<extends>>`: Optional extensions based on conditions
-- External system integration with AI for diagnostic assistance
+- External system integration with GROQ AI for diagnostic assistance
 
 ---
 

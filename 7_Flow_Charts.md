@@ -578,6 +578,101 @@ flowchart TD
 
 ---
 
+## 13. Statement of Account Generation Flow
+
+```mermaid
+flowchart TD
+    START([Start]) --> A[Staff opens SOA generator]
+    A --> B[Select customer]
+    B --> C[Enter patient name]
+    C --> D[Fill service breakdown]
+    D --> E[Consultation, Treatment, Boarding, etc.]
+    E --> F[Calculate total amount]
+    F --> G[Enter deposit if any]
+    G --> H[Auto-calculate balance]
+    H --> I[Save as DRAFT]
+    I --> J{Ready to release?}
+    J -->|No| K[Edit SOA]
+    K --> D
+    J -->|Yes| L[Release to customer]
+    L --> M[Set status = RELEASED]
+    M --> N[Customer can view in portal]
+    N --> O{Send via email?}
+    O -->|Yes| P[Send email notification]
+    P --> Q[Set status = SENT]
+    O -->|No| END([End])
+    Q --> END
+```
+
+---
+
+## 14. Cash Drawer Management Flow
+
+```mermaid
+flowchart TD
+    START([Start]) --> A{Drawer exists for branch today?}
+    A -->|Yes| B{Drawer status?}
+    A -->|No| C[Create new CashDrawer]
+    
+    B -->|OPEN| D[Continue with transactions]
+    B -->|CLOSED| C
+    
+    C --> E[Enter opening amount]
+    E --> F[Set status = OPEN]
+    F --> G[Record opened_by user]
+    G --> D
+    
+    D --> H{End of shift?}
+    H -->|No| I[Process sales]
+    I --> J[Update expected_cash]
+    J --> D
+    
+    H -->|Yes| K[Count actual cash]
+    K --> L[Enter actual_cash amount]
+    L --> M[Calculate variance]
+    M --> N{Variance acceptable?}
+    
+    N -->|Yes| O[Set status = CLOSED]
+    N -->|No| P[Add notes explaining variance]
+    P --> O
+    
+    O --> Q[Record closed_by user]
+    Q --> R[Generate drawer report]
+    R --> END([End])
+```
+
+---
+
+## 15. Recurring Schedule Generation Flow
+
+```mermaid
+flowchart TD
+    START([Start]) --> A[Admin creates RecurringSchedule]
+    A --> B[Select staff member]
+    B --> C[Select branch]
+    C --> D[Select day of week]
+    D --> E[Set start and end time]
+    E --> F[Set shift type]
+    F --> G[Set effective dates]
+    G --> H[Save RecurringSchedule]
+    H --> I[Set is_active = True]
+    I --> J[Trigger generation]
+    J --> K[Calculate next 30 days]
+    K --> L[Loop: For each day]
+    L --> M{Day matches day_of_week?}
+    M -->|No| N{More days?}
+    M -->|Yes| O{Within effective dates?}
+    O -->|No| N
+    O -->|Yes| P{VetSchedule exists?}
+    P -->|Yes| N
+    P -->|No| Q[Create VetSchedule entry]
+    Q --> N
+    N -->|Yes| L
+    N -->|No| END([End])
+```
+
+---
+
 ## Summary
 
 These flow charts cover the critical business processes:
@@ -596,3 +691,6 @@ These flow charts cover the critical business processes:
 | 10 | Product Reservation | Reserve and release workflow |
 | 11 | Activity Logging | Audit trail capture |
 | 12 | Branch Permission Check | RBAC enforcement |
+| 13 | Statement of Account | SOA generation and release |
+| 14 | Cash Drawer Management | Open/close shift cash handling |
+| 15 | Recurring Schedule | Auto-generate vet schedules |

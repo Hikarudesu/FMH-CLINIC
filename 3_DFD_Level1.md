@@ -60,6 +60,8 @@ flowchart TB
     D12[("D12: Notifications")]
     D13[("D13: Branches")]
     D14[("D14: Activity<br/>Logs")]
+    D15[("D15: Clinical<br/>Settings")]
+    D16[("D16: CMS<br/>Content")]
     
     %% ═══════════════════════════════════════════════════════════════
     %% DATA FLOWS - User & Access Management
@@ -81,6 +83,7 @@ flowchart TB
     PO -->|"Pet Info"| P2
     REC -->|"Walk-in Pet Info"| P2
     P2 <-->|"Pet Records"| D3
+    P2 -->|"Clinical Status Lookup"| D15
     P2 -->|"Pet Profile"| PO
     P2 -->|"Patient Data"| P4
     
@@ -92,6 +95,7 @@ flowchart TB
     WI -->|"Walk-in Request"| P3
     REC -->|"Appointment Data"| P3
     P3 <-->|"Appointment Data"| D4
+    P3 -->|"Reason Lookup"| D15
     P3 -->|"Pet Data"| D3
     P3 -->|"Schedule Check"| D10
     P3 -->|"Confirmation"| P10
@@ -182,10 +186,13 @@ flowchart TB
     
     BA -->|"Report Request"| P11
     SA -->|"System Report Request"| P11
+    SA -->|"CMS Content"| P11
     P11 -->|"Query"| D7
     P11 -->|"Query"| D8
     P11 -->|"Query"| D4
     P11 -->|"Query"| D11
+    P11 <-->|"Content"| D16
+    P11 <-->|"Settings"| D15
     P11 -->|"Reports"| BA
     P11 -->|"System Reports"| SA
     
@@ -314,6 +321,8 @@ flowchart TB
 | D12 | Notifications | Alert and notification records | Notification, FollowUp |
 | D13 | Branches | Clinic location data | Branch |
 | D14 | Activity Logs | Audit trail data | ActivityLog, UserActivity |
+| D15 | Clinical Settings | Dynamic lookup tables | ClinicalStatus, ReasonForVisit |
+| D16 | CMS Content | Landing page content management | SectionContent, HeroStat, CoreValue, LandingService, LandingVeterinarian |
 
 ---
 
@@ -322,8 +331,8 @@ flowchart TB
 | Process | Inputs From | Outputs To | Data Stores R/W |
 |---------|-------------|------------|-----------------|
 | 1.0 User Mgmt | PO, SA | PO, VET, REC | D1 (R/W), D2 (R/W), D14 (W) |
-| 2.0 Patient Mgmt | PO, REC | PO, P4 | D3 (R/W) |
-| 3.0 Appointment | PO, WI, REC | VET, REC, P10 | D4 (R/W), D3 (R), D10 (R) |
+| 2.0 Patient Mgmt | PO, REC | PO, P4 | D3 (R/W), D15 (R) |
+| 3.0 Appointment | PO, WI, REC | VET, REC, P10 | D4 (R/W), D3 (R), D10 (R), D15 (R) |
 | 4.0 Medical Records | VET | PO, P5, P10 | D5 (R/W), D3 (W) |
 | 5.0 AI Diagnostics | VET, AI_EXT | VET | D6 (R/W), D5 (R) |
 | 6.0 POS | REC, PO, WI | PO, WI, REC | D7 (R/W), D8 (W), D9 (R) |
@@ -331,7 +340,7 @@ flowchart TB
 | 8.0 Employee Mgmt | BA | VET, REC, P9 | D10 (R/W), D1 (W) |
 | 9.0 Payroll | BA | VET, BA, EMAIL | D11 (R/W), D10 (R), D14 (W) |
 | 10.0 Notifications | P3, P4, P7 | PO, VET, BA, EMAIL | D12 (R/W) |
-| 11.0 Reports | BA, SA | BA, SA | All (R) |
+| 11.0 Reports | BA, SA | BA, SA | All (R), D15 (R/W), D16 (R/W) |
 
 ---
 
@@ -339,5 +348,7 @@ flowchart TB
 
 1. **Branch Scoping**: Most data stores are implicitly scoped by Branch (D13)
 2. **Audit Trail**: All processes log activities to D14 (Activity Logs)
-3. **External Services**: AI Service (P5) and Email Service (P10) are external integrations
+3. **External Services**: GROQ AI Service (P5) and Email Service (P10) are external integrations
 4. **Real-time Updates**: P10 (Notifications) receives events from multiple processes
+5. **Dynamic Configuration**: D15 (Clinical Settings) provides admin-configurable lookup values for pet status and appointment reasons
+6. **Content Management**: D16 (CMS Content) stores landing page content managed by admins
