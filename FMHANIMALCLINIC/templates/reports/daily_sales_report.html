@@ -1,0 +1,285 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Daily Sales Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Daily Sales Report</h1>
+    <p class="page-subtitle">Sales summary for {{ report_date|date:"F j, Y" }}</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px; align-items: center;">
+    <form method="GET" style="display: flex; gap: 8px; align-items: center;">
+      <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}" class="filter-input" onchange="this.form.submit()">
+    </form>
+    <a href="{% url 'reports:export_daily_report_csv' %}?date={{ report_date|date:'Y-m-d' }}" class="btn-action primary">
+      <i class='bx bx-download'></i> Export CSV
+    </a>
+    <a href="{% url 'reports:finance_dashboard' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-money' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Sales</div>
+        <div style="font-size: 22px; font-weight: 700; color: var(--primary);">₱{{ summary.total_sales|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-receipt' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Transactions</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ summary.total_transactions|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-trending-up' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Avg Transaction</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.avg_transaction|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fce4ec; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-gift' style="font-size: 24px; color: #c62828;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Discounts</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.total_discount|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Payment Breakdown -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Payment Breakdown</h3>
+    <div class="admin-table-card" style="box-shadow: none; border: none;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th style="text-align: right;">Amount</th>
+            <th style="text-align: center;">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr>
+            <td style="font-weight: 500;">{{ payment.method }}</td>
+            <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ payment.total|floatformat:2 }}</td>
+            <td style="text-align: center;">{{ payment.count }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">No payments recorded</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Hourly Breakdown -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Hourly Breakdown</h3>
+    <div style="position: relative; height: 250px;">
+      <canvas id="hourlyChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Items Sold -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Items Sold</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Item Name</th>
+          <th style="text-align: center;">Quantity</th>
+          <th style="text-align: right;">Revenue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items_sold %}
+        <tr>
+          <td>
+            <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+              {% if item.item_type == 'SERVICE' %}background: #e8f5e9; color: #2e7d32;
+              {% elif item.item_type == 'PRODUCT' %}background: #e3f2fd; color: #1565c0;
+              {% else %}background: #fff3e0; color: #e65100;{% endif %}
+            ">{{ item.item_type }}</span>
+          </td>
+          <td style="font-weight: 500;">{{ item.name }}</td>
+          <td style="text-align: center;">{{ item.total_qty }}</td>
+          <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ item.revenue|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">No items sold on this date</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Transactions List -->
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Transactions</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Transaction ID</th>
+            <th>Customer</th>
+            <th style="text-align: center;">Items</th>
+            <th style="text-align: right;">Total</th>
+            <th style="text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in sales %}
+          <tr>
+            <td style="color: var(--text-secondary);">{{ sale.created_at|date:"g:i A" }}</td>
+            <td style="font-weight: 600; font-family: monospace;">{{ sale.transaction_id }}</td>
+            <td>{{ sale.customer_display_name }}</td>
+            <td style="text-align: center;">{{ sale.items.count }}</td>
+            <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ sale.total|floatformat:2 }}</td>
+            <td style="text-align: center;">
+              <a href="{% url 'pos:sale_detail' sale.pk %}" class="action-btn" title="View">
+                <i class='bx bx-show'></i>
+              </a>
+              <a href="{% url 'pos:receipt' sale.pk %}" class="action-btn" title="Receipt" target="_blank">
+                <i class='bx bx-printer'></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">No transactions on this date</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Cash Drawer Summary -->
+{% if drawers %}
+<div class="admin-card" style="margin-top: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Cash Drawers</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Drawer</th>
+          <th>Opened By</th>
+          <th style="text-align: right;">Opening</th>
+          <th style="text-align: right;">Expected</th>
+          <th style="text-align: right;">Actual</th>
+          <th style="text-align: right;">Variance</th>
+          <th style="text-align: center;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for drawer in drawers %}
+        <tr>
+          <td>#{{ drawer.pk }}</td>
+          <td>{{ drawer.opened_by.get_full_name|default:"-" }}</td>
+          <td style="text-align: right;">₱{{ drawer.opening_amount|floatformat:2 }}</td>
+          <td style="text-align: right;">₱{{ drawer.expected_cash|floatformat:2 }}</td>
+          <td style="text-align: right;">{% if drawer.actual_cash != None %}₱{{ drawer.actual_cash|floatformat:2 }}{% else %}-{% endif %}</td>
+          <td style="text-align: right; {% if drawer.variance != None %}{% if drawer.variance < 0 %}color: #c62828;{% elif drawer.variance > 0 %}color: #2e7d32;{% endif %}{% endif %}">
+            {% if drawer.variance != None %}₱{{ drawer.variance|floatformat:2 }}{% else %}-{% endif %}
+          </td>
+          <td style="text-align: center;">
+            <span class="admin-badge" style="{% if drawer.status == 'OPEN' %}background: #e8f5e9; color: #2e7d32;{% else %}background: var(--bg); color: var(--text-secondary);{% endif %}">
+              {{ drawer.get_status_display }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const hourlyLabels = [{% for h in hourly_sales %}'{{ h.hour }}:00'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const hourlyData = [{% for h in hourly_sales %}{{ h.total|floatformat:2 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const hourlyCounts = [{% for h in hourly_sales %}{{ h.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  if (hourlyLabels.length > 0) {
+    const ctx = document.getElementById('hourlyChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: hourlyLabels,
+        datasets: [{
+          label: 'Sales (₱)',
+          data: hourlyData,
+          backgroundColor: 'rgba(21, 101, 192, 0.7)',
+          borderColor: '#1565c0',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return '₱' + ctx.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' (' + hourlyCounts[ctx.dataIndex] + ' txns)';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: function(val) { return '₱' + val.toLocaleString(); } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

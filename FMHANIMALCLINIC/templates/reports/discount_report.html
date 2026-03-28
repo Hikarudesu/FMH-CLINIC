@@ -1,0 +1,113 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Discount Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Discount Report</h1>
+    <p class="page-subtitle">Discounts given and their impact on sales</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px;">
+    <a href="{% url 'reports:finance_dashboard' %}" class="btn-action outline"><i class='bx bx-arrow-back'></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="admin-card" style="margin-bottom: 24px;">
+  <form method="GET" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">From</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="filter-input">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">To</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="filter-input">
+    </div>
+    <button type="submit" class="btn-action primary" style="height: 40px;"><i class='bx bx-filter-alt'></i> Apply</button>
+  </form>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fce4ec; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-gift' style="font-size: 24px; color: #c62828;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Discounts</div>
+        <div style="font-size: 22px; font-weight: 700; color: #c62828;">₱{{ summary.total_discounts|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-receipt' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Discounted Sales</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ summary.discount_count|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-trending-down' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Avg Discount</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.avg_discount|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-pie-chart-alt-2' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">% of Sales</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ pct_of_sales }}%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Discounted Transactions</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Transaction ID</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th style="text-align: right;">Sale Total</th>
+            <th style="text-align: right;">Discount</th>
+            <th>Reason</th>
+            <th>Cashier</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in discounted_sales %}
+          <tr>
+            <td style="font-weight: 600; font-family: monospace;">{{ sale.transaction_id }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ sale.created_at|date:"M j, Y g:i A" }}</td>
+            <td>{{ sale.customer_display_name }}</td>
+            <td style="text-align: right;">₱{{ sale.total|floatformat:2 }}</td>
+            <td style="text-align: right; font-weight: 600; color: #c62828;">₱{{ sale.discount_amount|floatformat:2 }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ sale.discount_reason|default:"-" }}</td>
+            <td>{{ sale.cashier.get_full_name|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No discounted sales in this period</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

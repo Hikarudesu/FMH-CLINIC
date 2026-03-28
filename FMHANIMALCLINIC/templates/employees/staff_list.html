@@ -1,0 +1,117 @@
+{% extends 'base/portal_admin.html' %}
+{% load currency_filters %}
+
+{% block title %}Staff Management{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+{% include "components/page_hero.html" with title="Staff Management" subtitle="View and update staff member details" icon="bx-group" %}
+
+<!-- Search & Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" style="display:contents;" id="staffFilterForm">
+    <div class="portal-search" style="margin-bottom:0; flex:1; min-width:200px;">
+      <i class='bx bx-search'></i>
+      <input type="text" name="q" placeholder="Search by name or email..." value="{{ q }}" id="staffSearch">
+    </div>
+    <select class="filter-select sd-convert" name="branch" onchange="document.getElementById('staffFilterForm').submit()">
+      <option value="">All Branches</option>
+      {% for branch in branches %}
+      <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"d" %}selected{% endif %}>{{ branch.name }}</option>
+      {% endfor %}
+    </select>
+    <select class="filter-select sd-convert" name="position" onchange="document.getElementById('staffFilterForm').submit()">
+      <option value="">All Positions</option>
+      {% for value, label in positions %}
+      <option value="{{ value }}" {% if selected_position == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <div class="filter-actions">
+      <a href="{% url 'employees:staff_list' %}" class="filter-btn clear"><i class='bx bx-x'></i> Clear</a>
+    </div>
+  </form>
+</div>
+
+{% if staff_users %}
+<!-- Staff Table -->
+<div class="admin-table-card">
+    <table class="admin-table staff-table">
+      <thead>
+        <tr>
+          <th style="text-align: center;">Name</th>
+          <th style="text-align: center;">Role</th>
+          <th style="text-align: center;">Branch</th>
+          <th style="text-align: center;">Salary</th>
+          <th style="text-align: center;">License Expiry</th>
+          <th style="text-align: center;">Status</th>
+          <th style="text-align: center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in staff_users %}
+        <tr>
+        <td style="text-align: center;">
+            <div class="staff-name-cell" style="justify-content: center;">
+              <div class="cell-stack" style="align-items: center;">
+                <span class="cell-primary">{{ user.get_full_name|default:user.username }}</span>
+                <span class="cell-secondary">{{ user.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <span class="admin-badge position-{{ user.assigned_role.code|lower }}">{{ user.assigned_role.name }}</span>
+          </td>
+          <td style="text-align: center;">
+            <span class="cell-secondary">{{ user.branch.name|default:"—" }}</span>
+          </td>
+          <td style="text-align: center;" class="cell-secondary">
+            {% if user.staff_profile %}₱{{ user.staff_profile.salary|peso }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if user.staff_profile and user.staff_profile.license_expiry %}
+              <span class="cell-secondary {% if user.staff_profile.license_expired %}text-danger-inline{% endif %}">
+                {{ user.staff_profile.license_expiry|date:"M d, Y" }}
+                {% if user.staff_profile.license_expired %}<i class='bx bx-error-circle'></i>{% endif %}
+              </span>
+            {% else %}
+              <span class="cell-secondary">N/A</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if user.is_active %}
+              <span class="admin-badge active">Active</span>
+            {% else %}
+              <span class="admin-badge inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            <div onclick="event.stopPropagation();" class="rec-action-grid" style="margin: 0 auto; width: max-content;">
+              <a href="{% url 'employees:staff_edit' user.pk %}" class="action-btn" title="Edit">
+                <i class='bx bx-edit-alt'></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="dashboard-card full-width">
+  <div class="card-body">
+    <div class="empty-state-large">
+      <div class="empty-state-icon">
+        <i class='bx bx-group'></i>
+      </div>
+      <h3>No staff members found</h3>
+      <p>Add your first staff member to get started managing your clinic team.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+{% endblock %}

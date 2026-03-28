@@ -1,0 +1,341 @@
+{% extends 'base/portal_admin.html' %}
+{% load currency_filters %}
+{% load static %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<!-- Page Hero -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-package'></i> Inventory</h1>
+      <p>Track and manage your inventory items</p>
+    </div>
+    <div class="page-hero-actions">
+      <a href="{% url 'inventory:product_new' %}" class="page-hero-btn">
+        <i class='bx bx-plus'></i> Register Item
+      </a>
+      <a href="{% url 'inventory:adjustment_new' %}" class="page-hero-btn">
+        <i class='bx bx-transfer'></i> Adjust Stock
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Tab Bar (Component) -->
+<div class="c-tab-bar" id="invTabs">
+  <div class="c-tab-bar__glow"></div>
+  <div class="c-tab-bar__indicator" id="invTabs-indicator"></div>
+
+  <button class="c-tab-btn active" data-tab="items" type="button" onclick="switchInvMode('items')">
+    <i class='bx bx-package c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Stock Items</span>
+  </button>
+  <button class="c-tab-btn" data-tab="movements" type="button" onclick="switchInvMode('movements')">
+    <i class='bx bx-history c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Stock Movements</span>
+  </button>
+  <button class="c-tab-btn" data-tab="reservations" type="button" onclick="switchInvMode('reservations')">
+    <i class='bx bx-cart c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Reservations</span>
+    {% if pending_reservations %}
+    <span class="c-tab-btn__badge">{{ pending_reservations|length }}</span>
+    {% endif %}
+  </button>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" action="{% url 'inventory:management' %}" style="display:flex; align-items:center; gap:8px;">
+    <i class='bx bx-filter-alt'></i>
+    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-2);">Filters</span>
+    <select name="branch" class="filter-select sd-convert" onchange="this.form.submit()" style="min-width: 200px; margin-left: 8px;">
+      <option value="">All Branches</option>
+      {% for branch in branches %}
+        <option value="{{ branch.id }}" {% if selected_branch_id|add:"0" == branch.id %}selected{% endif %}>
+          {{ branch.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<!-- Items Section -->
+<div id="inv-items-section" class="inv-section active">
+    <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+<div class="admin-table-card">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="text-align: center;">Item Name</th>
+                <th style="text-align: center;">SKU</th>
+                <th style="text-align: center;">Type</th>
+                <th style="text-align: center;">Cost</th>
+                <th style="text-align: center;">Price</th>
+                <th style="text-align: center;">Margin</th>
+                <th style="text-align: center;">Stock</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in products %}
+              <tr>
+                <td style="text-align: center; font-weight: 600; color: var(--text-1);">{{ item.name }}</td>
+                <td style="text-align: center; font-size: 0.8rem; color: var(--text-3);">{{ item.sku }}</td>
+                <td style="text-align: center;">
+                    <span style="
+                        {% if item.item_type == 'Medication' %}background: #e8eaf6; color: #3949ab;
+                        {% elif item.item_type == 'Accessories' %}background: #fce4ec; color: #c62828;
+                        {% elif item.item_type == 'Medical Supplies' %}background: #fff3e0; color: #e65100;
+                        {% else %}background: #e0f2f1; color: #00897b;
+                        {% endif %}
+                        padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+                    ">{{ item.item_type }}{% if item.is_consumable %} <i class='bx bx-recycle' title='Consumable' style="font-size: 0.7rem;"></i>{% endif %}</span>
+                </td>
+                <td style="text-align: center;" class="cell-secondary">₱{{ item.unit_cost|peso }}</td>
+                <td style="text-align: center;" class="cell-secondary">₱{{ item.price|peso }}</td>
+                <td style="text-align: center; font-weight: 500;">{{ item.profit_margin }}%</td>
+                <td style="text-align: center;"><strong>{{ item.stock_quantity }}</strong> / {{ item.min_stock_level }}</td>
+                <td style="text-align: center;">
+                    <span class="admin-badge" style="
+                        {% if item.status == 'Out of Stock' %}background: #ffebee; color: #c62828;
+                        {% elif item.status == 'Low Stock' %}background: #fff3e0; color: #e65100;
+                        {% else %}background: #e8f5e9; color: #2e7d32;
+                        {% endif %}
+                    ">
+                        {{ item.status }}
+                    </span>
+                </td>
+                <td style="text-align: center;">
+                  <div onclick="event.stopPropagation();" class="rec-action-grid" style="margin: 0 auto; width: max-content;">
+                    <a href="{% url 'inventory:product_edit' item.pk %}" class="action-btn" title="Edit">
+                      <i class='bx bx-edit-alt'></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-3);">No stock items found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Movements Section (Hidden by default) -->
+<div id="inv-movements-section" class="inv-section" style="display: none;">
+    <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+<div class="admin-table-card">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="text-align: center;">Date</th>
+                <th style="text-align: center;">Product</th>
+                <th style="text-align: center;">Type</th>
+                <th style="text-align: center;">Reference</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: center;">Cost / Unit</th>
+                <th style="text-align: center;">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for adj in adjustments %}
+              <tr>
+                <td style="text-align: center; white-space: nowrap;" class="cell-secondary">{{ adj.date|date:"M j, Y" }}</td>
+                <td style="text-align: center; font-weight: 600; color: var(--text-1);">{{ adj.product.name }}</td>
+                <td style="text-align: center;">
+                    <span style="
+                        padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+                        {% if adj.adjustment_type == 'Purchase' %}background: #e8f5e9; color: #2e7d32;
+                        {% elif adj.adjustment_type == 'Sale' %}background: #e3f2fd; color: #1565c0;
+                        {% elif adj.adjustment_type == 'Return' %}background: #fff3e0; color: #e65100;
+                        {% elif adj.adjustment_type == 'Damage' %}background: #ffebee; color: #c62828;
+                        {% elif adj.adjustment_type == 'Expiration' %}background: #fce4ec; color: #ad1457;
+                        {% else %}background: var(--bg); color: var(--text-2);
+                        {% endif %}
+                    ">{{ adj.get_adjustment_type_display }}</span>
+                </td>
+                <td style="text-align: center; font-size: 0.85rem; color: var(--text-2);">{{ adj.reference }}</td>
+                <td style="text-align: center;">
+                  {% if adj.quantity > 0 %}
+                    <span style="color: #2e7d32; font-weight: 700;">+{{ adj.quantity }}</span>
+                  {% else %}
+                    <span style="color: #c62828; font-weight: 700;">{{ adj.quantity }}</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: center;" class="cell-secondary">₱{{ adj.cost_per_unit|peso }}</td>
+                <td style="text-align: center; font-size: 0.85rem; color: var(--text-2);">{{ adj.reason|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" style="text-align: center; padding: 50px; color: var(--text-3);">
+                    <i class='bx bx-history' style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                    No stock movements recorded yet.<br>
+                    <span style="font-size: 0.8rem;">Movements are logged automatically from purchases, sales, and manual adjustments.</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Reservations Section (Hidden by default) -->
+<div id="inv-reservations-section" class="inv-section" style="display: none;">
+    <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+<div class="admin-table-card">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="text-align: center;">ID</th>
+                <th style="text-align: center;">Customer</th>
+                <th style="text-align: center;">Product</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: center;">Date</th>
+                <th style="text-align: center;">Notes</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rsv in pending_reservations %}
+              <tr>
+                <td style="text-align: center; font-weight: 600; color: var(--text-1);">RSV-{{ rsv.pk }}</td>
+                <td style="text-align: center;">
+                    <div style="font-weight: 600; color: var(--text-1);">{{ rsv.user.get_full_name|default:rsv.user.username }}</div>
+                    <div style="font-size: 0.78rem; color: var(--text-3);">{{ rsv.user.email }}</div>
+                </td>
+                <td style="text-align: center;">{{ rsv.product.name }}</td>
+                <td style="text-align: center; font-weight: 700;">{{ rsv.quantity }}</td>
+                <td style="text-align: center; white-space: nowrap;" class="cell-secondary">{{ rsv.created_at|date:"M j, Y g:i A" }}</td>
+                <td style="text-align: center; font-size: 0.85rem; color: var(--text-2); max-width: 200px;">{{ rsv.notes|default:"-" }}</td>
+                <td style="text-align: center;">
+                    <span style="
+                        padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+                        {% if rsv.status == 'Pending' %}background: #fff3e0; color: #e65100;
+                        {% elif rsv.status == 'Released' %}background: #e8f5e9; color: #2e7d32;
+                        {% else %}background: #ffebee; color: #c62828;
+                        {% endif %}
+                    ">{{ rsv.status }}</span>
+                </td>
+                <td style="text-align: center;">
+                    {% if rsv.status == 'Pending' %}
+                    <a href="{% url 'inventory:confirm_reservation' rsv.pk %}"
+                       class="btn-action primary" style="padding: 5px 14px; font-size: 0.78rem;"
+                       onclick="return confirm('Release reservation RSV-{{ rsv.pk }}?')">
+                        <i class='bx bx-check'></i> Released
+                    </a>
+                    <a href="{% url 'inventory:cancel_reservation' rsv.pk %}"
+                       class="btn-action outline" style="padding: 5px 14px; font-size: 0.78rem; color: var(--danger);"
+                       onclick="return confirm('Cancel reservation RSV-{{ rsv.pk }}?')">
+                        <i class='bx bx-x'></i> Cancel
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-3); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 50px; color: var(--text-3);">
+                    <i class='bx bx-cart' style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+                    No reservations yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+
+<script>
+function switchInvMode(mode) {
+    const sections = ['items', 'movements', 'reservations'];
+    sections.forEach(function(s) {
+        const section = document.getElementById('inv-' + s + '-section');
+        const tab = document.querySelector(`.c-tab-btn[data-tab="${s}"]`);
+        if (section) section.style.display = (s === mode) ? 'block' : 'none';
+        if (tab) {
+            tab.classList.toggle('active', s === mode);
+        }
+    });
+
+    const activeBtn = document.querySelector(`.c-tab-btn[data-tab="${mode}"]`);
+    const indicator = document.getElementById('invTabs-indicator');
+    if (activeBtn && indicator) {
+        indicator.style.width = activeBtn.offsetWidth + 'px';
+        indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Make sure indicator moves immediately on load
+    setTimeout(() => {
+        const activeBtn = document.querySelector('.c-tab-btn.active');
+        const indicator = document.getElementById('invTabs-indicator');
+        if (activeBtn && indicator) {
+            indicator.style.width = activeBtn.offsetWidth + 'px';
+            indicator.style.transform = `translateX(${activeBtn.offsetLeft}px)`;
+        }
+    }, 50);
+});
+</script>
+
+<style>
+/* Fix dropdown clipping - allow overflow */
+.portal-content {
+    overflow: visible !important;
+}
+
+.page-header {
+    overflow: visible !important;
+    position: relative;
+    z-index: 100;
+}
+
+.page-header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    overflow: visible !important;
+    position: relative;
+    z-index: 100;
+}
+
+.page-header-actions .filter-bar {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: visible !important;
+    position: relative;
+    z-index: 100;
+}
+
+.page-header-actions .sd-wrap {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1000;
+}
+
+.page-header-actions .sd-dropdown {
+    z-index: 9999 !important;
+}
+
+/* Removed old tab-bar styles */
+</style>
+{% endblock %}
+

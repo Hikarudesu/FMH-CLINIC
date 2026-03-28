@@ -1,0 +1,278 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Finance Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Finance Dashboard</h1>
+    <p class="page-subtitle">Sales overview and financial analytics</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px; align-items: center;">
+    <a href="{% url 'reports:daily_sales_report' %}" class="btn-action outline">
+      <i class='bx bx-calendar'></i> Daily Report
+    </a>
+    <a href="{% url 'reports:sales_by_period' %}" class="btn-action outline">
+      <i class='bx bx-line-chart'></i> Sales Report
+    </a>
+    <a href="{% url 'reports:export_sales_csv' %}" class="btn-action primary">
+      <i class='bx bx-download'></i> Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: 24px;">
+  <!-- Today's Sales -->
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-dollar-circle' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Today's Sales</div>
+        <div style="font-size: 24px; font-weight: 700; color: var(--primary);">₱{{ today_sales.total|floatformat:2|default:"0.00" }}</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">{{ today_sales.count|default:0 }} transactions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- This Week -->
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-calendar-week' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">This Week</div>
+        <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">₱{{ week_sales.total|floatformat:2|default:"0.00" }}</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">{{ week_sales.count|default:0 }} transactions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- This Month -->
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-calendar' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">This Month</div>
+        <div style="font-size: 24px; font-weight: 700; color: var(--text-primary);">₱{{ month_sales.total|floatformat:2|default:"0.00" }}</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">{{ month_sales.count|default:0 }} transactions</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sales Chart -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Sales Trend (Last 30 Days)</h3>
+  </div>
+  <div style="position: relative; height: 300px;">
+    <canvas id="salesChart"></canvas>
+  </div>
+</div>
+
+<!-- Two Column Layout -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+  <!-- Payment Breakdown -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Payment Methods (This Month)</h3>
+    <div style="position: relative; height: 250px; margin-bottom: 16px;">
+      <canvas id="paymentChart"></canvas>
+    </div>
+    <div class="admin-table-card" style="box-shadow: none; border: none;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th style="text-align: right;">Amount</th>
+            <th style="text-align: center;">Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payment_breakdown %}
+          <tr>
+            <td>
+              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px;
+                {% if payment.method == 'CASH' %}background: #4caf50;
+                {% elif payment.method == 'CARD' %}background: #2196f3;
+                {% elif payment.method == 'GCASH' %}background: #2196f3;
+                {% elif payment.method == 'MAYA' %}background: #4caf50;
+                {% else %}background: #9e9e9e;{% endif %}
+              "></span>
+              {{ payment.method }}
+            </td>
+            <td style="text-align: right; font-weight: 600;">₱{{ payment.total|floatformat:2 }}</td>
+            <td style="text-align: center;">{{ payment.count }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">No payments this month</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Items -->
+  <div>
+    <!-- Top Services -->
+    <div class="admin-card" style="margin-bottom: 24px;">
+      <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Top Services (This Month)</h3>
+      <div class="admin-table-card" style="box-shadow: none; border: none;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Service</th>
+              <th style="text-align: right;">Revenue</th>
+              <th style="text-align: center;">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for service in top_services %}
+            <tr>
+              <td style="color: var(--text-secondary); font-size: 12px;">{{ forloop.counter }}</td>
+              <td style="font-weight: 500;">{{ service.name }}</td>
+              <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ service.revenue|floatformat:2 }}</td>
+              <td style="text-align: center;">{{ service.count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">No services sold this month</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="admin-card">
+      <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Top Products (This Month)</h3>
+      <div class="admin-table-card" style="box-shadow: none; border: none;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th style="text-align: right;">Revenue</th>
+              <th style="text-align: center;">Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in top_products %}
+            <tr>
+              <td style="color: var(--text-secondary); font-size: 12px;">{{ forloop.counter }}</td>
+              <td style="font-weight: 500;">{{ product.name }}</td>
+              <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ product.revenue|floatformat:2 }}</td>
+              <td style="text-align: center;">{{ product.count }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px;">No products sold this month</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js from CDN (vanilla JS charting) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Sales Trend Chart
+  const salesCtx = document.getElementById('salesChart').getContext('2d');
+  const salesLabels = {{ chart_labels|safe }};
+  const salesData = {{ chart_data|safe }};
+
+  new Chart(salesCtx, {
+    type: 'line',
+    data: {
+      labels: salesLabels,
+      datasets: [{
+        label: 'Daily Sales (₱)',
+        data: salesData,
+        borderColor: '#1565c0',
+        backgroundColor: 'rgba(21, 101, 192, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return '₱' + ctx.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(val) { return '₱' + val.toLocaleString(); }
+          },
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        },
+        x: {
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // Payment Methods Chart
+  const payCtx = document.getElementById('paymentChart').getContext('2d');
+  const payLabels = [{% for p in payment_breakdown %}'{{ p.method }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const payData = [{% for p in payment_breakdown %}{{ p.total|floatformat:2 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const payColors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#607d8b', '#795548'];
+
+  if (payLabels.length > 0) {
+    new Chart(payCtx, {
+      type: 'doughnut',
+      data: {
+        labels: payLabels,
+        datasets: [{
+          data: payData,
+          backgroundColor: payColors.slice(0, payLabels.length),
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 16 } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return ctx.label + ': ₱' + ctx.parsed.toLocaleString(undefined, {minimumFractionDigits: 2});
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

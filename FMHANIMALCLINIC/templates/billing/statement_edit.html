@@ -1,0 +1,269 @@
+{% extends "base/portal_admin.html" %}
+{% load static %}
+
+{% block title %}Edit Statement - {{ statement.statement_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Edit Statement</h1>
+    <p class="page-subtitle">{{ statement.statement_number }} — {{ statement.patient_name }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'billing:statement_detail' statement.id %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Cancel
+    </a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" style="margin-bottom: 1rem; padding: 0.875rem 1rem; border-radius: 8px; background: {% if 'error' in message.tags %}#fee2e2{% else %}#d1fae5{% endif %}; color: {% if 'error' in message.tags %}#991b1b{% else %}#065f46{% endif %}; border-left: 4px solid {% if 'error' in message.tags %}#ef4444{% else %}#10b981{% endif %};">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" action="{% url 'billing:edit_statement' statement.id %}">
+  {% csrf_token %}
+
+  <div class="edit-layout">
+
+    <!-- Left Column: Patient Info + Customer Link -->
+    <div class="edit-column">
+
+      <!-- Patient Info Card -->
+      <div class="edit-card">
+        <div class="edit-card-header"><i class='bx bx-user'></i> Patient Information</div>
+        <div class="edit-card-body">
+          <div class="form-group">
+            <label>Patient Name (Pet)</label>
+            <input type="text" name="patient_name" value="{{ statement.patient_name }}" required class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Owner's Name</label>
+            <input type="text" name="owner_name" value="{{ statement.owner_name }}" required class="form-input">
+          </div>
+          <div class="form-group">
+            <label>Statement Date</label>
+            <input type="date" name="date" value="{{ statement.date|date:'Y-m-d' }}" required class="form-input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Link Card -->
+      <div class="edit-card">
+        <div class="edit-card-header">
+          <i class='bx bx-link'></i> Link to Customer Account
+          {% if not statement.customer %}
+            <span class="badge-warning">Not linked</span>
+          {% else %}
+            <span class="badge-success">Linked</span>
+          {% endif %}
+        </div>
+        <div class="edit-card-body">
+          <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.75rem;">
+            Link to a registered customer so they can view this statement in their portal.
+          </p>
+          <div class="form-group">
+            <label>Customer Account (Optional)</label>
+            <select name="customer_id" class="form-input">
+              <option value="">— Walk-in / No Account —</option>
+              {% for owner in pet_owners %}
+                <option value="{{ owner.id }}"
+                  {% if statement.customer and statement.customer.id == owner.id %}selected{% endif %}>
+                  {{ owner.get_full_name }} ({{ owner.email }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Card -->
+      <div class="edit-card">
+        <div class="edit-card-header"><i class='bx bx-note'></i> Internal Notes</div>
+        <div class="edit-card-body">
+          <textarea name="notes" class="form-input" rows="3" placeholder="Internal notes (not shown to customer)">{{ statement.notes }}</textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Services -->
+    <div class="edit-column">
+      <div class="edit-card">
+        <div class="edit-card-header"><i class='bx bx-list-ul'></i> Services & Amounts</div>
+        <div class="edit-card-body">
+
+          {% include "billing/partials/_service_row.html" with label="Prof. Fee / Consultation" field="consultation_fee" desc_field="consultation_description" amount=statement.consultation_fee desc=statement.consultation_description %}
+          {% include "billing/partials/_service_row.html" with label="Treatment" field="treatment" desc_field="treatment_description" amount=statement.treatment desc=statement.treatment_description %}
+          {% include "billing/partials/_service_row.html" with label="Boarding / Confinement" field="boarding" desc_field="boarding_description" amount=statement.boarding desc=statement.boarding_description %}
+          {% include "billing/partials/_service_row.html" with label="Vaccinations" field="vaccination" desc_field="vaccination_description" amount=statement.vaccination desc=statement.vaccination_description %}
+          {% include "billing/partials/_service_row.html" with label="Surgery" field="surgery" desc_field="surgery_description" amount=statement.surgery desc=statement.surgery_description %}
+          {% include "billing/partials/_service_row.html" with label="Laboratory Exam" field="laboratory" desc_field="laboratory_description" amount=statement.laboratory desc=statement.laboratory_description %}
+          {% include "billing/partials/_service_row.html" with label="Grooming" field="grooming" desc_field="grooming_description" amount=statement.grooming desc=statement.grooming_description %}
+          {% include "billing/partials/_service_row.html" with label="Others" field="others" desc_field="others_description" amount=statement.others desc=statement.others_description %}
+
+          <hr style="margin: 1rem 0; border-color: #e5e7eb;">
+
+          <!-- Totals -->
+          <div class="totals-section">
+            <div class="total-row-display">
+              <span>Total Amount</span>
+              <strong id="totalDisplay">₱{{ statement.total_amount|floatformat:2 }}</strong>
+            </div>
+            <div class="form-group" style="margin-top: 0.75rem;">
+              <label>Deposit (₱)</label>
+              <input type="number" name="deposit" id="depositInput" value="{{ statement.deposit|floatformat:2 }}"
+                     min="0" step="0.01" class="form-input" oninput="updateBalance()">
+            </div>
+            <div class="total-row-display balance-row">
+              <span>Balance</span>
+              <strong id="balanceDisplay">₱{{ statement.balance|floatformat:2 }}</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1rem;">
+        <a href="{% url 'billing:statement_detail' statement.id %}" class="btn-action outline">Cancel</a>
+        <button type="submit" class="btn-action primary">
+          <i class='bx bx-save'></i> Save Changes
+        </button>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<style>
+.edit-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+.edit-column { display: flex; flex-direction: column; gap: 1.25rem; }
+.edit-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+.edit-card-header {
+  padding: 0.875rem 1.25rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.edit-card-body { padding: 1.25rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group:last-child { margin-bottom: 0; }
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.service-row { margin-bottom: 1rem; }
+.service-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+.service-row-header label { font-size: 0.85rem; font-weight: 500; color: #374151; }
+.service-amount-input {
+  width: 140px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: right;
+}
+.service-desc-input {
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.totals-section { background: #f9fafb; border-radius: 8px; padding: 1rem; }
+.total-row-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+.balance-row {
+  border-top: 2px solid #374151;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  font-size: 1rem;
+}
+.badge-warning {
+  font-size: 0.75rem;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  margin-left: auto;
+}
+.badge-success {
+  font-size: 0.75rem;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  margin-left: auto;
+}
+@media (max-width: 900px) {
+  .edit-layout { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+const amountInputs = document.querySelectorAll('.service-amount-input');
+
+function updateTotal() {
+  let total = 0;
+  amountInputs.forEach(input => {
+    total += parseFloat(input.value || 0);
+  });
+  document.getElementById('totalDisplay').textContent = '₱' + total.toFixed(2);
+  updateBalance();
+}
+
+function updateBalance() {
+  const total = Array.from(amountInputs).reduce((s, i) => s + parseFloat(i.value || 0), 0);
+  const deposit = parseFloat(document.getElementById('depositInput').value || 0);
+  const balance = total - deposit;
+  document.getElementById('balanceDisplay').textContent = '₱' + balance.toFixed(2);
+  document.getElementById('balanceDisplay').style.color = balance > 0 ? '#dc2626' : '#059669';
+}
+
+amountInputs.forEach(input => input.addEventListener('input', updateTotal));
+</script>
+{% endblock %}

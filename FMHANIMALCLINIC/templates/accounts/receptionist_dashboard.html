@@ -1,0 +1,338 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Receptionist Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+{% include "components/page_hero.html" with title="Receptionist Dashboard" icon="bx-desktop" subtitle="Manage front desk operations, appointments, and sales" %}
+
+
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card teal">
+    <div class="stat-label"><i class='bx bx-calendar-check'></i> Today's Appointments</div>
+    <div class="stat-value">{{ today_count }}</div>
+    <div class="stat-sub">{{ today_confirmed }} confirmed, {{ today_pending }} pending</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label"><i class='bx bx-cart'></i> Today's Sales</div>
+    <div class="stat-value">{{ todays_sales_count }}</div>
+    <div class="stat-sub">₱{{ todays_revenue|floatformat:0 }} revenue</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-label"><i class='bx bx-trending-up'></i> Weekly Sales</div>
+    <div class="stat-value">{{ weekly_sales_count }}</div>
+    <div class="stat-sub">₱{{ weekly_revenue|floatformat:0 }} this week</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label"><i class='bx bxs-dog'></i> New Pets</div>
+    <div class="stat-value">{{ new_pets_this_week }}</div>
+    <div class="stat-sub">registered this week</div>
+  </div>
+</div>
+
+<!-- Content Grid -->
+<div class="dashboard-grid">
+  <!-- Today's Appointments -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-check'></i> Today's Appointments</h3>
+      <a href="{% url 'appointments:admin_list' %}" class="btn-action outline sm">View All</a>
+    </div>
+    <div class="card-body">
+      {% if todays_appointments %}
+        <div class="appointment-list">
+          {% for appointment in todays_appointments %}
+          <div class="appointment-item">
+            <div class="appointment-time">
+              {{ appointment.appointment_time|date:"g:i A" }}
+            </div>
+            <div class="appointment-details">
+              <div class="patient-name">{{ appointment.pet.name }}</div>
+              <div class="owner-name">{{ appointment.pet.owner.get_full_name }}</div>
+              <div class="appointment-type">{{ appointment.appointment_type }}</div>
+            </div>
+            <div class="appointment-status">
+              <span class="status-badge status-{{ appointment.status|lower }}">{{ appointment.get_status_display }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bx-calendar'></i>
+          <p>No appointments scheduled for today</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Pending Tasks -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-task'></i> Pending Tasks</h3>
+    </div>
+    <div class="card-body">
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-icon"><i class='bx bx-calendar-x'></i></div>
+          <div class="task-details">
+            <div class="task-title">Pending Appointments</div>
+            <div class="task-count">{{ pending_appointments }} waiting for confirmation</div>
+          </div>
+          <a href="{% url 'appointments:admin_list' %}?status=PENDING" class="btn-action outline sm">View</a>
+        </div>
+        <div class="task-item">
+          <div class="task-icon"><i class='bx bx-receipt'></i></div>
+          <div class="task-details">
+            <div class="task-title">Draft Statements</div>
+            <div class="task-count">{{ draft_statements }} ready for release</div>
+          </div>
+          <a href="{% url 'billing:statement_list' %}?status=DRAFT" class="btn-action outline sm">View</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Sales -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-shopping-bag'></i> Recent Sales</h3>
+      <a href="{% url 'pos:sales_list' %}" class="btn-action outline sm">View All</a>
+    </div>
+    <div class="card-body">
+      {% if recent_sales %}
+        <div class="sales-list">
+          {% for sale in recent_sales %}
+          <div class="sale-item">
+            <div class="sale-id">{{ sale.transaction_id }}</div>
+            <div class="sale-details">
+              <div class="customer-name">
+                {% if sale.customer %}
+                  {{ sale.customer.get_full_name }}
+                {% else %}
+                  {{ sale.guest_name|default:"Walk-in Customer" }}
+                {% endif %}
+              </div>
+              <div class="sale-time">{{ sale.created_at|date:"M j, g:i A" }}</div>
+            </div>
+            <div class="sale-amount">₱{{ sale.total|floatformat:2 }}</div>
+            <div class="sale-status">
+              <span class="status-badge status-{{ sale.status|lower }}">{{ sale.get_status_display }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bx-shopping-bag'></i>
+          <p>No recent sales</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Upcoming Appointments -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-week'></i> Upcoming Appointments</h3>
+      <a href="{% url 'appointments:admin_list' %}" class="btn-action outline sm">View All</a>
+    </div>
+    <div class="card-body">
+      {% if upcoming_appointments %}
+        <div class="appointment-list">
+          {% for appointment in upcoming_appointments %}
+          <div class="appointment-item">
+            <div class="appointment-date">
+              {{ appointment.appointment_date|date:"M j" }}<br>
+              <small>{{ appointment.appointment_time|date:"g:i A" }}</small>
+            </div>
+            <div class="appointment-details">
+              <div class="patient-name">{{ appointment.pet.name }}</div>
+              <div class="owner-name">{{ appointment.pet.owner.get_full_name }}</div>
+              <div class="appointment-type">{{ appointment.appointment_type }}</div>
+            </div>
+            <div class="appointment-status">
+              <span class="status-badge status-{{ appointment.status|lower }}">{{ appointment.get_status_display }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bx-calendar'></i>
+          <p>No upcoming appointments</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Revenue & Performance Analytics -->
+<div class="dashboard-grid">
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-trending-up metric-icon green'></i>
+      <h4>Revenue Today</h4>
+    </div>
+    <div class="metric-value">₱{{ todays_revenue|floatformat:0 }}</div>
+    <div class="metric-sub">{{ todays_sales_count }} transactions</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-trending-up metric-icon blue'></i>
+      <h4>Weekly Revenue</h4>
+    </div>
+    <div class="metric-value">₱{{ weekly_revenue|floatformat:0 }}</div>
+    <div class="metric-sub">{{ weekly_sales_count }} this week</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-undo metric-icon orange'></i>
+      <h4>Refunds Today</h4>
+    </div>
+    <div class="metric-value">{{ refunds_count }}</div>
+    <div class="metric-sub">₱{{ refunds_amount|floatformat:0 }}</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-check-circle metric-icon green'></i>
+      <h4>Completed Today</h4>
+    </div>
+    <div class="metric-value">{{ checked_in_today }}</div>
+    <div class="metric-sub">appointments</div>
+  </div>
+</div>
+
+<!-- Appointment Source & Revenue Breakdown -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-direction'></i> Appointment Sources</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Walk-in Today</span>
+        <span class="metric-badge">{{ walkin_today }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Portal Bookings</span>
+        <span class="metric-badge">{{ portal_today }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-credit-card'></i> Payment Methods</h3>
+    </div>
+    <div class="card-body">
+      {% if payment_method_breakdown %}
+        <div class="service-list">
+          {% for payment in payment_method_breakdown %}
+          <div class="service-item">
+            <span class="service-name">{{ payment.method }}</span>
+            <div class="service-bar">
+              <div class="service-fill" style="width: {{ payment.percentage|floatformat:0 }}%"></div>
+            </div>
+            <span class="service-count">{{ payment.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Customer Type & Appointment Reasons -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-user'></i> Customer Type Sales</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Registered Customers</span>
+        <span class="metric-badge">₱{{ registered_sales_today|floatformat:0 }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Walk-in Customers</span>
+        <span class="metric-badge">₱{{ walkin_sales_today|floatformat:0 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-check-circle'></i> Appointment Reasons</h3>
+    </div>
+    <div class="card-body">
+      {% if appointment_reasons_today %}
+        <div class="service-list">
+          {% for reason in appointment_reasons_today|slice:":6" %}
+          <div class="service-item">
+            <span class="service-name">{{ reason.reason|truncatewords:2 }}</span>
+            <div class="service-bar">
+              <div class="service-fill" style="width: {{ reason.percentage|floatformat:0 }}%"></div>
+            </div>
+            <span class="service-count">{{ reason.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Reservation Status -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-check'></i> Reservation Status</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Pending Reservations</span>
+        <span class="metric-badge">{{ pending_reservations }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Draft Statements</span>
+        <span class="metric-badge">{{ draft_statements }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Released Statements</span>
+        <span class="metric-badge">{{ released_statements }} / {{ total_statements }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-trending-up'></i> Revenue Comparison</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Today's Revenue</span>
+        <span class="metric-badge green">₱{{ todays_revenue|floatformat:0 }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Yesterday's Revenue</span>
+        <span class="metric-badge">₱{{ yesterdays_revenue|floatformat:0 }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Difference</span>
+        <span class="metric-badge {% if revenue_diff_pct >= 0 %}green{% else %}red{% endif %}">{% if revenue_diff_pct >= 0 %}+{% endif %}{{ revenue_diff_pct|floatformat:1 }}%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{% endblock %}

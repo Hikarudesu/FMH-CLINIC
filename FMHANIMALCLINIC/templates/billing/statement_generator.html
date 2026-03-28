@@ -1,0 +1,1157 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Statement of Account{% endblock %}
+
+{% block content %}
+<!-- ══════ STATEMENT GENERATOR HERO ══════ -->
+{% url 'billing:statement_list' as view_statements_url %}
+{% include "components/page_hero.html" with title="Create Statement" icon="bx-receipt" subtitle="Generate professional billing statements for your patients" action_url=view_statements_url action_icon="bx-list-ul" action_label="View All Statements" %}
+
+<div class="statement-form-container">
+  <form id="statementForm" onsubmit="return false;">
+    {% csrf_token %}
+
+    <div class="form-main-card">
+      <!-- CUSTOMER INFORMATION SECTION -->
+      <div class="form-section-divider">
+        <i class='bx bx-user'></i>
+        <h3>Customer Information</h3>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label for="patientName">Patient (Pet Name)</label>
+          <input type="text" id="patientName" name="patient_name" placeholder="Enter pet name" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="statementDate">Date</label>
+          <input type="date" id="statementDate" name="date" class="form-control">
+        </div>
+      </div>
+      <div class="form-grid-1">
+        <div class="form-group">
+          <label for="ownerName">Owner's Name</label>
+          <input type="text" id="ownerName" name="owner_name" placeholder="Enter owner's name" class="form-control">
+        </div>
+      </div>
+      <div class="form-grid-1">
+        <div class="form-group">
+          <label for="customerAccount">Link to Customer Account (Optional)</label>
+          <select id="customerAccount" name="customer_id" class="form-control">
+            <option value="">-- No Account (Walk-in Customer) --</option>
+            {% for customer in recent_customers %}
+            <option value="{{ customer.id }}" data-name="{{ customer.get_full_name }}" data-email="{{ customer.email }}">
+              {{ customer.get_full_name|default:customer.email }}
+              {% if customer.phone_number %}({{ customer.phone_number }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+          <span class="form-help-text">Select a registered customer account to make this statement visible in their portal. Leave blank for walk-in customers.</span>
+        </div>
+      </div>
+
+      <!-- SERVICES SECTION -->
+      <div class="form-section-divider">
+        <i class='bx bx-briefcase'></i>
+        <h3>Services & Charges</h3>
+      </div>
+      <div class="services-input-grid">
+        <div class="service-row">
+          <label>Prof. Fee / Consultation</label>
+          <input type="text" id="desc_consultation" class="description-input" placeholder="e.g., General consultation, Physical examination">
+          <input type="number" step="0.01" min="0" id="amt_consultation" class="amount-input" data-service="consultation" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Treatment</label>
+          <input type="text" id="desc_treatment" class="description-input" placeholder="e.g., Medication administration, Wound care">
+          <input type="number" step="0.01" min="0" id="amt_treatment" class="amount-input" data-service="treatment" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Boarding / Confinement</label>
+          <input type="text" id="desc_boarding" class="description-input" placeholder="e.g., Overnight boarding, Recovery confinement">
+          <input type="number" step="0.01" min="0" id="amt_boarding" class="amount-input" data-service="boarding" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Vaccinations</label>
+          <input type="text" id="desc_vaccination" class="description-input" placeholder="e.g., Rabies vaccine, 5-in-1 vaccine">
+          <input type="number" step="0.01" min="0" id="amt_vaccination" class="amount-input" data-service="vaccination" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Surgery</label>
+          <input type="text" id="desc_surgery" class="description-input" placeholder="e.g., Spay/Neuter, Tumor removal">
+          <input type="number" step="0.01" min="0" id="amt_surgery" class="amount-input" data-service="surgery" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Laboratory Exam</label>
+          <input type="text" id="desc_laboratory" class="description-input" placeholder="e.g., Blood test, Fecalysis, X-ray">
+          <input type="number" step="0.01" min="0" id="amt_laboratory" class="amount-input" data-service="laboratory" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Grooming</label>
+          <input type="text" id="desc_grooming" class="description-input" placeholder="e.g., Full grooming, Bath only, Nail trim">
+          <input type="number" step="0.01" min="0" id="amt_grooming" class="amount-input" data-service="grooming" placeholder="0.00">
+        </div>
+        <div class="service-row">
+          <label>Others</label>
+          <input type="text" id="desc_others" class="description-input" placeholder="e.g., Pet supplies, Special services">
+          <input type="number" step="0.01" min="0" id="amt_others" class="amount-input" data-service="others" placeholder="0.00">
+        </div>
+      </div>
+
+      <!-- SUMMARY SECTION -->
+      <div class="form-section-divider">
+        <i class='bx bx-calculator'></i>
+        <h3>Payment Summary</h3>
+      </div>
+      <div class="totals-section">
+        <div class="totals-grid">
+          <div class="total-row">
+            <label>Total Amount</label>
+            <div class="total-value">
+              <span>₱</span>
+              <input type="text" id="totalAmount" readonly value="0.00">
+            </div>
+          </div>
+          <div class="total-row">
+            <label>Deposit Paid</label>
+            <div class="total-value">
+              <span>₱</span>
+              <input type="number" step="0.01" min="0" id="depositAmount" placeholder="0.00">
+            </div>
+          </div>
+          <div class="total-row highlight">
+            <label>Balance Due</label>
+            <div class="total-value">
+              <span>₱</span>
+              <input type="text" id="balanceAmount" readonly value="0.00">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTES SECTION -->
+      <div class="form-section-divider">
+        <i class='bx bx-note'></i>
+        <h3>Notes & Instructions</h3>
+      </div>
+      <div class="form-grid-1">
+        <div class="form-group">
+          <label for="notes">Additional Notes (Optional)</label>
+          <textarea id="notes" name="notes" placeholder="Enter any additional notes or special instructions..." class="form-control" rows="3"></textarea>
+          <span class="form-help-text">Add any additional information, special instructions, or internal notes about this statement.</span>
+        </div>
+      </div>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions">
+        <button type="button" onclick="clearForm()" class="btn-action outline">
+          <i class='bx bx-refresh'></i> Clear
+        </button>
+        <button type="button" onclick="saveStatement()" class="btn-action success">
+          <i class='bx bx-save'></i> Save Statement
+        </button>
+        <button type="button" onclick="printStatement()" class="btn-action primary">
+          <i class='bx bx-printer'></i> Print
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Print Preview (Hidden until print) -->
+<div id="printArea" class="print-only">
+  <!-- Content generated by JavaScript -->
+</div>
+
+<!-- Success Modal -->
+<div id="soaSuccessModal" class="soa-modal">
+  <div class="soa-modal-content">
+    <div class="soa-modal-icon success">
+      <i class='bx bx-check-circle'></i>
+    </div>
+    <h3 class="soa-modal-title">Statement Saved Successfully!</h3>
+    <p class="soa-modal-message" id="soaSuccessMessage">Your statement has been saved as a Draft.</p>
+    <div class="soa-modal-actions">
+      <button type="button" onclick="goToStatements()" class="soa-modal-btn primary">
+        <i class='bx bx-list-ul'></i> View Statements
+      </button>
+      <button type="button" onclick="createNewStatement()" class="soa-modal-btn secondary">
+        <i class='bx bx-plus'></i> Create New
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div id="soaErrorModal" class="soa-modal">
+  <div class="soa-modal-content">
+    <div class="soa-modal-icon error">
+      <i class='bx bx-x-circle'></i>
+    </div>
+    <h3 class="soa-modal-title">Error</h3>
+    <p class="soa-modal-message" id="soaErrorMessage">An error occurred while saving the statement.</p>
+    <div class="soa-modal-actions">
+      <button type="button" onclick="closeSoaModal('soaErrorModal')" class="soa-modal-btn secondary">
+        <i class='bx bx-x'></i> Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.statement-form-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.form-main-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.form-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 32px 0 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0;
+}
+
+.form-section-divider:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.form-section-divider h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section-divider i {
+  font-size: 1.2rem;
+  color: var(--primary);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.form-grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin: 0;
+}
+
+.form-group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: var(--bg);
+  color: var(--text-1);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+  background: var(--surface);
+}
+
+.form-control::placeholder {
+  color: var(--text-3);
+}
+
+.services-input-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.service-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 160px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.service-row:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.service-row label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.description-input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.description-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.description-input::placeholder {
+  color: var(--text-3);
+}
+
+.amount-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  text-align: right;
+  background: var(--surface);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.amount-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.form-help-text {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-top: 6px;
+  display: block;
+}
+
+.totals-section {
+  background: var(--bg);
+  padding: 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  margin-top: 24px;
+}
+
+.totals-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.total-row label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.total-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-value span {
+  font-weight: 500;
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+
+.total-value input {
+  width: 160px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  text-align: right;
+  background: var(--surface);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.total-value input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+
+.total-value input[readonly] {
+  background: var(--surface);
+  cursor: not-allowed;
+}
+
+.total-row.highlight {
+  padding: 12px 0;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 2px solid var(--primary);
+}
+
+.total-row.highlight label {
+  font-size: 1.1rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.total-row.highlight .total-value input {
+  font-size: 1.1rem;
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-action {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-action.primary {
+  background: var(--primary-gradient, linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, #1e40af) 100%));
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.2);
+}
+
+.btn-action.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 150, 136, 0.3);
+}
+
+.btn-action.success {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.btn-action.success:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-action.outline {
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1.5px solid var(--border);
+}
+
+.btn-action.outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .statement-form-container {
+    padding: 0 1rem;
+  }
+
+  .form-main-card {
+    padding: 20px;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .service-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button,
+  .form-actions a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* SOA Modal Styles */
+.soa-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.soa-modal.active {
+  display: flex;
+  animation: soaFadeIn 0.2s ease forwards;
+}
+
+.soa-modal-content {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: soaSlideUp 0.3s ease forwards;
+  border: 1px solid var(--border);
+}
+
+.soa-modal-icon {
+  font-size: 3.5rem;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.soa-modal-icon.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.soa-modal-icon.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.soa-modal-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 0.75rem;
+}
+
+.soa-modal-message {
+  color: var(--text-2);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.soa-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.soa-modal-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.soa-modal-btn.primary {
+  background: var(--primary);
+  color: white;
+}
+
+.soa-modal-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.2);
+}
+
+.soa-modal-btn.secondary {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text-2);
+}
+
+.soa-modal-btn.secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+@keyframes soaFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes soaSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* SOA Modal Responsive */
+@media (max-width: 640px) {
+  .soa-modal-content {
+    max-width: 95%;
+    padding: 1.5rem;
+  }
+  .soa-modal-icon {
+    font-size: 2.8rem;
+    width: 65px;
+    height: 65px;
+    line-height: 65px;
+    margin-bottom: 1rem;
+  }
+  .soa-modal-title {
+    font-size: 1.15rem;
+  }
+  .soa-modal-message {
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+  }
+  .soa-modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .soa-modal-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-only, .print-only * {
+    visibility: visible;
+  }
+
+  .print-only {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+</style>
+
+<script>
+// Set today's date by default
+document.getElementById('statementDate').valueAsDate = new Date();
+
+// Calculate totals when amounts change
+document.querySelectorAll('.amount-input').forEach(input => {
+  input.addEventListener('input', calculateTotals);
+});
+
+document.getElementById('depositAmount').addEventListener('input', calculateTotals);
+
+// Auto-fill owner name when customer account is selected
+document.getElementById('customerAccount').addEventListener('change', function() {
+  const select = this;
+  const selectedOption = select.options[select.selectedIndex];
+
+  if (selectedOption.value && selectedOption.dataset.name) {
+    // Auto-fill owner name from selected customer
+    document.getElementById('ownerName').value = selectedOption.dataset.name;
+  }
+});
+
+function calculateTotals() {
+  let total = 0;
+
+  document.querySelectorAll('.amount-input').forEach(input => {
+    const value = parseFloat(input.value) || 0;
+    total += value;
+  });
+
+  document.getElementById('totalAmount').value = total.toFixed(2);
+
+  const deposit = parseFloat(document.getElementById('depositAmount').value) || 0;
+  const balance = total - deposit;
+
+  document.getElementById('balanceAmount').value = balance.toFixed(2);
+}
+
+function clearForm() {
+  document.getElementById('patientName').value = '';
+  document.getElementById('ownerName').value = '';
+  document.getElementById('customerAccount').value = '';
+  document.getElementById('statementDate').valueAsDate = new Date();
+
+  document.querySelectorAll('.amount-input').forEach(input => {
+    input.value = '';
+  });
+
+  document.querySelectorAll('.description-input').forEach(input => {
+    input.value = '';
+  });
+
+  document.getElementById('depositAmount').value = '';
+  document.getElementById('totalAmount').value = '0.00';
+  document.getElementById('balanceAmount').value = '0.00';
+
+  if (document.getElementById('notes')) {
+    document.getElementById('notes').value = '';
+  }
+}
+
+async function saveStatement() {
+  // Validate required fields
+  const patientName = document.getElementById('patientName').value.trim();
+  const ownerName = document.getElementById('ownerName').value.trim();
+  const date = document.getElementById('statementDate').value;
+
+  if (!patientName || !ownerName || !date) {
+    alert('Please fill in all required fields: Patient Name, Owner Name, and Date');
+    return;
+  }
+
+  // Collect form data using explicit IDs
+  const formData = {
+    patient_name: patientName,
+    owner_name: ownerName,
+    date: date,
+    customer_id: document.getElementById('customerAccount').value || null,
+    consultation_fee: document.getElementById('amt_consultation').value || '0',
+    consultation_description: document.getElementById('desc_consultation').value || '',
+    treatment: document.getElementById('amt_treatment').value || '0',
+    treatment_description: document.getElementById('desc_treatment').value || '',
+    boarding: document.getElementById('amt_boarding').value || '0',
+    boarding_description: document.getElementById('desc_boarding').value || '',
+    vaccination: document.getElementById('amt_vaccination').value || '0',
+    vaccination_description: document.getElementById('desc_vaccination').value || '',
+    surgery: document.getElementById('amt_surgery').value || '0',
+    surgery_description: document.getElementById('desc_surgery').value || '',
+    laboratory: document.getElementById('amt_laboratory').value || '0',
+    laboratory_description: document.getElementById('desc_laboratory').value || '',
+    grooming: document.getElementById('amt_grooming').value || '0',
+    grooming_description: document.getElementById('desc_grooming').value || '',
+    others: document.getElementById('amt_others').value || '0',
+    others_description: document.getElementById('desc_others').value || '',
+    total_amount: document.getElementById('totalAmount').value || '0',
+    deposit: document.getElementById('depositAmount').value || '0',
+    notes: document.getElementById('notes') ? document.getElementById('notes').value : ''
+  };
+
+  try {
+    // Show loading state
+    const saveButton = document.querySelector('.btn-success');
+    const originalText = saveButton.innerHTML;
+    saveButton.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Saving...';
+    saveButton.disabled = true;
+
+    // Send to backend
+    const response = await fetch('/billing/statement/save/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Show success modal
+      document.getElementById('soaSuccessMessage').textContent = result.message + ' Statement saved as Draft.';
+      document.getElementById('soaSuccessModal').classList.add('active');
+    } else {
+      // Show error modal
+      document.getElementById('soaErrorMessage').textContent = result.message || 'Failed to save statement';
+      document.getElementById('soaErrorModal').classList.add('active');
+    }
+
+  } catch (error) {
+    console.error('Save error:', error);
+    // Show error modal
+    document.getElementById('soaErrorMessage').textContent = 'Network error occurred. Please try again.';
+    document.getElementById('soaErrorModal').classList.add('active');
+  } finally {
+    // Restore button state
+    const saveButton = document.querySelector('.btn-success');
+    saveButton.innerHTML = originalText;
+    saveButton.disabled = false;
+  }
+}
+
+function closeSoaModal(modalId) {
+  document.getElementById(modalId).classList.remove('active');
+}
+
+function goToStatements() {
+  window.location.href = '/billing/statements/';
+}
+
+function createNewStatement() {
+  closeSoaModal('soaSuccessModal');
+  clearForm();
+}
+
+function printStatement() {
+  const patient = document.getElementById('patientName').value || '_________________';
+  const owner = document.getElementById('ownerName').value || '_________________';
+  const date = document.getElementById('statementDate').value
+    ? new Date(document.getElementById('statementDate').value).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})
+    : '_________________';
+
+  // Get amounts and descriptions for each service using IDs
+  const serviceData = {
+    consultation: {
+      amount: document.getElementById('amt_consultation').value || '',
+      description: document.getElementById('desc_consultation').value || ''
+    },
+    treatment: {
+      amount: document.getElementById('amt_treatment').value || '',
+      description: document.getElementById('desc_treatment').value || ''
+    },
+    boarding: {
+      amount: document.getElementById('amt_boarding').value || '',
+      description: document.getElementById('desc_boarding').value || ''
+    },
+    vaccination: {
+      amount: document.getElementById('amt_vaccination').value || '',
+      description: document.getElementById('desc_vaccination').value || ''
+    },
+    surgery: {
+      amount: document.getElementById('amt_surgery').value || '',
+      description: document.getElementById('desc_surgery').value || ''
+    },
+    laboratory: {
+      amount: document.getElementById('amt_laboratory').value || '',
+      description: document.getElementById('desc_laboratory').value || ''
+    },
+    grooming: {
+      amount: document.getElementById('amt_grooming').value || '',
+      description: document.getElementById('desc_grooming').value || ''
+    },
+    others: {
+      amount: document.getElementById('amt_others').value || '',
+      description: document.getElementById('desc_others').value || ''
+    }
+  };
+
+  // Add hasContent flag
+  Object.keys(serviceData).forEach(key => {
+    serviceData[key].hasContent = serviceData[key].amount && parseFloat(serviceData[key].amount) > 0;
+  });
+
+  const totalAmount = document.getElementById('totalAmount').value;
+  const deposit = document.getElementById('depositAmount').value || '';
+  const balance = document.getElementById('balanceAmount').value;
+
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Statement of Account</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: Arial, sans-serif;
+          padding: 8mm;
+          margin: 0;
+        }
+        .statement-box {
+          width: 100%;
+          max-width: 70mm;
+          margin: 0 auto;
+          border: 2px solid #000;
+          padding: 8mm;
+          background: white;
+          font-size: 10px;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 15px;
+        }
+        .header h1 {
+          font-size: 13px;
+          font-weight: bold;
+          margin: 0;
+          letter-spacing: 1.5px;
+        }
+        .header h2 {
+          font-size: 10px;
+          margin: 2px 0 0 0;
+          font-weight: normal;
+        }
+        .patient-info {
+          margin-bottom: 12px;
+          font-size: 11px;
+        }
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 6px;
+        }
+        .owner-row {
+          margin-bottom: 6px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 1px solid #000;
+          margin-bottom: 12px;
+        }
+        th, td {
+          border: 1px solid #000;
+          padding: 3px 4px;
+          text-align: left;
+          vertical-align: top;
+          font-size: 9px;
+        }
+        th {
+          background: #f5f5f5;
+          font-weight: bold;
+        }
+        td.amount {
+          text-align: center;
+          width: 80px;
+          vertical-align: middle;
+        }
+        .totals-table {
+          margin: 0;
+        }
+        .totals-table td {
+          font-size: 10px;
+        }
+        .totals-table .label {
+          font-weight: bold;
+        }
+        .totals-table .value {
+          text-align: center;
+          font-weight: bold;
+        }
+        .signature {
+          text-align: center;
+          margin-top: 20px;
+        }
+        .signature-line {
+          border-bottom: 1px solid #000;
+          width: 150px;
+          margin: 0 auto 5px auto;
+          height: 20px;
+        }
+        .signature-label {
+          font-weight: bold;
+          font-size: 10px;
+        }
+        @media print {
+          body {
+            padding: 0;
+            margin: 0;
+          }
+          .statement-box {
+            max-width: 100%;
+            width: 100%;
+          }
+        }
+        @page {
+          size: 80mm auto;
+          margin: 3mm;
+        }
+      </style>
+    </head>
+    <body>
+      <div style="text-align:center; padding: 10px; background: #f0f0f0; margin-bottom: 10px;">
+        <button onclick="window.print()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin-right: 8px;">
+          Print
+        </button>
+        <button onclick="window.close()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #95a5a6; color: white; border: none; border-radius: 4px;">
+          Close
+        </button>
+      </div>
+      <style>@media print { div[style*="background: #f0f0f0"] { display: none !important; } }</style>
+      <div class="statement-box">
+        <div class="header">
+          <h1>FMH ANIMAL CLINIC</h1>
+          <h2>Statement of Account</h2>
+        </div>
+
+        <div class="patient-info">
+          <div class="info-row">
+            <div><strong>Patient:</strong> ${patient}</div>
+            <div style="text-align: right;"><strong>Date:</strong> ${date}</div>
+          </div>
+          <div class="owner-row">
+            <strong>Owner's Name:</strong> ${owner}
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Particulars</th>
+              <th class="amount">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Prof. Fee / Consultation</strong>
+                ${serviceData.consultation.description ? '<br>' + serviceData.consultation.description : ''}
+              </td>
+              <td class="amount">${serviceData.consultation.hasContent ? '₱' + serviceData.consultation.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Treatment</strong>
+                ${serviceData.treatment.description ? '<br>' + serviceData.treatment.description : ''}
+              </td>
+              <td class="amount">${serviceData.treatment.hasContent ? '₱' + serviceData.treatment.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Boarding / Confinement</strong>
+                ${serviceData.boarding.description ? '<br>' + serviceData.boarding.description : ''}
+              </td>
+              <td class="amount">${serviceData.boarding.hasContent ? '₱' + serviceData.boarding.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Vaccinations</strong>
+                ${serviceData.vaccination.description ? '<br>' + serviceData.vaccination.description : ''}
+              </td>
+              <td class="amount">${serviceData.vaccination.hasContent ? '₱' + serviceData.vaccination.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Surgery</strong>
+                ${serviceData.surgery.description ? '<br>' + serviceData.surgery.description : ''}
+              </td>
+              <td class="amount">${serviceData.surgery.hasContent ? '₱' + serviceData.surgery.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Laboratory Exam</strong>
+                ${serviceData.laboratory.description ? '<br>' + serviceData.laboratory.description : ''}
+              </td>
+              <td class="amount">${serviceData.laboratory.hasContent ? '₱' + serviceData.laboratory.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Grooming</strong>
+                ${serviceData.grooming.description ? '<br>' + serviceData.grooming.description : ''}
+              </td>
+              <td class="amount">${serviceData.grooming.hasContent ? '₱' + serviceData.grooming.amount : ''}</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Others</strong>
+                ${serviceData.others.description ? '<br>' + serviceData.others.description : ''}
+              </td>
+              <td class="amount">${serviceData.others.hasContent ? '₱' + serviceData.others.amount : ''}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="totals-table">
+          <tr>
+            <td class="label"><strong>Amount</strong></td>
+            <td class="value"><strong>Php ${totalAmount}</strong></td>
+          </tr>
+          <tr>
+            <td class="label">Deposit</td>
+            <td class="value">${deposit}</td>
+          </tr>
+          <tr>
+            <td class="label"><strong>Balance</strong></td>
+            <td class="value"><strong>${balance}</strong></td>
+          </tr>
+        </table>
+
+        <div class="signature">
+          <div class="signature-line"></div>
+          <div class="signature-label">Signature</div>
+        </div>
+      </div>
+
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+}
+</script>
+
+{% endblock %}

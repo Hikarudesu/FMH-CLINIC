@@ -1,0 +1,393 @@
+{% extends 'base/portal_user.html' %}
+{% load static %}
+
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- No Branch Warning Banner -->
+{% if not user.branch %}
+<div class="dashboard-alert warning">
+  <div class="dashboard-alert-icon">
+    <i class='bx bx-info-circle'></i>
+  </div>
+  <div class="dashboard-alert-content">
+    <strong>Set your preferred branch</strong>
+    <p>Choose a preferred branch to speed up booking. Your branch will be pre-selected when you book appointments.</p>
+  </div>
+  <a href="{% url 'select_branch' %}" class="dashboard-alert-action">Set Preferred Branch <i class='bx bx-right-arrow-alt'></i></a>
+</div>
+{% endif %}
+
+<!-- Page Hero -->
+{% include "components/page_hero.html" with title="Dashboard" subtitle="Welcome back! Here's an overview of your pet care" icon="bxs-dashboard" action_url="appointments:portal_book" action_label="Book Appointment" action_icon="bx-calendar-plus" action_url_2="patients:add_pet" action_label_2="Register Pet" action_icon_2="bx-plus-circle" %}
+
+<!-- Branch Badge -->
+{% if user.branch %}
+<div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+  <span class="branch-badge" title="Your preferred branch for booking">
+    <i class='bx bx-map-pin'></i> {{ user.branch.name }} — {{ user.branch.city }}
+  </span>
+</div>
+{% endif %}
+
+<!-- Search Bar -->
+<div class="portal-search">
+  <i class='bx bx-search'></i>
+  <input type="text" placeholder="Search pets, records, appointments..." id="dashboardSearch">
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card teal">
+    <div class="stat-icon-bg"><i class='bx bxs-dog'></i></div>
+    <div class="stat-label"><i class='bx bxs-dog'></i> My Pets</div>
+    <div class="stat-value">{{ pet_count|default:"0" }}</div>
+    <div class="stat-sub">registered pets</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon-bg"><i class='bx bxs-calendar-check'></i></div>
+    <div class="stat-label"><i class='bx bx-calendar-check'></i> Upcoming Appointments</div>
+    <div class="stat-value">{{ upcoming_count|default:"0" }}</div>
+    <div class="stat-sub">scheduled this week</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon-bg"><i class='bx bxs-bell-ring'></i></div>
+    <div class="stat-label"><i class='bx bx-bell'></i> Follow-ups</div>
+    <div class="stat-value">{{ follow_up_count|default:"0" }}</div>
+    <div class="stat-sub">pending return visits</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon-bg"><i class='bx bxs-envelope'></i></div>
+    <div class="stat-label"><i class='bx bx-envelope'></i> Notifications</div>
+    <div class="stat-value">{{ unread_notif_count|default:"0" }}</div>
+    <div class="stat-sub">unread</div>
+  </div>
+</div>
+
+<!-- Medical Alerts / Follow-ups -->
+{% if follow_ups %}
+<div class="dashboard-card full-width">
+  <div class="card-header">
+    <h3><i class='bx bxs-bell-ring'></i> Medical Alerts / Follow-ups</h3>
+    <span class="badge">{{ follow_ups|length }}</span>
+  </div>
+  <div class="card-body">
+    <div class="schedule-entries">
+      {% for fu in follow_ups %}
+      <div class="schedule-entry {% if fu.is_completed %}completed{% else %}pending{% endif %}">
+        <div class="schedule-entry-left">
+          <div class="schedule-entry-avatar {% if fu.is_completed %}completed{% else %}pending{% endif %}">
+            <i class='bx {% if fu.is_completed %}bx-check{% else %}bx-calendar-exclamation{% endif %}'></i>
+          </div>
+          <div class="schedule-entry-info">
+            <strong>{{ fu.pet_name }}</strong>
+            <span>{{ fu.reason|default:"Routine follow-up visit" }}</span>
+          </div>
+        </div>
+        <div class="schedule-entry-details">
+          <div class="pet-alert-meta">
+            <span>
+              <i class='bx bx-calendar'></i> {{ fu.follow_up_date|date:"M d, Y" }}
+              {% if fu.follow_up_end_date and fu.follow_up_end_date != fu.follow_up_date %}
+                - {{ fu.follow_up_end_date|date:"M d, Y" }}
+              {% endif %}
+            </span>
+          </div>
+          <span class="status-badge {% if fu.is_completed %}confirmed{% else %}pending{% endif %}">
+            {% if fu.is_completed %}Completed{% else %}Upcoming{% endif %}
+          </span>
+          <!-- Calendar Add Button (ICS download) -->
+          {% if not fu.is_completed %}
+          <div class="pet-alert-actions">
+            <a href="javascript:void(0)" class="pet-action-btn" title="Add to Calendar" onclick="downloadICS('{{ fu.pet_name|escapejs }}', '{{ fu.follow_up_date|date:'Y-m-d' }}', '{{ fu.reason|escapejs }} {% if fu.follow_up_end_date %}(Ends: {{ fu.follow_up_end_date|date:'Y-m-d' }}){% endif %}')">
+              <i class='bx bx-calendar-plus'></i> Add to Calendar
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- Pet Care Analytics -->
+<div class="dashboard-grid">
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bxs-dog metric-icon green'></i>
+      <h4>Total Pets</h4>
+    </div>
+    <div class="metric-value">{{ pet_count|default:"0" }}</div>
+    <div class="metric-sub">in your care</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-calendar-check metric-icon blue'></i>
+      <h4>Appointments</h4>
+    </div>
+    <div class="metric-value">{{ appointments_this_month|default:"0" }}</div>
+    <div class="metric-sub">this month</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-injection metric-icon orange'></i>
+      <h4>Vaccinations</h4>
+    </div>
+    <div class="metric-value">{{ vaccination_appointments|default:"0" }}</div>
+    <div class="metric-sub">last 30 days</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-check-circle metric-icon purple'></i>
+      <h4>Pending Visits</h4>
+    </div>
+    <div class="metric-value">{{ pending_reservations|default:"0" }}</div>
+    <div class="metric-sub">to be scheduled</div>
+  </div>
+</div>
+
+<!-- Pet Species & Reservation Breakdown -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-dog'></i> Pet Species Breakdown</h3>
+    </div>
+    <div class="card-body">
+      {% if pet_species_breakdown %}
+        <div class="species-list">
+          {% for species in pet_species_breakdown %}
+          <div class="species-item">
+            <span class="species-name">{{ species.species }}</span>
+            <div class="species-bar">
+              <div class="species-fill" data-width="{{ species.percentage|floatformat:0 }}%"></div>
+            </div>
+            <span class="species-count">{{ species.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bxs-dog'></i>
+          <p>No pets registered yet</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-check'></i> Reservation Status</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">Approved Reservations</span>
+        <span class="metric-badge">{{ approved_reservations|default:"0" }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Pending Reservations</span>
+        <span class="metric-badge">{{ pending_reservations|default:"0" }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Cancelled Appointments</span>
+        <span class="metric-badge">{{ cancelled_appointments_count|default:"0" }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upcoming Vaccinations -->
+<div class="dashboard-grid">
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <h3><i class='bx bx-injection'></i> Recent Vaccination Appointments</h3>
+      <a href="{% url 'appointments:my_appointments' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      {% if vaccination_appointments %}
+        <div class="vaccination-list">
+          {% for appt in upcoming_appointments %}
+            {% if 'vaccination' in appt.appointment_type|lower %}
+            <div class="vaccination-item">
+              <div class="vaccination-icon">
+                <i class='bx bx-injection'></i>
+              </div>
+              <div class="vaccination-details">
+                <strong>{{ appt.pet_name }}</strong>
+                <span class="vaccination-type">Vaccination due</span>
+              </div>
+              <div class="vaccination-date">
+                <i class='bx bx-calendar'></i> {{ appt.appointment_date|date:"M j, Y" }}
+              </div>
+              <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bx-injection'></i>
+          <p>No upcoming vaccinations scheduled</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Content Grid -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-calendar'></i> Upcoming Appointments</h3>
+      <a href="{% url 'appointments:my_appointments' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      {% if upcoming_appointments %}
+      <div class="schedule-entries">
+        {% for appt in upcoming_appointments %}
+        <div class="schedule-entry">
+          <div class="schedule-entry-left">
+            <div class="schedule-entry-avatar">{{ appt.pet_name|make_list|first|upper }}</div>
+            <div class="schedule-entry-info">
+              <strong>{{ appt.pet_name }}</strong>
+              <span>{{ appt.branch.name }}</span>
+              {% if appt.notes %}
+              <div class="vet-notes">
+                <strong>Vet Notes:</strong> {{ appt.notes }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="schedule-entry-details">
+            <div class="schedule-entry-time"><i class='bx bx-calendar'></i> {{ appt.appointment_date|date:"M d" }}</div>
+            <div class="schedule-entry-time"><i class='bx bx-time-five'></i> {{ appt.appointment_time|time:"g:i A" }}</div>
+            <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-calendar-x'></i>
+        <h4>No upcoming appointments</h4>
+        <p>Book your first appointment to get started.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-file-doc'></i> Recent Medical Records</h3>
+      <a href="{% url 'patients:my_pets' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      <div class="empty-state">
+        <i class='bx bx-file-blank'></i>
+        <h4>No records yet</h4>
+        <p>Records appear after your pet's first visit.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-history'></i> My Recent Changes</h3>
+    </div>
+    <div class="card-body">
+      <ul class="activity-list">
+        {% for activity in recent_activities %}
+        <li class="activity-item">
+          <div class="activity-icon {% if 'Created' in activity.action %}teal{% elif 'Updated' in activity.action %}blue{% else %}orange{% endif %}">
+            <i class='bx {% if 'Created' in activity.action %}bx-plus{% elif 'Updated' in activity.action %}bx-edit-alt{% else %}bx-trash{% endif %}'></i>
+          </div>
+          <div class="activity-text">
+            <p><strong>{{ activity.action }}</strong>: {{ activity.object_name }}</p>
+            <span>{{ activity.timestamp|timesince }} ago</span>
+          </div>
+        </li>
+        {% empty %}
+        <li class="activity-item">
+          <div class="activity-icon teal"><i class='bx bx-check'></i></div>
+          <div class="activity-text">
+            <p>No recent changes detected</p>
+            <span>Your activity history will appear here.</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <!-- Pagination Controls -->
+      {% if recent_activities.has_other_pages %}
+      <div class="pagination-footer">
+        <div class="pagination-info">
+          Page {{ recent_activities.number }} of {{ recent_activities.paginator.num_pages }}
+        </div>
+        <div class="pagination-links">
+          {% if recent_activities.has_previous %}
+            <a href="?page=1" class="page-link" title="First Page"><i class='bx bx-chevrons-left'></i></a>
+            <a href="?page={{ recent_activities.previous_page_number }}" class="page-link" title="Previous"><i class='bx bx-chevron-left'></i></a>
+          {% endif %}
+
+          {% for num in recent_activities.paginator.page_range %}
+            {% if recent_activities.number == num %}
+              <span class="page-link active">{{ num }}</span>
+            {% elif num > recent_activities.number|add:'-3' and num < recent_activities.number|add:'3' %}
+              <a href="?page={{ num }}" class="page-link">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if recent_activities.has_next %}
+            <a href="?page={{ recent_activities.next_page_number }}" class="page-link" title="Next"><i class='bx bx-chevron-right'></i></a>
+            <a href="?page={{ recent_activities.paginator.num_pages }}" class="page-link" title="Last Page"><i class='bx bx-chevrons-right'></i></a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// ICS Calendar download for follow-ups
+function downloadICS(petName, dateStr, reason) {
+  const dtStart = dateStr.replace(/-/g, '');
+  const dtEnd = dtStart; // Same day
+  const summary = 'Follow-up: ' + petName;
+  const description = reason || 'Routine follow-up visit at FMH Animal Clinic';
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//FMHSYNC//EN',
+    'BEGIN:VEVENT',
+    'DTSTART;VALUE=DATE:' + dtStart,
+    'DTEND;VALUE=DATE:' + dtEnd,
+    'SUMMARY:' + summary,
+    'DESCRIPTION:' + description,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'followup_' + petName.replace(/\s+/g, '_') + '.ics';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+
+{% endblock %}

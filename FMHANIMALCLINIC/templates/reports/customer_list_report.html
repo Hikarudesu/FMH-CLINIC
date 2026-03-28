@@ -1,0 +1,113 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Customer List Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Customer List Report</h1>
+    <p class="page-subtitle">Customer lifetime value and purchase history</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px;">
+    <a href="{% url 'reports:customer_analytics' %}" class="btn-action outline"><i class='bx bx-arrow-back'></i> Analytics</a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-group' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Customers</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ total_customers }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-dollar-circle' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Avg Lifetime Value</div>
+        <div style="font-size: 22px; font-weight: 700; color: #2e7d32;">₱{{ avg_ltv|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <form method="GET" style="display: flex; gap: 12px; align-items: flex-end;">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Search Customers</label>
+      <input type="text" name="q" value="{{ search }}" placeholder="Search by name or email..." class="filter-input" style="width: 100%;">
+    </div>
+    <button type="submit" class="btn-action primary" style="height: 40px;"><i class='bx bx-search'></i> Search</button>
+    {% if search %}
+    <a href="{% url 'reports:customer_list_report' %}" class="btn-action outline" style="height: 40px;">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Customer Table -->
+<div class="admin-card">
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th style="text-align: center;">Visits</th>
+            <th style="text-align: right;">Total Spent</th>
+            <th>Joined</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+          <tr>
+            <td style="font-weight: 600;">{{ customer.get_full_name|default:customer.username }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ customer.email|default:"-" }}</td>
+            <td style="font-size: 13px;">{{ customer.phone_number|default:"-" }}</td>
+            <td style="text-align: center; font-weight: 600;">{{ customer.visit_count|default:0 }}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--primary);">₱{{ customer.total_spent|floatformat:2|default:"0.00" }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ customer.date_joined|date:"M j, Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+            {% if search %}No customers matching "{{ search }}"{% else %}No customers found{% endif %}
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if customers.has_other_pages %}
+  <div style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;">
+    {% if customers.has_previous %}
+    <a href="?page={{ customers.previous_page_number }}{% if search %}&q={{ search }}{% endif %}" class="btn-action outline" style="padding: 6px 14px; font-size: 13px;">
+      <i class='bx bx-chevron-left'></i> Prev
+    </a>
+    {% endif %}
+
+    <span style="display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--text-secondary);">
+      Page {{ customers.number }} of {{ customers.paginator.num_pages }}
+    </span>
+
+    {% if customers.has_next %}
+    <a href="?page={{ customers.next_page_number }}{% if search %}&q={{ search }}{% endif %}" class="btn-action outline" style="padding: 6px 14px; font-size: 13px;">
+      Next <i class='bx bx-chevron-right'></i>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,459 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Statement of Account - {{ statement.statement_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Statement of Account</h1>
+    <p class="page-subtitle">{{ statement.statement_number }} - {{ customer.get_full_name }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'billing:statement_print' statement.id %}" class="btn-action primary" target="_blank">
+      <i class='bx bx-printer'></i> Print Statement
+    </a>
+    <a href="{% url 'billing:account_detail' customer.id %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Back to Account
+    </a>
+  </div>
+</div>
+
+<div class="statement-container">
+  <!-- Statement Header -->
+  <div class="statement-header">
+    <div class="clinic-info">
+      <h2>FMH ANIMAL CLINIC</h2>
+      <p>Multi-Branch Veterinary System</p>
+      <p>Complete Pet Care Services</p>
+    </div>
+
+    <div class="statement-info">
+      <h3>STATEMENT OF ACCOUNT</h3>
+      <table class="statement-details-table">
+        <tr>
+          <td><strong>Statement #:</strong></td>
+          <td>{{ statement.statement_number }}</td>
+        </tr>
+        <tr>
+          <td><strong>Statement Date:</strong></td>
+          <td>{{ statement.generated_at|date:"F j, Y" }}</td>
+        </tr>
+        <tr>
+          <td><strong>Period:</strong></td>
+          <td>{{ statement.period_start|date:"M j, Y" }} - {{ statement.period_end|date:"M j, Y" }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Customer Information -->
+  <div class="customer-info-section">
+    <h4>CUSTOMER INFORMATION</h4>
+    <div class="customer-details">
+      <div class="customer-left">
+        <p><strong>Name:</strong> {{ customer.get_full_name|default:customer.email }}</p>
+        <p><strong>Email:</strong> {{ customer.email }}</p>
+        <p><strong>Phone:</strong> {{ customer.phone_number|default:"N/A" }}</p>
+      </div>
+      <div class="customer-right">
+        <p><strong>Address:</strong></p>
+        <p>{{ customer.address|default:"Address not provided" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Summary -->
+  <div class="account-summary">
+    <h4>ACCOUNT SUMMARY</h4>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="label">Opening Balance:</span>
+        <span class="amount">₱{{ statement.opening_balance|floatformat:2 }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">Total Charges:</span>
+        <span class="amount charges">₱{{ statement.total_charges|floatformat:2 }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="label">Total Payments:</span>
+        <span class="amount payments">₱{{ statement.total_payments|floatformat:2 }}</span>
+      </div>
+      <div class="summary-item total">
+        <span class="label">Closing Balance:</span>
+        <span class="amount">₱{{ statement.closing_balance|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="transaction-history">
+    <h4>TRANSACTION HISTORY</h4>
+
+    {% if transactions %}
+    <table class="transaction-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th>Pet</th>
+          <th>Reference</th>
+          <th>Charges</th>
+          <th>Payments</th>
+          <th>Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Opening Balance Row -->
+        <tr class="opening-balance-row">
+          <td>{{ statement.period_start|date:"M j, Y" }}</td>
+          <td><strong>Opening Balance</strong></td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td class="balance-amount">₱{{ statement.opening_balance|floatformat:2 }}</td>
+        </tr>
+
+        {% for transaction in transactions %}
+        <tr class="transaction-row {{ transaction.transaction_type|lower }}">
+          <td>{{ transaction.date|date:"M j, Y" }}</td>
+          <td>{{ transaction.description }}</td>
+          <td>{{ transaction.pet.name|default:"-" }}</td>
+          <td>{{ transaction.reference_number|default:"-" }}</td>
+          <td class="charge-amount">
+            {% if transaction.is_charge %}
+              ₱{{ transaction.amount|floatformat:2 }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="payment-amount">
+            {% if transaction.is_payment %}
+              ₱{{ transaction.amount|floatformat:2|slice:"1:" }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="balance-amount">
+            <!-- Running balance would be calculated here -->
+          </td>
+        </tr>
+        {% endfor %}
+
+        <!-- Closing Balance Row -->
+        <tr class="closing-balance-row">
+          <td>{{ statement.period_end|date:"M j, Y" }}</td>
+          <td><strong>Closing Balance</strong></td>
+          <td>-</td>
+          <td>-</td>
+          <td><strong>₱{{ statement.total_charges|floatformat:2 }}</strong></td>
+          <td><strong>₱{{ statement.total_payments|floatformat:2 }}</strong></td>
+          <td class="balance-amount"><strong>₱{{ statement.closing_balance|floatformat:2 }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    {% else %}
+    <div class="no-transactions">
+      <p>No transactions found for this period.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Services Categories Summary -->
+  <div class="services-summary">
+    <h4>SERVICES BREAKDOWN</h4>
+    <div class="services-grid">
+      {% regroup transactions|dictsort:"description" by description as service_list %}
+      {% for service in service_list %}
+        {% if service.grouper != "Manual payment" and service.grouper != "Payment" %}
+        <div class="service-item">
+          <span class="service-name">{{ service.grouper }}</span>
+          <span class="service-total">
+            {% for transaction in service.list %}
+              {% if transaction.is_charge %}
+                ₱{{ transaction.amount|floatformat:2 }}
+              {% endif %}
+            {% endfor %}
+          </span>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Payment Information -->
+  <div class="payment-notice">
+    <h4>PAYMENT INFORMATION</h4>
+    <div class="payment-details">
+      <p><strong>Current Balance Due:</strong> ₱{{ account.current_balance|floatformat:2 }}</p>
+      <p><strong>Credit Limit:</strong> ₱{{ account.credit_limit|floatformat:2 }}</p>
+      <p><strong>Available Credit:</strong> ₱{{ account.available_credit|floatformat:2 }}</p>
+    </div>
+
+    <div class="payment-instructions">
+      <p><strong>Payment Instructions:</strong></p>
+      <p>Please remit payment to FMH Animal Clinic. For inquiries, contact your nearest branch.</p>
+      <p>Thank you for choosing FMH Animal Clinic for your pet's healthcare needs.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+.statement-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+}
+
+.statement-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 30px;
+  border-bottom: 2px solid var(--primary);
+  margin-bottom: 30px;
+}
+
+.clinic-info h2 {
+  color: var(--primary);
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.clinic-info p {
+  margin: 4px 0;
+  color: var(--text-2);
+}
+
+.statement-info {
+  text-align: right;
+}
+
+.statement-info h3 {
+  color: var(--primary);
+  font-size: 24px;
+  margin-bottom: 15px;
+}
+
+.statement-details-table {
+  width: 100%;
+}
+
+.statement-details-table td {
+  padding: 4px 8px;
+  text-align: right;
+}
+
+.customer-info-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.customer-info-section h4 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.customer-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.customer-details p {
+  margin: 8px 0;
+}
+
+.account-summary {
+  margin-bottom: 30px;
+}
+
+.account-summary h4 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.summary-item .label {
+  font-size: 14px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.summary-item .amount {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.summary-item.total .amount {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.summary-item .amount.charges {
+  color: #e74c3c;
+}
+
+.summary-item .amount.payments {
+  color: #27ae60;
+}
+
+.transaction-history h4 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+
+.transaction-table th,
+.transaction-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.transaction-table th {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.transaction-table td {
+  font-size: 14px;
+}
+
+.opening-balance-row,
+.closing-balance-row {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.charge-amount,
+.payment-amount,
+.balance-amount {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+}
+
+.charge-amount {
+  color: #e74c3c;
+}
+
+.payment-amount {
+  color: #27ae60;
+}
+
+.services-summary {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.services-summary h4 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.service-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 4px;
+  border-left: 4px solid var(--primary);
+}
+
+.service-total {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.payment-notice {
+  padding: 20px;
+  background: #e8f5e8;
+  border-radius: 6px;
+  border-left: 4px solid #27ae60;
+}
+
+.payment-notice h4 {
+  color: #27ae60;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.payment-details {
+  margin-bottom: 20px;
+}
+
+.payment-details p {
+  margin: 8px 0;
+  font-weight: 600;
+}
+
+.payment-instructions p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.no-transactions {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-2);
+}
+
+@media print {
+  .page-header {
+    display: none;
+  }
+
+  .statement-container {
+    box-shadow: none;
+    padding: 20px;
+  }
+}
+</style>
+
+{% endblock %}

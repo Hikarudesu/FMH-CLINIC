@@ -1,0 +1,346 @@
+{% extends 'base/portal_user.html' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+
+<div class="user-notif-page">
+<!-- ══════ NOTIFICATIONS HERO ══════ -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-bell'></i> Notifications</h1>
+      <p>Stay updated on appointments, follow-ups &amp; clinic news</p>
+    </div>
+    <div class="page-hero-actions">
+      {% if unread_count > 0 %}
+      <button id="markAllReadBtn" class="page-hero-btn" onclick="markAllNotificationsRead()">
+        <i class='bx bx-check-double'></i> Mark All Read
+        <span class="notif-badge-count">{{ unread_count }}</span>
+      </button>
+      {% endif %}
+      {% if page_obj.paginator.count > 0 %}
+      <button id="clearAllBtn" class="page-hero-btn" onclick="clearAllNotifications()">
+        <i class='bx bx-trash-alt'></i>
+        <span>Clear All</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar (Component) -->
+<div class="c-tab-bar" id="notifTabs">
+  <div class="c-tab-bar__glow"></div>
+  <div class="c-tab-bar__indicator" id="notifTabs-indicator"></div>
+
+  <button class="c-tab-btn {% if current_filter == 'all' or not current_filter %}active{% endif %}" data-tab="all" type="button" onclick="window.location.href='?filter=all'">
+    <i class='bx bx-list-ul c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">All</span>
+  </button>
+  <button class="c-tab-btn {% if current_filter == 'unread' %}active{% endif %}" data-tab="unread" type="button" onclick="window.location.href='?filter=unread'">
+    <i class='bx bx-envelope c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Unread</span>
+    {% if unread_count > 0 %}
+    <span class="c-tab-btn__badge">{{ unread_count }}</span>
+    {% endif %}
+  </button>
+  <button class="c-tab-btn {% if current_filter == 'read' %}active{% endif %}" data-tab="read" type="button" onclick="window.location.href='?filter=read'">
+    <i class='bx bx-envelope-open c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Read</span>
+  </button>
+</div>
+
+<!-- Type Filter -->
+<div class="notif-type-filter">
+  <label for="notifTypeFilter" class="filter-label">Filter by Type:</label>
+  <select id="notifTypeFilter" class="filter-dropdown" onchange="filterByType(this.value)">
+    <option value="">All Types</option>
+    {% for type_code, type_label in notification_types %}
+    <option value="{{ type_code }}" {% if notif_type == type_code %}selected{% endif %}>{{ type_label }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if page_obj.object_list %}
+<!-- Notification List -->
+<div class="modern-notif-list" id="notifList">
+  {% for notif in page_obj.object_list %}
+  <div class="notif-card-v2 {% if not notif.is_read %}unread{% endif %}"
+       data-id="{{ notif.pk }}"
+       data-read="{{ notif.is_read|yesno:'true,false' }}">
+
+    <!-- Accent gradient bar -->
+    <div class="notif-accent-bar
+      {% if notif.notification_type == 'APPOINTMENT' %}accent-appointment
+      {% elif notif.notification_type == 'FOLLOW_UP' %}accent-followup
+      {% elif notif.notification_type == 'INVENTORY_RESTOCK' or notif.notification_type == 'LOW_INVENTORY' %}accent-inventory
+      {% else %}accent-general{% endif %}"></div>
+
+    <!-- Main content area -->
+    <div class="notif-card-body">
+      <!-- Icon with glow effect -->
+      <div class="notif-icon-v2
+        {% if notif.notification_type == 'APPOINTMENT' %}icon-appointment
+        {% elif notif.notification_type == 'FOLLOW_UP' %}icon-followup
+        {% elif notif.notification_type == 'INVENTORY_RESTOCK' or notif.notification_type == 'LOW_INVENTORY' %}icon-inventory
+        {% else %}icon-general{% endif %}">
+        <div class="notif-icon-glow"></div>
+        {% if notif.notification_type == 'APPOINTMENT' %}
+          <i class='bx bx-calendar-event'></i>
+        {% elif notif.notification_type == 'FOLLOW_UP' %}
+          <i class='bx bx-plus-medical'></i>
+        {% elif notif.notification_type == 'INVENTORY_RESTOCK' or notif.notification_type == 'LOW_INVENTORY' %}
+          <i class='bx bx-package'></i>
+        {% else %}
+          <i class='bx bx-bell'></i>
+        {% endif %}
+      </div>
+
+      <!-- Content section -->
+      <div class="notif-content-v2">
+        <div class="notif-header-v2">
+          <h4 class="notif-title-v2">{{ notif.title }}</h4>
+          <div class="notif-meta-v2">
+            {% if not notif.is_read %}
+            <span class="notif-new-badge">
+              <span class="pulse-dot"></span>
+              New
+            </span>
+            {% endif %}
+            <span class="notif-time-v2">
+              <i class='bx bx-time-five'></i>
+              {{ notif.created_at|timesince }} ago
+            </span>
+          </div>
+        </div>
+        <p class="notif-message-v2">{{ notif.message }}</p>
+        <div class="notif-footer-v2">
+          <span class="notif-type-chip
+            {% if notif.notification_type == 'APPOINTMENT' %}chip-appointment
+            {% elif notif.notification_type == 'FOLLOW_UP' %}chip-followup
+            {% elif notif.notification_type == 'INVENTORY_RESTOCK' or notif.notification_type == 'LOW_INVENTORY' %}chip-inventory
+            {% else %}chip-general{% endif %}">
+            <span class="chip-dot"></span>
+            {{ notif.get_notification_type_display }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="notif-actions-v2">
+        {% if not notif.is_read %}
+        <button class="notif-action-btn action-read" onclick="markOneRead(this, {{ notif.pk }})" title="Mark as read">
+          <span class="action-icon"><i class='bx bx-check'></i></span>
+          <span class="action-label">Read</span>
+        </button>
+        {% endif %}
+        <button class="notif-action-btn action-delete" onclick="deleteNotification(this, {{ notif.pk }})" title="Delete notification">
+          <span class="action-icon"><i class='bx bx-trash-alt'></i></span>
+          <span class="action-ripple"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="notif-pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page=1{% if current_filter %}&filter={{ current_filter }}{% endif %}" class="notif-page-btn notif-page-first" title="First page">
+      <i class='bx bx-chevrons-left'></i>
+    </a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_filter %}&filter={{ current_filter }}{% endif %}" class="notif-page-btn notif-page-prev" title="Previous page">
+      <i class='bx bx-chevron-left'></i>
+    </a>
+  {% else %}
+    <button class="notif-page-btn notif-page-first" disabled>
+      <i class='bx bx-chevrons-left'></i>
+    </button>
+    <button class="notif-page-btn notif-page-prev" disabled>
+      <i class='bx bx-chevron-left'></i>
+    </button>
+  {% endif %}
+
+  <div class="notif-page-info">
+    <span class="notif-page-current">{{ page_obj.number }}</span>
+    <span class="notif-page-divider">/</span>
+    <span class="notif-page-total">{{ page_obj.paginator.num_pages }}</span>
+  </div>
+
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_filter %}&filter={{ current_filter }}{% endif %}" class="notif-page-btn notif-page-next" title="Next page">
+      <i class='bx bx-chevron-right'></i>
+    </a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if current_filter %}&filter={{ current_filter }}{% endif %}" class="notif-page-btn notif-page-last" title="Last page">
+      <i class='bx bx-chevrons-right'></i>
+    </a>
+  {% else %}
+    <button class="notif-page-btn notif-page-next" disabled>
+      <i class='bx bx-chevron-right'></i>
+    </button>
+    <button class="notif-page-btn notif-page-last" disabled>
+      <i class='bx bx-chevrons-right'></i>
+    </button>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+function markAllNotificationsRead() {
+  fetch("{% url 'notifications:mark_all_read' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    }
+  }).then(response => {
+    if (response.ok) window.location.reload();
+  });
+}
+
+function markOneRead(btn, pk) {
+  event.stopPropagation();
+  fetch(`/notifications/${pk}/read/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    }
+  }).then(response => {
+    if (response.ok) {
+      const card = btn.closest('.notif-card-v2');
+      card.classList.remove('unread');
+      card.dataset.read = 'true';
+      const newBadge = card.querySelector('.notif-new-badge');
+      if (newBadge) newBadge.remove();
+      btn.remove();
+    }
+  });
+}
+
+function deleteNotification(btn, pk) {
+  event.stopPropagation();
+  const card = btn.closest('.notif-card-v2');
+  card.classList.add('deleting');
+  setTimeout(() => {
+    fetch(`/notifications/${pk}/delete/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/json"
+      }
+    }).then(response => {
+      if (response.ok) {
+        card.remove();
+        if (document.querySelectorAll('.notif-card-v2').length === 0) {
+          window.location.reload();
+        }
+      }
+    });
+  }, 400);
+}
+
+function clearAllNotifications() {
+  if (confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+    const cards = document.querySelectorAll('.notif-card-v2');
+    cards.forEach((card, index) => {
+      setTimeout(() => {
+        card.classList.add('deleting');
+      }, index * 50);
+    });
+    setTimeout(() => {
+      fetch("{% url 'notifications:delete_all' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/json"
+        }
+      }).then(response => {
+        if (response.ok) window.location.reload();
+      });
+    }, cards.length * 50 + 400);
+  }
+}
+
+function filterByType(typeValue) {
+  const currentFilter = '{{ current_filter }}';
+  let url = '?';
+  if (currentFilter && currentFilter !== 'all') {
+    url += 'filter=' + currentFilter;
+  }
+  if (typeValue) {
+    if (currentFilter) url += '&';
+    url += 'type=' + typeValue;
+  }
+  window.location.href = url;
+}
+</script>
+
+{% else %}
+<!-- No results for current filter -->
+<div class="notif-filter-empty">
+  <div class="notif-empty-visual">
+    <div class="notif-empty-ring ring-1"></div>
+    <div class="notif-empty-ring ring-2"></div>
+    <div class="notif-empty-ring ring-3"></div>
+    <div class="notif-empty-center-icon">
+      <i class='bx bx-filter-alt'></i>
+    </div>
+  </div>
+  <h2>No notifications found</h2>
+  <p>Try switching to a different filter to see other notifications.</p>
+</div>
+<script>
+function clearAllNotifications() {
+  if (confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+    window.location.reload();
+  }
+}
+</script>
+{% endif %}
+</div>
+
+<style>
+.notif-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 10px;
+  padding: 15px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.filter-label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.filter-dropdown {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-dropdown:hover {
+  border-color: var(--primary);
+}
+
+.filter-dropdown:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+</style>
+
+{% endblock %}

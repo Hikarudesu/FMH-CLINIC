@@ -1,0 +1,270 @@
+{% extends 'base/portal_admin.html' %}
+{% load permission_tags %}
+
+{% block title %}Roles & Permissions{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-shield-quarter'></i> Roles & Permissions</h1>
+      <p>Define access levels and manage user permissions</p>
+    </div>
+    <div class="page-hero-actions">
+      {% if user|has_module_permission:'staff:EDIT' %}
+      <a href="{% url 'accounts:user_role_list' %}" class="page-hero-btn">
+        <i class='bx bx-user-check'></i> Assign Roles
+      </a>
+      {% endif %}
+      {% if user|has_module_permission:'roles:CREATE' %}
+      <a href="{% url 'accounts:role_create' %}" class="page-hero-btn">
+        <i class='bx bx-plus'></i> New Role
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if roles %}
+<!-- Roles Table -->
+<div class="admin-table-card">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Role</th>
+        <th style="text-align: center;">Level</th>
+        <th style="text-align: center;">Type</th>
+        <th style="text-align: center;">Branch Access</th>
+        <th style="text-align: center;">Permissions</th>
+        <th style="text-align: center;">Users</th>
+        <th style="text-align: center;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for role in roles %}
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="role-icon">
+              <i class='bx {% if role.code == 'superadmin' or role.code == 'admin' %}bx-crown{% elif role.code == 'branch_admin' %}bx-building{% elif role.code == 'veterinarian' %}bx-plus-medical{% elif role.code == 'receptionist' %}bx-phone{% elif role.code == 'vet_assistant' %}bx-user{% elif role.code == 'user' %}bx-heart{% else %}bx-shield-quarter{% endif %}'></i>
+            </div>
+            <div>
+              <strong style="display: block;">{{ role.name }}</strong>
+              <code style="font-size: 11px; color: var(--text-3);">{{ role.code }}</code>
+            </div>
+            {% if role.is_system_role %}
+            <span class="system-lock" title="System role">
+              <i class='bx bx-lock-alt'></i>
+            </span>
+            {% endif %}
+          </div>
+        </td>
+        <td style="text-align: center;">
+          <span class="level-num">{{ role.hierarchy_level }}</span>
+        </td>
+        <td style="text-align: center;">
+          {% if role.is_staff_role %}
+          <span class="type-badge staff">Staff</span>
+          {% else %}
+          <span class="type-badge user">User</span>
+          {% endif %}
+        </td>
+        <td style="text-align: center;">
+          {% if role.restrict_to_branch %}
+          <span class="access-text restricted">Own Branch</span>
+          {% else %}
+          <span class="access-text">All Branches</span>
+          {% endif %}
+        </td>
+        <td style="text-align: center;">
+          <span class="perm-count">{{ role.module_permissions.count }}</span>
+        </td>
+        <td style="text-align: center;">
+          <span class="user-count {% if role.user_count > 0 %}active{% endif %}">{{ role.user_count }}</span>
+        </td>
+        <td style="text-align: center;">
+          <div class="rec-action-grid" style="margin: 0 auto; width: max-content;">
+            <a href="{% url 'accounts:role_detail' role.pk %}" class="action-btn" title="View">
+              <i class='bx bx-show'></i>
+            </a>
+            {% if user|has_module_permission:'roles:EDIT' %}
+              {% if not role.is_system_role or user.is_superuser %}
+              <a href="{% url 'accounts:role_edit' role.pk %}" class="action-btn" title="Edit">
+                <i class='bx bx-edit-alt'></i>
+              </a>
+              {% endif %}
+            {% endif %}
+            {% if user|has_module_permission:'roles:DELETE' %}
+              {% if not role.is_system_role or user.is_superuser %}
+              <form action="{% url 'accounts:role_delete' role.pk %}" method="POST" style="display: inline;"
+                    onsubmit="return confirm('{% if role.user_count > 0 %}This role has {{ role.user_count }} user(s) assigned. {% endif %}Delete this role?');">
+                {% csrf_token %}
+                <button type="submit" class="action-btn danger" title="Delete"
+                        {% if role.user_count > 0 and not user.is_superuser %}disabled{% endif %}>
+                  <i class='bx bx-trash'></i>
+                </button>
+              </form>
+              {% endif %}
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+{% else %}
+<!-- Empty State -->
+<div class="dashboard-card full-width">
+  <div class="card-body">
+    <div class="empty-state-large">
+      <div class="empty-state-icon">
+        <i class='bx bx-shield-quarter'></i>
+      </div>
+      <h3>No roles configured</h3>
+      <p>Create roles to control staff access levels.</p>
+      {% if user|has_module_permission:'roles:CREATE' %}
+      <a href="{% url 'accounts:role_create' %}" class="btn-action primary" style="margin-top: 16px;">
+        <i class='bx bx-plus'></i> Create Role
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .role-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 16px;
+  }
+  [data-theme="dark"] .role-icon {
+    background: rgba(0, 150, 136, 0.15);
+  }
+
+  .system-lock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--border);
+    color: var(--text-3);
+    border-radius: 50%;
+    font-size: 11px;
+  }
+
+  .level-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .type-badge.staff {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  .type-badge.user {
+    background: var(--bg);
+    color: var(--text-3);
+    border: 1px solid var(--border);
+  }
+  [data-theme="dark"] .type-badge.staff {
+    background: rgba(0, 150, 136, 0.15);
+    color: var(--primary);
+  }
+
+  .access-text {
+    font-size: 12px;
+    color: var(--text-2);
+  }
+  .access-text.restricted {
+    color: var(--text-3);
+  }
+
+  .perm-count, .user-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .user-count.active {
+    background: var(--primary-light);
+    border-color: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  [data-theme="dark"] .user-count.active {
+    background: rgba(0, 150, 136, 0.15);
+    border-color: rgba(0, 150, 136, 0.3);
+    color: var(--primary);
+  }
+
+  /* Hierarchy Reference */
+  .hierarchy-ref {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .hierarchy-ref-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .hierarchy-ref-level {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--primary);
+  }
+</style>
+
+{% endblock %}

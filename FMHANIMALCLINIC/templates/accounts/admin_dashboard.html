@@ -1,0 +1,462 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+{% url 'appointments:admin_list' as appt_url %}
+{% url 'patients:admin_list' as patient_url %}
+{% include "components/page_hero.html" with title="Dashboard" icon="bx-grid-alt" subtitle="Overview of clinic activities and statistics" action_url=appt_url action_label="New Appointment" action_icon="bx-calendar-plus" action_url_2=patient_url action_label_2="View Patients" action_icon_2="bx-user-plus" %}
+
+
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card teal">
+    <div class="stat-label"><i class='bx bx-calendar-check'></i> Today's Appointments</div>
+    <div class="stat-value">{{ today_count }}</div>
+    <div class="stat-sub">{{ today_confirmed }} confirmed, {{ today_pending }} pending</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label"><i class='bx bxs-dog'></i> Registered Pets</div>
+    <div class="stat-value">{{ patient_count }}</div>
+    <div class="stat-sub">total in system</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-label"><i class='bx bx-building-house'></i> Active Branches</div>
+    <div class="stat-value">{{ branches|length }}</div>
+    <div class="stat-sub">{{ branches|length }} branch{{ branches|length|pluralize:"es" }}</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label"><i class='bx bx-group'></i> Active Staff</div>
+    <div class="stat-value">{{ active_staff }}</div>
+    <div class="stat-sub">of {{ total_staff }} total staff</div>
+  </div>
+</div>
+
+<!-- Content Grid -->
+<div class="dashboard-grid">
+  <!-- Today's Appointments -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-calendar'></i> Today's Appointments</h3>
+      <a href="{% url 'appointments:admin_list' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      {% if todays_appointments %}
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Owner</th>
+            <th>Vet</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in todays_appointments %}
+          <tr>
+            <td>{{ appt.appointment_time|time:"g:i A" }}</td>
+            <td><strong>{{ appt.pet_name }}</strong></td>
+            <td>{{ appt.owner_name }}</td>
+            <td>{{ appt.preferred_vet.full_name|default:"Any available" }}</td>
+            <td>
+              <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state" style="padding: 18px 0;">
+        <i class='bx bx-calendar-x'></i>
+        <h4>No appointments today</h4>
+        <p>Appointments will show here when booked.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-time-five'></i> Recent Activity</h3>
+      <a href="{% url 'appointments:admin_list' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      <ul class="activity-list">
+        {% for appt in recent_appointments %}
+        <li class="activity-item">
+          <div class="activity-icon {% if appt.source == 'PORTAL' %}blue{% else %}teal{% endif %}">
+            <i class='bx {% if appt.source == "PORTAL" %}bx-user{% else %}bx-walk{% endif %}'></i>
+          </div>
+          <div class="activity-text">
+            <p><strong>{{ appt.owner_name }}</strong> booked {{ appt.pet_name }} — {{ appt.branch.name }}</p>
+            <span>{{ appt.created_at|timesince }} ago · {{ appt.get_source_display }}</span>
+          </div>
+        </li>
+        {% empty %}
+        <li class="activity-item">
+          <div class="activity-icon teal"><i class='bx bx-check'></i></div>
+          <div class="activity-text">
+            <p>System initialized — FMHSYNC is ready</p>
+            <span>No recent bookings yet</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Revenue Chart -->
+<div class="dashboard-grid">
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <h3><i class='bx bx-line-chart'></i> Revenue Trend (Last 7 Days)</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="revenueChart" class="dashboard-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Business Metrics Grid -->
+<div class="dashboard-grid">
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-trending-up metric-icon green'></i>
+      <h4>Revenue Growth</h4>
+    </div>
+    <div class="metric-value">{{ revenue_growth|floatformat:1 }}%</div>
+    <div class="metric-sub">vs last week</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-x-circle metric-icon red'></i>
+      <h4>Cancellation Rate</h4>
+    </div>
+    <div class="metric-value">{{ cancellation_rate|floatformat:1 }}%</div>
+    <div class="metric-sub">of all appointments</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-package metric-icon blue'></i>
+      <h4>Inventory Value</h4>
+    </div>
+    <div class="metric-value">₱{{ total_inventory_value|floatformat:0 }}</div>
+    <div class="metric-sub">in stock</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-user-check metric-icon orange'></i>
+      <h4>New Customers</h4>
+    </div>
+    <div class="metric-value">{{ new_customers_this_week }}</div>
+    <div class="metric-sub">this week</div>
+  </div>
+</div>
+
+<!-- Customer Analytics -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-user-voice'></i> Customer Analytics</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">New Customers</span>
+        <span class="metric-badge">{{ new_customers_this_week }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Returning Customers</span>
+        <span class="metric-badge">{{ returning_customers_this_week }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">New Pets Registered</span>
+        <span class="metric-badge">{{ new_patients_this_week }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-pie-chart-alt-2'></i> Appointment Status</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="appointmentStatusChart" class="dashboard-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Service Breakdown -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-check-circle'></i> Top Services</h3>
+    </div>
+    <div class="card-body">
+      {% if service_breakdown %}
+        <div class="service-list">
+          {% for service in service_breakdown|slice:":5" %}
+          <div class="service-item">
+            <span class="service-name">{{ service.name }}</span>
+            <div class="service-bar">
+              <div class="service-fill" style="width: {{ service.percentage|floatformat:0 }}%"></div>
+            </div>
+            <span class="service-count">{{ service.usage_count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state" style="padding: 18px 0;">
+          <i class='bx bx-check-circle'></i>
+          <h4>No services data</h4>
+          <p>Service usage will appear here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-credit-card'></i> Payment Methods</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="paymentMethodChart" class="dashboard-chart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Species & Health Status Distribution -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-dog'></i> Species Distribution</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="speciesChart" class="dashboard-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-heart-circle'></i> Pet Health Status</h3>
+    </div>
+    <div class="card-body">
+      {% if pet_health_stats %}
+        <div class="health-grid">
+          {% for status_item in pet_health_stats %}
+          <div class="health-item health-{{ status_item.status|lower }}">
+            <div class="health-count">{{ status_item.count }}</div>
+            <div class="health-label">{{ status_item.status }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Source & Low Stock Alerts -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-direction'></i> Appointment Sources</h3>
+    </div>
+    <div class="card-body">
+      <canvas id="appointmentSourceChart" class="dashboard-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-exclamation-circle'></i> Low Stock Products</h3>
+    </div>
+    <div class="card-body">
+      {% if low_stock_products %}
+        <div class="low-stock-list">
+          {% for product in low_stock_products|slice:":8" %}
+          <div class="stock-item warning">
+            <div class="stock-info">
+              <span class="stock-name">{{ product.name }}</span>
+              <span class="stock-qty">{{ product.stock_quantity }} left</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class='bx bx-check-circle'></i>
+          <p>All products adequately stocked</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Branch Overview -->
+<div class="dashboard-grid">
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <h3><i class='bx bxs-building-house'></i> Branch Overview</h3>
+    </div>
+    <div class="card-body">
+      {% if branches %}
+      <div class="branch-grid">
+        {% for branch in branches %}
+        <div class="branch-card">
+          <h4>{{ branch.name }}</h4>
+          <p>{{ branch.address|default:"No address set" }}</p>
+          <div class="branch-status"><span class="dot"></span> Active</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-building-house'></i>
+        <h4>No branches configured</h4>
+        <p>Add branches in the admin panel.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Revenue Chart (Last 7 days)
+  const revenueCtx = document.getElementById('revenueChart');
+  if (revenueCtx) {
+    const revenueData = {{ revenue_by_day|safe }};
+    new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: revenueData.map(item => item.date),
+        datasets: [{
+          label: 'Revenue (₱)',
+          data: revenueData.map(item => item.revenue),
+          borderColor: 'var(--primary)',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: 'var(--primary)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: function(v) { return '₱' + v.toLocaleString(); } } }
+        }
+      }
+    });
+  }
+
+  // Appointment Status Chart
+  const statusCtx = document.getElementById('appointmentStatusChart');
+  if (statusCtx) {
+    const statusData = {{ appointment_status_breakdown|safe }};
+    new Chart(statusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: statusData.map(item => item.status),
+        datasets: [{
+          data: statusData.map(item => item.count),
+          backgroundColor: ['#66BB6A', '#FFA726', '#42A5F5', '#EF5350'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  // Payment Method Chart
+  const paymentCtx = document.getElementById('paymentMethodChart');
+  if (paymentCtx) {
+    const paymentData = {{ payment_method_stats_json|safe }};
+    new Chart(paymentCtx, {
+      type: 'bar',
+      data: {
+        labels: paymentData.map(item => item.method),
+        datasets: [{
+          label: 'Transactions',
+          data: paymentData.map(item => item.count),
+          backgroundColor: 'rgba(99, 102, 241, 0.8)',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } }
+      }
+    });
+  }
+
+  // Species Chart
+  const speciesCtx = document.getElementById('speciesChart');
+  if (speciesCtx) {
+    const speciesData = {{ pet_species_breakdown_json|safe }};
+    new Chart(speciesCtx, {
+      type: 'pie',
+      data: {
+        labels: speciesData.map(item => item.species),
+        datasets: [{
+          data: speciesData.map(item => item.count),
+          backgroundColor: ['#66BB6A', '#FFA726', '#42A5F5', '#AB47BC', '#29B6F6', '#EC407A'],
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  // Appointment Source Chart
+  const sourceCtx = document.getElementById('appointmentSourceChart');
+  if (sourceCtx) {
+    const sourceData = {{ appointment_sources_json|safe }};
+    new Chart(sourceCtx, {
+      type: 'bar',
+      data: {
+        labels: sourceData.map(item => item.source),
+        datasets: [{
+          label: 'Appointments',
+          data: sourceData.map(item => item.count),
+          backgroundColor: ['#2196F3', '#FF9800'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'x',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+});
+</script>
+
+{% endblock %}

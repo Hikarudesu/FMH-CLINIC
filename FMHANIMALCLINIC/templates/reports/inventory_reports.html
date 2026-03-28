@@ -1,0 +1,244 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Inventory Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Inventory Reports</h1>
+    <p class="page-subtitle">Stock summary, movement analysis, and product performance</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px;">
+    <a href="{% url 'reports:operations_dashboard' %}" class="btn-action outline"><i class='bx bx-arrow-back'></i> Dashboard</a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-package' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Products</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ total_products }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-money' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Inventory Value</div>
+        <div style="font-size: 22px; font-weight: 700; color: #2e7d32;">₱{{ total_value|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-error-alt' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Low Stock</div>
+        <div style="font-size: 22px; font-weight: 700; color: #e65100;">{{ low_stock_items|length }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #ffebee; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-x-circle' style="font-size: 24px; color: #c62828;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Out of Stock</div>
+        <div style="font-size: 22px; font-weight: 700; color: #c62828;">{{ out_of_stock_items|length }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Low Stock Items -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">
+      <i class='bx bx-error-alt' style="color: #e65100;"></i> Low Stock Items
+    </h3>
+    <div class="admin-table-card" style="box-shadow: none; border: none;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="text-align: center;">Current</th>
+            <th style="text-align: center;">Min Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in low_stock_items %}
+          <tr>
+            <td style="font-weight: 500;">{{ item.name }}</td>
+            <td style="text-align: center; font-weight: 700; color: #e65100;">{{ item.stock_quantity }}</td>
+            <td style="text-align: center; color: var(--text-secondary);">{{ item.min_stock_level }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">All items well stocked</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Expiring Soon -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">
+      <i class='bx bx-time-five' style="color: #c62828;"></i> Expiring Within 30 Days
+    </h3>
+    <div class="admin-table-card" style="box-shadow: none; border: none;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th style="text-align: center;">Qty</th>
+            <th>Expiry Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in expiring_items %}
+          <tr>
+            <td style="font-weight: 500;">{{ item.name }}</td>
+            <td style="text-align: center;">{{ item.stock_quantity }}</td>
+            <td style="color: #c62828; font-weight: 600;">{{ item.expiration_date|date:"M j, Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align: center; color: var(--text-secondary); padding: 20px;">No items expiring soon</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Top Selling Products -->
+{% if top_sellers %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Top Selling Products (Last 30 Days)</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th style="text-align: center;">Units Sold</th>
+            <th style="text-align: right;">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in top_sellers %}
+          <tr>
+            <td style="font-weight: 600; color: var(--text-secondary);">{{ forloop.counter }}</td>
+            <td style="font-weight: 500;">{{ item.product__name }}</td>
+            <td style="text-align: center; font-weight: 600;">{{ item.units_sold }}</td>
+            <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ item.revenue|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Stock Movements -->
+{% if movement_by_type %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Stock Movement Summary (Last 30 Days)</h3>
+  <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+    {% for m in movement_by_type %}
+    <div style="padding: 12px 20px; border-radius: 10px; background: var(--bg-secondary); flex: 1; min-width: 150px;">
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px;">{{ m.adjustment_type }}</div>
+      <div style="font-size: 20px; font-weight: 700;">{{ m.count }} adjustments</div>
+      <div style="font-size: 13px; color: var(--text-secondary);">{{ m.total_qty }} units</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Movements -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Recent Stock Movements</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Product</th>
+            <th>Type</th>
+            <th style="text-align: center;">Qty</th>
+            <th>Branch</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in recent_movements %}
+          <tr>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ m.date|date:"M j, Y" }}</td>
+            <td style="font-weight: 500;">{{ m.product.name }}</td>
+            <td>
+              <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+                {% if m.adjustment_type == 'RESTOCK' %}background: #e8f5e9; color: #2e7d32;
+                {% elif m.adjustment_type == 'SOLD' %}background: #e3f2fd; color: #1565c0;
+                {% elif m.adjustment_type == 'EXPIRED' %}background: #ffebee; color: #c62828;
+                {% else %}background: #fff3e0; color: #e65100;{% endif %}
+              ">{{ m.adjustment_type }}</span>
+            </td>
+            <td style="text-align: center; font-weight: 600;">{{ m.quantity }}</td>
+            <td>{{ m.branch.name|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 30px;">No recent stock movements</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Dead Stock -->
+{% if dead_stock %}
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">
+    <i class='bx bx-archive' style="color: #c62828;"></i> Dead Stock (No Sales in 60 Days)
+  </h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Type</th>
+            <th style="text-align: center;">Qty on Hand</th>
+            <th style="text-align: right;">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in dead_stock %}
+          <tr>
+            <td style="font-weight: 500;">{{ item.name }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ item.item_type }}</td>
+            <td style="text-align: center; font-weight: 600;">{{ item.stock_quantity }}</td>
+            <td style="text-align: right; color: var(--text-secondary);">₱{{ item.unit_cost|floatformat:2|default:"0.00" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,651 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payslip - {{ payslip.employee.full_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       GOLD STANDARD PAYSLIP - Professional Enterprise Format
+       ═══════════════════════════════════════════════════════════════ */
+    
+    :root {
+      --primary: #009688;
+      --primary-dark: #00796b;
+      --gold: #d4a04d;
+      --gold-light: #f5e6cc;
+      --text-dark: #1a1a2e;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --surface: #ffffff;
+      --bg: #f9fafb;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      color: var(--text-dark);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    @media print {
+      body { background: white; }
+      .no-print { display: none !important; }
+      .payslip { box-shadow: none; margin: 0; max-width: 100%; }
+    }
+    
+    /* Print Controls */
+    .no-print {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--text-dark);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 1000;
+    }
+    
+    .no-print button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .btn-print {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-print:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    
+    .btn-back:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    /* Payslip Container */
+    .payslip {
+      max-width: 850px;
+      margin: 80px auto 40px;
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    /* Header - Gold Accent Professional Style */
+    .payslip-header {
+      background: linear-gradient(135deg, var(--text-dark) 0%, #2d2d44 100%);
+      color: white;
+      padding: 32px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .payslip-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold), var(--primary), var(--gold));
+    }
+    
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .clinic-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .clinic-logo {
+      width: 64px;
+      height: 64px;
+      background: var(--gold);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: var(--text-dark);
+    }
+    
+    .clinic-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    
+    .clinic-subtitle {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.7);
+      margin-top: 2px;
+    }
+    
+    .document-info {
+      text-align: right;
+    }
+    
+    .document-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 2px;
+    }
+    
+    .document-period {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.8);
+      margin-top: 4px;
+    }
+    
+    /* Employee Card */
+    .employee-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .employee-field {
+      background: var(--bg);
+      padding: 20px 24px;
+    }
+    
+    .employee-field:first-child {
+      grid-column: span 2;
+    }
+    
+    .field-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    
+    .field-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+    
+    /* Main Content */
+    .payslip-body {
+      padding: 32px 40px;
+    }
+    
+    .tables-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    
+    /* Section Styling */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .section-header {
+      padding: 14px 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .section-header.earnings {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border-bottom: 2px solid #10b981;
+    }
+    
+    .section-header.deductions {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border-bottom: 2px solid #ef4444;
+    }
+    
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table td {
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .data-table .item-name {
+      color: var(--text-dark);
+    }
+    
+    .data-table .item-amount {
+      text-align: right;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    .data-table .total-row td {
+      background: var(--bg);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    
+    /* Net Pay Summary */
+    .net-pay-card {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 12px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .net-pay-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+    
+    .summary-stat {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .summary-stat.highlight {
+      transform: scale(1.05);
+    }
+    
+    .summary-stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+    }
+    
+    .summary-stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
+    
+    .summary-stat.highlight .summary-stat-value {
+      font-size: 2.25rem;
+      color: var(--gold-light);
+    }
+    
+    /* Footer */
+    .payslip-footer {
+      background: var(--bg);
+      padding: 24px 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .footer-info {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    
+    .footer-info strong {
+      color: var(--text-dark);
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .status-released {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+    
+    .status-pending {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+    }
+    
+    /* Signature Area */
+    .signature-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 1px dashed var(--border);
+    }
+    
+    .signature-box {
+      text-align: center;
+    }
+    
+    .signature-line {
+      border-bottom: 1px solid var(--text-dark);
+      height: 60px;
+      margin-bottom: 8px;
+    }
+    
+    .signature-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      bottom: 100px;
+      right: 40px;
+      font-size: 6rem;
+      font-weight: 700;
+      color: rgba(0,0,0,0.02);
+      transform: rotate(-15deg);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Print Controls -->
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">
+      <i class='bx bx-printer'></i> Print Payslip
+    </button>
+    <button class="btn-back" onclick="window.history.back()">
+      <i class='bx bx-arrow-back'></i> Back
+    </button>
+  </div>
+  
+  <!-- Payslip Document -->
+  <div class="payslip">
+    <!-- Header -->
+    <div class="payslip-header">
+      <div class="header-content">
+        <div class="clinic-brand">
+          <div class="clinic-logo">
+            <i class='bx bxs-clinic'></i>
+          </div>
+          <div>
+            <div class="clinic-name">FMH Animal Clinic</div>
+            <div class="clinic-subtitle">Veterinary Payroll Department</div>
+          </div>
+        </div>
+        <div class="document-info">
+          <div class="document-title">PAYSLIP</div>
+          <div class="document-period">{{ payslip.payroll_period.period_display }}</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Employee Information -->
+    <div class="employee-card">
+      <div class="employee-field">
+        <div class="field-label">Employee Name</div>
+        <div class="field-value">{{ payslip.employee.full_name }}</div>
+      </div>
+      <div class="employee-field">
+        <div class="field-label">Position</div>
+        <div class="field-value">{{ payslip.employee.get_position_display|default:"Staff" }}</div>
+      </div>
+      <div class="employee-field">
+        <div class="field-label">Branch</div>
+        <div class="field-value">{{ payslip.employee.branch.name|default:"Main Clinic" }}</div>
+      </div>
+      <div class="employee-field">
+        <div class="field-label">Pay Period</div>
+        <div class="field-value">{{ payslip.payroll_period.month_name }} {{ payslip.payroll_period.year }}</div>
+      </div>
+      <div class="employee-field">
+        <div class="field-label">Days Worked</div>
+        <div class="field-value">{{ payslip.days_worked }} days</div>
+      </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="payslip-body">
+      <!-- Earnings & Deductions Tables -->
+      <div class="tables-grid">
+        <!-- Earnings -->
+        <div class="section">
+          <div class="section-header earnings">
+            <i class='bx bx-trending-up'></i> Earnings
+          </div>
+          <table class="data-table">
+            <tr>
+              <td class="item-name">Base Salary</td>
+              <td class="item-amount">₱{{ payslip.base_salary|peso }}</td>
+            </tr>
+            {% if payslip.overtime_pay > 0 %}
+            <tr>
+              <td class="item-name">Overtime ({{ payslip.overtime_hours }}h)</td>
+              <td class="item-amount">₱{{ payslip.overtime_pay|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.holiday_pay > 0 %}
+            <tr>
+              <td class="item-name">Holiday Pay</td>
+              <td class="item-amount">₱{{ payslip.holiday_pay|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.bonus > 0 %}
+            <tr>
+              <td class="item-name">Performance Bonus</td>
+              <td class="item-amount">₱{{ payslip.bonus|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.allowance > 0 %}
+            <tr>
+              <td class="item-name">Allowances</td>
+              <td class="item-amount">₱{{ payslip.allowance|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.staff_allowance > 0 %}
+            <tr>
+              <td class="item-name">Staff Allowance</td>
+              <td class="item-amount">₱{{ payslip.staff_allowance|peso }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+              <td class="item-name">Total Earnings</td>
+              <td class="item-amount">₱{{ payslip.gross_pay|peso }}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <!-- Deductions -->
+        <div class="section">
+          <div class="section-header deductions">
+            <i class='bx bx-trending-down'></i> Deductions
+          </div>
+          <table class="data-table">
+            {% if payslip.tax > 0 %}
+            <tr>
+              <td class="item-name">Withholding Tax</td>
+              <td class="item-amount">₱{{ payslip.tax|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.cash_advance > 0 %}
+            <tr>
+              <td class="item-name">Cash Advance</td>
+              <td class="item-amount">₱{{ payslip.cash_advance|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.late_deduction > 0 %}
+            <tr>
+              <td class="item-name">Late Deductions</td>
+              <td class="item-amount">₱{{ payslip.late_deduction|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.absent_deduction > 0 %}
+            <tr>
+              <td class="item-name">Absence Deductions</td>
+              <td class="item-amount">₱{{ payslip.absent_deduction|peso }}</td>
+            </tr>
+            {% endif %}
+            {% if payslip.other_deductions > 0 %}
+            <tr>
+              <td class="item-name">Other Deductions</td>
+              <td class="item-amount">₱{{ payslip.other_deductions|peso }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+              <td class="item-name">Total Deductions</td>
+              <td class="item-amount">₱{{ payslip.total_deductions|peso }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Net Pay Summary Card -->
+      <div class="net-pay-card">
+        <div class="summary-stat">
+          <div class="summary-stat-label">Gross Earnings</div>
+          <div class="summary-stat-value">₱{{ payslip.gross_pay|peso }}</div>
+        </div>
+        <div class="summary-stat highlight">
+          <div class="summary-stat-label">Net Pay</div>
+          <div class="summary-stat-value">₱{{ payslip.net_pay|peso }}</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-stat-label">Total Deductions</div>
+          <div class="summary-stat-value">₱{{ payslip.total_deductions|peso }}</div>
+        </div>
+      </div>
+      
+      <!-- Clinic-Paid Benefits Info -->
+      {% if payslip.total_clinic_contributions > 0 %}
+      <div style="margin-top: 20px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 20px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+          <i class='bx bx-shield-quarter' style="margin-right: 4px;"></i> Clinic-Paid Benefits (Employer Contributions)
+        </div>
+        <table class="data-table" style="margin-bottom: 0;">
+          {% if payslip.clinic_sss > 0 %}
+          <tr>
+            <td class="item-name" style="border-color: #dbeafe;">SSS</td>
+            <td class="item-amount" style="border-color: #dbeafe; color: #2563eb;">₱{{ payslip.clinic_sss|peso }}</td>
+          </tr>
+          {% endif %}
+          {% if payslip.clinic_philhealth > 0 %}
+          <tr>
+            <td class="item-name" style="border-color: #dbeafe;">PhilHealth</td>
+            <td class="item-amount" style="border-color: #dbeafe; color: #2563eb;">₱{{ payslip.clinic_philhealth|peso }}</td>
+          </tr>
+          {% endif %}
+          {% if payslip.clinic_pagibig > 0 %}
+          <tr>
+            <td class="item-name" style="border-color: #dbeafe;">PAG-IBIG Fund</td>
+            <td class="item-amount" style="border-color: #dbeafe; color: #2563eb;">₱{{ payslip.clinic_pagibig|peso }}</td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td class="item-name" style="font-weight: 700; border: none;">Total Clinic Contributions</td>
+            <td class="item-amount" style="font-weight: 700; color: #2563eb; border: none;">₱{{ payslip.total_clinic_contributions|peso }}</td>
+          </tr>
+        </table>
+        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 8px; font-style: italic;">
+          Note: These are paid by the clinic and are NOT deducted from the employee's salary.
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Signature Area -->
+      <div class="signature-area">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Employee Signature / Date Received</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Authorized Signatory</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="payslip-footer">
+      <div class="footer-info">
+        <strong>Document ID:</strong> PS-{{ payslip.id }}-{{ payslip.payroll_period.year }}{{ payslip.payroll_period.month|stringformat:"02d" }}<br>
+        <strong>Generated:</strong> {% now "F d, Y \a\t h:i A" %}
+      </div>
+      <div>
+        {% if payslip.status == 'RELEASED' %}
+        <span class="status-badge status-released">
+          <i class='bx bx-check-circle'></i> Released
+        </span>
+        {% else %}
+        <span class="status-badge status-pending">
+          <i class='bx bx-time'></i> {{ payslip.status }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

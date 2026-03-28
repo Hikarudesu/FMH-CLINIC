@@ -1,0 +1,145 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Cash Drawer Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Cash Drawer Report</h1>
+    <p class="page-subtitle">Cash drawer reconciliation for {{ report_date|date:"F j, Y" }}</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px; align-items: center;">
+    <form method="GET" style="display: flex; gap: 8px; align-items: center;">
+      <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}" class="filter-input" onchange="this.form.submit()">
+    </form>
+    <a href="{% url 'reports:finance_dashboard' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-log-in-circle' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Opening</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.total_opening|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-calculator' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Expected Cash</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.total_expected|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-money' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Actual Cash</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.total_actual|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        {% if summary.total_variance < 0 %}background: #ffebee;{% elif summary.total_variance > 0 %}background: #e8f5e9;{% else %}background: var(--bg);{% endif %}
+      ">
+        <i class='bx bx-transfer-alt' style="font-size: 24px;
+          {% if summary.total_variance < 0 %}color: #c62828;{% elif summary.total_variance > 0 %}color: #2e7d32;{% else %}color: var(--text-secondary);{% endif %}
+        "></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Variance</div>
+        <div style="font-size: 22px; font-weight: 700;
+          {% if summary.total_variance < 0 %}color: #c62828;{% elif summary.total_variance > 0 %}color: #2e7d32;{% else %}color: var(--text-secondary);{% endif %}
+        ">₱{{ summary.total_variance|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawers Table -->
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Cash Drawer Sessions</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="text-align: center;">Drawer #</th>
+            <th>Branch</th>
+            <th>Opened By</th>
+            <th>Opened At</th>
+            <th>Closed By</th>
+            <th>Closed At</th>
+            <th style="text-align: right;">Opening</th>
+            <th style="text-align: right;">Expected</th>
+            <th style="text-align: right;">Actual</th>
+            <th style="text-align: right;">Variance</th>
+            <th style="text-align: center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for drawer in drawers %}
+          <tr>
+            <td style="text-align: center; font-weight: 600;">#{{ drawer.pk }}</td>
+            <td>{{ drawer.branch.name }}</td>
+            <td>{{ drawer.opened_by.get_full_name|default:"-" }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ drawer.opened_at|date:"g:i A" }}</td>
+            <td>{{ drawer.closed_by.get_full_name|default:"-" }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{% if drawer.closed_at %}{{ drawer.closed_at|date:"g:i A" }}{% else %}-{% endif %}</td>
+            <td style="text-align: right;">₱{{ drawer.opening_amount|floatformat:2 }}</td>
+            <td style="text-align: right;">₱{{ drawer.expected_cash|floatformat:2 }}</td>
+            <td style="text-align: right;">
+              {% if drawer.actual_cash != None %}₱{{ drawer.actual_cash|floatformat:2 }}{% else %}-{% endif %}
+            </td>
+            <td style="text-align: right; font-weight: 600;
+              {% if drawer.variance != None %}
+                {% if drawer.variance < 0 %}color: #c62828;{% elif drawer.variance > 0 %}color: #2e7d32;{% else %}color: var(--text-secondary);{% endif %}
+              {% endif %}
+            ">
+              {% if drawer.variance != None %}₱{{ drawer.variance|floatformat:2 }}{% else %}-{% endif %}
+            </td>
+            <td style="text-align: center;">
+              <span class="admin-badge" style="
+                {% if drawer.status == 'OPEN' %}background: #e8f5e9; color: #2e7d32;
+                {% else %}background: var(--bg); color: var(--text-secondary);{% endif %}
+              ">{{ drawer.get_status_display }}</span>
+            </td>
+          </tr>
+          {% if drawer.notes %}
+          <tr>
+            <td></td>
+            <td colspan="10" style="font-size: 12px; color: var(--text-secondary); padding-top: 0;">
+              <i class='bx bx-note' style="margin-right: 4px;"></i> {{ drawer.notes }}
+            </td>
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr>
+            <td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+              No cash drawer sessions found for this date.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

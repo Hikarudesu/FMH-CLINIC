@@ -1,0 +1,90 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Account Details{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ account.client_name }}</h1>
+    <p class="page-subtitle">Account #{{ account.account_number }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'billing:account_list' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Back to Accounts
+    </a>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <h3><i class='bx bx-user'></i> Account Information</h3>
+    </div>
+    <div class="card-body">
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div class="form-group">
+          <label>Client Name</label>
+          <div class="form-display">{{ account.client_name }}</div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <div class="form-display">{{ account.client_email|default:"Not provided" }}</div>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <div class="form-display">{{ account.client_phone|default:"Not provided" }}</div>
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>Address</label>
+          <div class="form-display">{{ account.client_address|default:"Not provided" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card full-width">
+    <div class="card-header">
+      <h3><i class='bx bx-receipt'></i> Account Balance</h3>
+    </div>
+    <div class="card-body">
+      <div class="balance-summary">
+        <div class="balance-item">
+          <span class="balance-label">Total Balance:</span>
+          <span class="balance-amount">₱{{ account.balance|floatformat:2 }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.form-display {
+  padding: 8px 0;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.balance-summary {
+  text-align: center;
+  padding: 20px;
+}
+
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.balance-label {
+  color: var(--text-2);
+}
+
+.balance-amount {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.4rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,313 @@
+{% extends 'base/portal_admin.html' %}
+{% load permission_tags %}
+
+{% block title %}Staff Role Management{% endblock %}
+
+{% block content %}
+
+<!-- Page Hero -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-group'></i> Staff Role Management</h1>
+      <p>Manage staff access levels and role assignments</p>
+    </div>
+    <div class="page-hero-actions">
+      <a href="{% url 'accounts:role_list' %}" class="page-hero-btn">
+        <i class='bx bx-shield-quarter'></i> Manage Roles
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" style="display:contents;" id="userFilterForm">
+    <div class="portal-search" style="margin-bottom:0; flex:1; min-width:200px;">
+      <i class='bx bx-search'></i>
+      <input type="text" name="q" placeholder="Search staff..." value="{{ request.GET.q }}" id="userSearch">
+    </div>
+    <select class="filter-select sd-convert" name="role" onchange="document.getElementById('userFilterForm').submit()">
+      <option value="">All Staff Roles</option>
+      {% for role in roles %}
+      <option value="{{ role.id }}" {% if request.GET.role|add:"0" == role.id %}selected{% endif %}>{{ role.name }}</option>
+      {% endfor %}
+    </select>
+    <div class="filter-actions">
+      <a href="{% url 'accounts:user_role_list' %}" class="filter-btn clear">
+        <i class='bx bx-x'></i> Clear
+      </a>
+    </div>
+  </form>
+</div>
+
+{% if users %}
+<!-- Users Table -->
+<div class="admin-table-card">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Staff Member</th>
+        <th style="text-align: center;">Current Role</th>
+        <th style="text-align: center;">Level</th>
+        <th style="text-align: center;">Branch</th>
+        <th style="text-align: center; width: 240px;">Change Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr data-user-id="{{ u.pk }}">
+        <td>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="user-avatar {% if u.is_superuser %}superuser{% endif %}">
+              {% if u.profile_picture %}
+              <img src="{{ u.profile_picture.url }}" alt="">
+              {% else %}
+              {{ u.first_name|slice:":1"|upper|default:u.username|slice:":1"|upper }}
+              {% endif %}
+            </div>
+            <div>
+              <strong style="display: block;">{{ u.get_full_name|default:u.username }}</strong>
+              <span style="font-size: 12px; color: var(--text-3);">{{ u.email }}</span>
+            </div>
+          </div>
+        </td>
+        <td style="text-align: center;">
+          {% if u.is_superuser %}
+          <span class="role-tag superuser">Superuser</span>
+          {% elif u.assigned_role %}
+          <span class="role-tag staff">{{ u.assigned_role.name }}</span>
+          {% else %}
+          <span class="role-tag">No Role</span>
+          {% endif %}
+        </td>
+        <td style="text-align: center;">
+          {% if u.is_superuser %}
+          <span class="level-num highlight">10</span>
+          {% elif u.assigned_role %}
+          <span class="level-num {% if u.assigned_role.hierarchy_level >= 6 %}highlight{% endif %}">{{ u.assigned_role.hierarchy_level }}</span>
+          {% else %}
+          <span class="level-num">0</span>
+          {% endif %}
+        </td>
+        <td style="text-align: center;">
+          <span style="color: var(--text-3); font-size: 13px;">{{ u.branch.name|default:"—" }}</span>
+        </td>
+        <td style="text-align: center;">
+          {% if not u.is_superuser %}
+          <form class="role-assign-form" action="{% url 'accounts:assign_user_role' u.pk %}" method="POST"
+                style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+            {% csrf_token %}
+            <select name="role_id" class="filter-select" style="min-width: 140px;" data-current="{{ u.assigned_role_id|default:'' }}">
+              {% for role in roles %}
+              <option value="{{ role.id }}" {% if u.assigned_role_id == role.id %}selected{% endif %}>
+                {{ role.name }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="save-btn" title="Save">
+              <i class='bx bx-check'></i>
+            </button>
+          </form>
+          {% else %}
+          <span style="color: var(--text-3); font-size: 12px;">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="dashboard-card full-width">
+  <div class="card-body">
+    <div class="empty-state-large">
+      <div class="empty-state-icon">
+        <i class='bx bx-user-x'></i>
+      </div>
+      <h3>No staff members found</h3>
+      <p>No staff members match your search criteria.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+  .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 14px;
+    overflow: hidden;
+  }
+  .user-avatar.superuser {
+    background: var(--accent);
+    color: white;
+  }
+  .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  [data-theme="dark"] .user-avatar {
+    background: rgba(0, 150, 136, 0.15);
+  }
+
+  .role-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  .role-tag.staff {
+    background: var(--primary-light);
+    border-color: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  .role-tag.superuser {
+    background: rgba(230, 57, 70, 0.1);
+    border-color: rgba(230, 57, 70, 0.2);
+    color: var(--accent);
+  }
+  [data-theme="dark"] .role-tag.staff {
+    background: rgba(0, 150, 136, 0.15);
+    border-color: rgba(0, 150, 136, 0.3);
+    color: var(--primary);
+  }
+
+  .level-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .level-num.highlight {
+    background: var(--primary-light);
+    border-color: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  [data-theme="dark"] .level-num.highlight {
+    background: rgba(0, 150, 136, 0.15);
+    border-color: rgba(0, 150, 136, 0.3);
+    color: var(--primary);
+  }
+
+  .save-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease);
+  }
+  .save-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+  .save-btn i {
+    font-size: 18px;
+  }
+</style>
+
+<script>
+  // Handle AJAX form submission
+  document.querySelectorAll('.role-assign-form').forEach(form => {
+    const select = form.querySelector('select');
+    const originalValue = select.dataset.current;
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const btn = this.querySelector('button[type="submit"]');
+      const originalHtml = btn.innerHTML;
+      const newRoleId = formData.get('role_id');
+
+      if (newRoleId === originalValue) {
+        btn.innerHTML = '<i class="bx bx-check" style="color: var(--primary);"></i>';
+        setTimeout(() => { btn.innerHTML = originalHtml; }, 1000);
+        return;
+      }
+
+      btn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i>';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(this.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          const row = this.closest('tr');
+          const roleCell = row.querySelector('td:nth-child(2)');
+          const levelCell = row.querySelector('td:nth-child(3)');
+
+          if (newRoleId) {
+            const selectedOption = select.options[select.selectedIndex];
+            roleCell.innerHTML = `<span class="role-tag staff">${selectedOption.text}</span>`;
+            levelCell.innerHTML = `<span class="level-num highlight">${selectedOption.dataset.level || '—'}</span>`;
+          } else {
+            roleCell.innerHTML = '<span class="role-tag">User</span>';
+            levelCell.innerHTML = '<span class="level-num">0</span>';
+          }
+
+          select.dataset.current = newRoleId;
+          btn.innerHTML = '<i class="bx bx-check"></i>';
+          btn.style.background = 'var(--primary)';
+          btn.style.borderColor = 'var(--primary)';
+          btn.style.color = 'white';
+
+          // Auto-reload page after role update to reflect new permissions/UI
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        btn.innerHTML = '<i class="bx bx-x"></i>';
+        btn.style.background = 'var(--accent)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'white';
+
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+          btn.style.background = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+          btn.disabled = false;
+        }, 1500);
+      }
+    });
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Veterinarian Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+{% url 'appointments:admin_list' as appt_url %}
+{% url 'patients:admin_list' as patient_url %}
+{% include "components/page_hero.html" with title="Veterinarian Dashboard" icon="bx-plus-medical" subtitle="Manage your patients, appointments, and schedule" action_url=appt_url action_label="View Appointments" action_icon="bx-calendar-plus" action_url_2=patient_url action_label_2="View Patients" action_icon_2="bxs-dog" %}
+
+
+
+<div class="stats-grid">
+  <div class="stat-card teal">
+    <div class="stat-label"><i class='bx bx-calendar-check'></i> Today's Appointments</div>
+    <div class="stat-value">{{ today_count }}</div>
+    <div class="stat-sub">appointments scheduled</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label"><i class='bx bxs-dog'></i> Assigned Patients</div>
+    <div class="stat-value">{{ assigned_patients }}</div>
+    <div class="stat-sub">total patients under care</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-label"><i class='bx bx-check-circle'></i> Completed Consultations</div>
+    <div class="stat-value">{{ completed_consultations }}</div>
+    <div class="stat-sub">total completed</div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-label"><i class='bx bx-file'></i> Medical Records</div>
+    <div class="stat-value">{{ medical_records_count }}</div>
+    <div class="stat-sub">records created</div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bxs-calendar'></i> Today's Appointments</h3>
+      <a href="{% url 'appointments:admin_list' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      {% if todays_appointments %}
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Owner</th>
+            <th>Branch</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in todays_appointments %}
+          <tr>
+            <td>{{ appt.appointment_time|time:"g:i A" }}</td>
+            <td><strong>{{ appt.pet_name }}</strong></td>
+            <td>{{ appt.owner_name }}</td>
+            <td>{{ appt.branch.name }}</td>
+            <td>
+              <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-calendar-x'></i>
+        <h4>No appointments today</h4>
+        <p>Your schedule is clear for today.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-event'></i> This Week's Schedule</h3>
+      <a href="{% url 'employees:schedule' %}" class="card-action">View Full Schedule</a>
+    </div>
+    <div class="card-body">
+      {% if this_week_schedule %}
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Branch</th>
+            <th>Shift Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for schedule in this_week_schedule %}
+          <tr>
+            <td><strong>{{ schedule.date|date:"D, M j" }}</strong></td>
+            <td>{{ schedule.start_time|time:"g:i A" }} - {{ schedule.end_time|time:"g:i A" }}</td>
+            <td>{{ schedule.branch.name }}</td>
+            <td>
+              <span class="status-badge {{ schedule.shift_type|lower }}">{{ schedule.get_shift_type_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-calendar-x'></i>
+        <h4>No schedule this week</h4>
+        <p>Your schedule for this week has not been set.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Professional Metrics -->
+<div class="dashboard-grid">
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-check-circle metric-icon green'></i>
+      <h4>This Month</h4>
+    </div>
+    <div class="metric-value">{{ medical_records_this_month }}</div>
+    <div class="metric-sub">medical records</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-stethoscope metric-icon blue'></i>
+      <h4>Surgery Appointments</h4>
+    </div>
+    <div class="metric-value">{{ surgeries_this_month }}</div>
+    <div class="metric-sub">this month</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-alert-circle metric-icon red'></i>
+      <h4>Emergency Cases</h4>
+    </div>
+    <div class="metric-value">{{ emergency_cases }}</div>
+    <div class="metric-sub">total</div>
+  </div>
+
+  <div class="analytics-card">
+    <div class="metric-header">
+      <i class='bx bx-injection metric-icon orange'></i>
+      <h4>Vaccinations</h4>
+    </div>
+    <div class="metric-value">{{ vaccinations_count }}</div>
+    <div class="metric-sub">total</div>
+  </div>
+</div>
+
+<!-- Patient Analytics -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-user-voice'></i> Patient Flow Analytics</h3>
+    </div>
+    <div class="card-body">
+      <div class="metric-row">
+        <span class="metric-label">New Patients This Month</span>
+        <span class="metric-badge">{{ new_patients_this_month }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Returning Patients This Month</span>
+        <span class="metric-badge">{{ returning_patients_this_month }}</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">Average Daily Consultations</span>
+        <span class="metric-badge">{{ avg_daily_consultations|floatformat:1 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-heart-circle'></i> Patient Health Status</h3>
+    </div>
+    <div class="card-body">
+      {% if patient_status_distribution %}
+        <div class="health-grid">
+          {% for status in patient_status_distribution %}
+          <div class="health-item health-{{ status.status|lower }}">
+            <div class="health-count">{{ status.count }}</div>
+            <div class="health-label">{{ status.get_status_display }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Consultation Breakdown -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-check-circle'></i> Consultation Reasons</h3>
+    </div>
+    <div class="card-body">
+      {% if consultation_reasons %}
+        <div class="service-list">
+          {% for reason in consultation_reasons|slice:":8" %}
+          <div class="service-item">
+            <span class="service-name">{{ reason.reason|truncatewords:2 }}</span>
+            <div class="service-bar">
+              <div class="service-fill" style="width: {{ reason.percentage|floatformat:0 }}%"></div>
+            </div>
+            <span class="service-count">{{ reason.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-calendar-week'></i> Upcoming Appointments</h3>
+      <span class="card-badge">{{ upcoming_count }} appointments</span>
+    </div>
+    <div class="card-body">
+      {% if upcoming_appointments %}
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Owner</th>
+            <th>Branch</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appt in upcoming_appointments %}
+          <tr>
+            <td><strong>{{ appt.appointment_date|date:"M j, Y" }}</strong></td>
+            <td>{{ appt.appointment_time|time:"g:i A" }}</td>
+            <td>{{ appt.pet_name }}</td>
+            <td>{{ appt.owner_name }}</td>
+            <td>{{ appt.branch.name }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-calendar-x'></i>
+        <h4>No upcoming appointments</h4>
+        <p>You have no appointments scheduled for the next 7 days.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Pending Follow-ups -->
+<div class="dashboard-grid">
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-plus-medical'></i> Pending Follow-ups</h3>
+      <span class="card-badge">{{ follow_up_count }} follow-ups</span>
+    </div>
+    <div class="card-body">
+      {% if follow_ups %}
+      <ul class="activity-list">
+        {% for followup in follow_ups %}
+        <li class="activity-item">
+          <div class="activity-icon orange">
+            <i class='bx bx-plus-medical'></i>
+          </div>
+          <div class="activity-text">
+            <p><strong>{{ followup.appointment.pet_name }}</strong> — {{ followup.title }}</p>
+            <span>Due: {{ followup.follow_up_date|date:"M j, Y" }} · {{ followup.appointment.owner_name }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">
+        <i class='bx bx-check-circle'></i>
+        <h4>No pending follow-ups</h4>
+        <p>All follow-ups are complete or none scheduled.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

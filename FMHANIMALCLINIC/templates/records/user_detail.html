@@ -1,0 +1,416 @@
+{% extends 'base/portal_user.html' %}
+{% load static %}
+{% load record_filters %}
+
+{% block title %}Record — {{ record.pet.name }}{% endblock %}
+
+{% block content %}
+
+<style>
+    .record-view {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg, 12px);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+    }
+    .record-view::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Ctext x='50%25' y='50%25' transform='rotate(-35 160 160)' text-anchor='middle' fill='rgba(0, 0, 0, 0.09)' font-size='22' font-weight='800' font-family='Arial, Helvetica, sans-serif' letter-spacing='2'%3EFMH ANIMAL CLINIC%3C/text%3E%3C/svg%3E");
+        background-repeat: repeat;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .record-view::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: url("{% static 'image/fmh-logo.png' %}");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: clamp(250px, 40%, 500px);
+        opacity: 0.09;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .rv-header, .rv-section-hd, .rv-info-grid, .rv-vet-banner, .rv-records-table {
+        position: relative;
+        z-index: 2;
+    }
+    .rv-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--border);
+        gap: 8px;
+    }
+    .rv-header-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+    .rv-header-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: 0.5px;
+    }
+    .rv-header-sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+    .rv-actions {
+        display: flex;
+        gap: 8px;
+        padding: 12px 28px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+        flex-wrap: wrap;
+    }
+    .rv-section-hd {
+        background: #333;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        padding: 6px 12px;
+    }
+    .rv-info-grid {
+        display: grid;
+        grid-template-columns: 100px 1fr 100px 1fr;
+        border-left: 1px solid var(--border);
+        border-top: 1px solid var(--border);
+    }
+    .rv-info-grid.cols-6 {
+        grid-template-columns: 80px 1fr 80px 1fr 80px 1fr;
+    }
+    .rv-info-grid .lbl {
+        background: var(--bg);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        padding: 6px 10px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .rv-info-grid .val {
+        font-size: 12px;
+        color: var(--text-primary);
+        padding: 6px 10px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        word-break: break-word;
+    }
+    .rv-vet-banner {
+        background: #e8f4f8;
+        border-bottom: 1px solid #b8d4e3;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: #2c5282;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .rv-vet-banner span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .rv-records-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .rv-records-table th {
+        background: var(--bg);
+        color: var(--text-2);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        text-align: center;
+        padding: 10px 6px;
+        border: 1px solid var(--border);
+    }
+    .rv-records-table td {
+        border: 1px solid var(--border);
+        padding: 10px 8px;
+        font-size: 12px;
+        vertical-align: top;
+        color: var(--text-primary);
+        word-break: break-word;
+    }
+    .rv-records-table .col-date    { width: 11%; text-align: center; }
+    .rv-records-table .col-vitals  { width: 9%;  text-align: center; }
+    .rv-records-table .col-history { width: 22%; }
+    .rv-records-table .col-tx      { width: 24%; }
+    .rv-records-table .col-rx      { width: 24%; }
+    .rv-records-table .col-ffup    { width: 10%; text-align: center; }
+    .rv-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .rv-footer-text {
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+    /* ---- Warning banner for missing details ---- */
+    .rv-warnings-banner {
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 10px;
+        padding: 14px 20px;
+        margin-bottom: 18px;
+    }
+    .rv-warnings-banner-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #f57f17;
+        margin-bottom: 8px;
+    }
+    .rv-warnings-banner-title i { font-size: 20px; }
+    .rv-warnings-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+    }
+    .rv-warnings-list li {
+        font-size: 12px;
+        color: #795548;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .rv-warnings-list li i { font-size: 14px; color: #ff9800; }
+    /* Stat pills inside hero */
+    .rv-hero-stats {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
+    .rv-hero-stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.13);
+        border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 10px;
+        padding: 7px 14px;
+        backdrop-filter: blur(6px);
+    }
+    .rv-hero-stat i { font-size: 17px; color: rgba(255,255,255,0.8); }
+    .rv-hero-stat-label { font-size: 10px; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .rv-hero-stat-value { font-size: 13px; font-weight: 700; color: #fff; margin-top: 1px; }
+    @media (max-width: 640px) {
+        .rv-info-grid        { grid-template-columns: 80px 1fr; }
+        .rv-info-grid.cols-6 { grid-template-columns: 80px 1fr; }
+        .rv-header { padding: 14px 16px; }
+        .rv-actions { padding: 10px 16px; }
+        .rv-records-table th, .rv-records-table td { font-size: 10px; padding: 6px 4px; }
+    }
+</style>
+
+<!-- ══════ MEDICAL RECORD HERO ══════ -->
+<div class="page-hero">
+  <div class="page-hero-bg">
+    <i class='bx bx-file-blank hero-scatter sc-1'></i>
+    <i class='bx bx-paw hero-scatter sc-2'></i>
+    <i class='bx bxs-dog hero-scatter sc-3'></i>
+    <i class='bx bx-plus-medical hero-scatter sc-4'></i>
+    <i class='bx bx-paw hero-scatter sc-5'></i>
+    <i class='bx bx-file-blank hero-scatter sc-6'></i>
+  </div>
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-file-blank'></i> {{ record.pet.name }}'s Records</h1>
+      <p>Viewing official medical history &mdash; FMH Animal Clinic</p>
+      <div class="page-hero-stats">
+        <div class="page-hero-stat">
+          <i class='bx bx-calendar-check'></i>
+          <div>
+            <div class="page-hero-stat-label">Visit Entries</div>
+            <div class="page-hero-stat-value">{{ entries.count }} visit{{ entries.count|pluralize }}</div>
+          </div>
+        </div>
+        <div class="page-hero-stat">
+          <i class='bx bx-building'></i>
+          <div>
+            <div class="page-hero-stat-label">Branch</div>
+            <div class="page-hero-stat-value">{{ record.branch.name|default:"—" }}</div>
+          </div>
+        </div>
+        <div class="page-hero-stat">
+          <i class='bx bx-pulse'></i>
+          <div>
+            <div class="page-hero-stat-label">Status</div>
+            <div class="page-hero-stat-value">{{ record.status }}</div>
+          </div>
+        </div>
+        <div class="page-hero-stat">
+          <i class='bx bx-paw'></i>
+          <div>
+            <div class="page-hero-stat-label">Species</div>
+            <div class="page-hero-stat-value">{{ record.pet.species|default:"—" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-hero-actions" style="flex-direction:column;align-items:flex-end;">
+      <a href="{% url 'patients:my_pets' %}" class="page-hero-btn">
+        <i class='bx bx-arrow-back'></i> Back to My Pets
+      </a>
+      {% if missing_fields %}
+      <span class="page-hero-btn" style="background:rgba(255,255,255,0.4);color:rgba(255,255,255,0.6);cursor:not-allowed;border-color:rgba(255,255,255,0.3);" title="Complete all required fields before downloading PDF">
+        <i class='bx bx-download'></i> Download PDF
+      </span>
+      {% else %}
+      <a href="{% url 'records:download_pdf' record.pk %}" class="page-hero-btn" style="background:rgba(255,255,255,0.95);color:#009688;border-color:rgba(255,255,255,0.95);">
+        <i class='bx bx-download'></i> Download PDF
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Record Card -->
+{% if missing_fields %}
+<div class="rv-warnings-banner">
+    <div class="rv-warnings-banner-title">
+        <i class='bx bx-error-circle'></i> Missing Details &mdash; PDF download is disabled
+    </div>
+    <ul class="rv-warnings-list">
+        {% for warning in missing_fields %}
+        <li><i class='bx bx-error'></i> {{ warning }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Record Card -->
+<div class="record-view">
+
+    <!-- Header -->
+    <div class="rv-header">
+        <img src="{% static 'image/fmh-logo.png' %}" alt="FMH Logo" class="rv-header-logo">
+        <div class="rv-header-title">PET MEDICAL RECORD</div>
+        <div class="rv-header-sub">FMH Animal Clinic — Official Document</div>
+    </div>
+
+    <!-- Owner Information -->
+    <div class="rv-section-hd">Owner Information</div>
+    <div class="rv-info-grid">
+        <div class="lbl">Name</div>
+        <div class="val">{% if record.pet.owner %}{{ record.pet.owner.get_full_name }}{% else %}{{ record.pet.guest_owner_name|default:"—" }}{% endif %}</div>
+        <div class="lbl">Contact</div>
+        <div class="val">{% if record.pet.owner %}{{ record.pet.owner.phone_number|default:"—" }}{% else %}{{ record.pet.guest_owner_phone|default:"—" }}{% endif %}</div>
+        <div class="lbl">Address</div>
+        <div class="val" style="grid-column: span 3;">{% if record.pet.owner %}{{ record.pet.owner.address|default:"—" }}{% else %}{{ record.pet.guest_owner_address|default:"—" }}{% endif %}</div>
+    </div>
+
+    <!-- Pet Information -->
+    <div class="rv-section-hd">Pet Information</div>
+    <div class="rv-info-grid cols-6">
+        <div class="lbl">Name</div>
+        <div class="val">{{ record.pet.name }}</div>
+        <div class="lbl">Species</div>
+        <div class="val">{{ record.pet.species|default:"—" }}</div>
+        <div class="lbl">Breed</div>
+        <div class="val">{{ record.pet.breed|default:"—" }}</div>
+        <div class="lbl">Sex</div>
+        <div class="val">{{ record.pet.get_sex_display|default:"—" }}</div>
+        <div class="lbl">Age / DOB</div>
+        <div class="val">{{ record.pet.date_of_birth|date:"M j, Y"|default:"\u2014" }}</div>
+        <div class="lbl">Color</div>
+        <div class="val">{{ record.pet.color|default:"—" }}</div>
+    </div>
+
+    <!-- Visit Information -->
+    <div class="rv-section-hd">Visit Information</div>
+    <div class="rv-vet-banner">
+        <span><i class='bx bxs-user-detail'></i> <strong>Vet:</strong>&nbsp;{% if record.vet %}Dr. {{ record.vet.first_name }} {{ record.vet.last_name }}{% if record.vet.license_number %} &mdash; PRC Lic. No. {{ record.vet.license_number }}{% endif %}{% else %}Not Assigned{% endif %}</span>
+        <span><i class='bx bx-building'></i> <strong>Branch:</strong>&nbsp;{{ record.branch.name|default:"—" }}{% if record.branch.clinic_license_number %} &mdash; Lic. No. {{ record.branch.clinic_license_number }}{% endif %}</span>
+        <span><i class='bx bx-pulse'></i> <strong>Status:</strong>&nbsp;
+            <span style="font-weight:700; color:{% if record.status == 'Active' %}#2e7d32{% else %}#c62828{% endif %};">{{ record.status }}</span>
+        </span>
+    </div>
+
+    <!-- Clinical Data Table -->
+    <div style="overflow-x: auto;">
+        <table class="rv-records-table">
+            <thead>
+                <tr>
+                    <th class="col-date">Date</th>
+                    <th class="col-vitals">Wt / Temp</th>
+                    <th class="col-history">History / Clinical Signs</th>
+                    <th class="col-tx">Treatment (Tx)</th>
+                    <th class="col-rx">Prescription (Rx)</th>
+                    <th class="col-ffup">Follow-Up</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td class="col-date">{{ entry.date_recorded|date:"M j, Y" }}</td>
+                    <td class="col-vitals">
+                        {% if entry.weight %}{{ entry.weight }} kg{% else %}—{% endif %}<br>
+                        {% if entry.temperature %}{{ entry.temperature }}°C{% else %}—{% endif %}
+                    </td>
+                    <td class="col-history">{{ entry.history_clinical_signs|default:"No notes recorded"|linebreaks }}</td>
+                    <td class="col-tx">{{ entry.treatment|default:"—"|linebreaks }}</td>
+                    <td class="col-rx">{{ entry.rx|default:"—"|linebreaks }}</td>
+                    <td class="col-ffup">{{ entry.ff_up|date:"M j, Y"|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-secondary);">No visit entries recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="rv-footer">
+        <div class="rv-footer-text">
+            Record Created: {{ record.created_at|date:"M j, Y" }} at {{ record.created_at|time:"g:i A" }} &nbsp;|&nbsp; Last Updated: {{ record.updated_at|date:"M j, Y" }} at {{ record.updated_at|time:"g:i A" }}
+        </div>
+    </div>
+
+    <!-- Disclaimer Note -->
+    <div style="padding: 12px 16px; background: #fff3e0; border-top: 1px solid #ffe0b2; position: relative; z-index: 2;">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <i class='bx bx-info-circle' style="font-size: 20px; color: #e65100; flex-shrink: 0; margin-top: 1px;"></i>
+            <div style="font-size: 12px; color: #4e342e; line-height: 1.5;">
+                <strong style="color: #e65100;">Note:</strong> This is a digital copy for personal reference only.
+                For an <strong>official verified medical record</strong> with the attending veterinarian's signature,
+                please visit <strong>FMH Animal Clinic</strong> in person.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

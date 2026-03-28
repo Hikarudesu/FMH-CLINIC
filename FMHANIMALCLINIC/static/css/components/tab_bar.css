@@ -1,0 +1,293 @@
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENT — Tab Bar  ·  Modern Glassmorphic Sliding Tabs
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.c-tab-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  margin-bottom: 24px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.c-tab-bar::-webkit-scrollbar { display: none; }
+
+/* Subtle animated glow behind the bar */
+.c-tab-bar__glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 150, 136, 0.08) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(0, 150, 136, 0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Sliding Indicator (HIDDEN - page refreshes on click) ── */
+.c-tab-bar__indicator {
+  display: none;
+}
+
+/* ── Tab Button ── */
+.c-tab-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: 14px;
+  white-space: nowrap;
+  transition:
+    color 0.3s var(--ease),
+    background 0.25s var(--ease),
+    transform 0.2s var(--ease);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.c-tab-btn:hover:not(.active) {
+  color: var(--text-1);
+  background: rgba(0, 150, 136, 0.06);
+}
+
+.c-tab-btn:active:not(.active) {
+  transform: scale(0.97);
+}
+
+/* Active state — background replaces sliding indicator */
+.c-tab-btn.active {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  background: linear-gradient(135deg, var(--primary) 0%, #00796b 60%, #004d40 100%);
+  box-shadow:
+    0 4px 16px rgba(0, 150, 136, 0.35),
+    0 2px 6px rgba(0, 150, 136, 0.2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* ── Icon ── */
+.c-tab-btn__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: transform 0.3s var(--ease);
+}
+.c-tab-btn.active .c-tab-btn__icon {
+  transform: scale(1.05);
+}
+
+/* ── Label ── */
+.c-tab-btn__label {
+  transition: opacity 0.2s var(--ease);
+}
+
+/* ── Badge ── */
+.c-tab-btn__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-3);
+  transition:
+    background 0.3s var(--ease),
+    color 0.3s var(--ease),
+    transform 0.3s var(--ease);
+}
+
+.c-tab-btn.active .c-tab-btn__badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.c-tab-btn:hover:not(.active) .c-tab-btn__badge {
+  background: rgba(0, 150, 136, 0.1);
+  color: var(--primary);
+}
+
+/* ══════════════════════════
+    DARK MODE
+   ══════════════════════════ */
+[data-theme="dark"] .c-tab-bar {
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="dark"] .c-tab-bar__glow {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 150, 136, 0.06) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(0, 150, 136, 0.04) 100%
+  );
+}
+
+[data-theme="dark"] .c-tab-btn.active {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 60%, #115e59 100%);
+  box-shadow:
+    0 4px 20px rgba(13, 148, 136, 0.4),
+    0 2px 6px rgba(13, 148, 136, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .c-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .c-tab-btn__badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-3);
+}
+
+[data-theme="dark"] .c-tab-btn:hover:not(.active) .c-tab-btn__badge {
+  background: rgba(13, 148, 136, 0.15);
+}
+
+/* ══════════════════════════
+    RESPONSIVE
+   ══════════════════════════ */
+
+/* Large Tablets */
+@media (max-width: 1024px) {
+  .c-tab-bar {
+    margin-bottom: 20px;
+  }
+  .c-tab-btn {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .c-tab-bar {
+    gap: 2px;
+    padding: 5px;
+    border-radius: 16px;
+    margin-bottom: 18px;
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+  .c-tab-btn {
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    gap: 5px;
+    border-radius: 12px;
+    flex: 1;
+  }
+  .c-tab-btn__icon {
+    font-size: 1rem;
+  }
+  .c-tab-btn__badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.65rem;
+  }
+}
+
+/* Mobile Landscape */
+@media (max-width: 640px) {
+  .c-tab-bar {
+    gap: 2px;
+    padding: 4px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+  .c-tab-btn {
+    padding: 9px 10px;
+    font-size: 0.75rem;
+    gap: 4px;
+    border-radius: 10px;
+  }
+  .c-tab-btn__icon {
+    font-size: 0.95rem;
+  }
+  .c-tab-btn__badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.62rem;
+    padding: 0 4px;
+  }
+}
+
+/* Small mobile — show condensed version */
+@media (max-width: 480px) {
+  .c-tab-bar {
+    gap: 2px;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .c-tab-btn {
+    padding: 8px 8px;
+    flex-direction: column;
+    gap: 2px;
+    border-radius: 10px;
+    min-width: 50px;
+  }
+  .c-tab-btn__label {
+    font-size: 0.62rem;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .c-tab-btn__icon {
+    font-size: 1rem;
+  }
+  .c-tab-btn__badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-size: 0.55rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 380px) {
+  .c-tab-btn {
+    padding: 7px 6px;
+    min-width: 44px;
+  }
+  .c-tab-btn__label {
+    display: none; /* Hide labels on very small screens */
+  }
+  .c-tab-btn__icon {
+    font-size: 1.1rem;
+  }
+}

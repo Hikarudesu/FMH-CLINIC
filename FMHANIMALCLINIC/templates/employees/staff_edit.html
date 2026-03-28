@@ -1,0 +1,222 @@
+{% extends 'base/portal_admin.html' %}
+{% load currency_filters %}
+
+{% block title %}Edit Staff Profile{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1>Edit Staff Profile</h1>
+    <p class="page-subtitle">Update {{ user.get_full_name|default:user.username }}'s employment details</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'employees:staff_list' %}" class="btn-action">
+      <i class='bx bx-arrow-back'></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="dashboard-card" style="max-width: 700px;">
+  <div class="card-header">
+    <h3><i class='bx bx-user'></i> Employment Information</h3>
+  </div>
+  <div class="card-body">
+    <!-- Account Info (Read-only) -->
+    <div class="info-section">
+      <h4>Account Information</h4>
+      <div class="info-grid">
+        <div>
+          <label>Name</label>
+          <p>{{ user.get_full_name|default:user.username }}</p>
+        </div>
+        <div>
+          <label>Email</label>
+          <p>{{ user.email }}</p>
+        </div>
+        <div>
+          <label>Role</label>
+          <p><span class="role-tag">{{ user.assigned_role.name }}</span></p>
+        </div>
+        <div>
+          <label>Branch</label>
+          <p>{{ user.branch.name|default:"—" }}</p>
+        </div>
+      </div>
+      <small class="form-hint">To update account details, go to <a href="{% url 'accounts:user_role_list' %}">Assign Roles</a></small>
+    </div>
+
+    <!-- Employment Details Form -->
+    <form method="POST" style="margin-top: 24px;">
+      {% csrf_token %}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Monthly Salary (₱)</label>
+          <input type="number" name="salary" class="admin-input" step="0.01"
+                 value="{{ staff_profile.salary|default:0 }}"
+                 placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date Hired</label>
+          <input type="date" name="date_hired" class="admin-input"
+                 value="{{ staff_profile.date_hired|date:'Y-m-d' }}">
+        </div>
+
+        {% if user.assigned_role.code == 'veterinarian' %}
+        <div class="form-group">
+          <label class="form-label">PRC License Number</label>
+          <input type="text" name="license_number" class="admin-input"
+                 value="{{ staff_profile.license_number|default:'' }}"
+                 placeholder="License number">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">License Expiry Date</label>
+          <input type="date" name="license_expiry" class="admin-input"
+                 value="{{ staff_profile.license_expiry|date:'Y-m-d' }}">
+        </div>
+        {% endif %}
+
+        <div class="form-group full-width">
+          <label class="checkbox-item">
+            <input type="checkbox" name="is_active"
+                   {% if staff_profile.is_active or not staff_profile.pk %}checked{% endif %}>
+            <span>Active Employee</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{% url 'employees:staff_list' %}" class="btn-action">Cancel</a>
+        <button type="submit" class="btn-action primary">
+          <i class='bx bx-save'></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .info-section {
+    padding: 16px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+  }
+  .info-section h4 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: var(--text-2);
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .info-grid label {
+    font-size: 12px;
+    color: var(--text-3);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .info-grid p {
+    font-size: 14px;
+    color: var(--text-1);
+    font-weight: 500;
+  }
+
+  .role-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  [data-theme="dark"] .role-tag {
+    background: rgba(0, 150, 136, 0.15);
+    color: var(--primary);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-group.full-width { grid-column: 1 / -1; }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: var(--text-1);
+  }
+  .form-hint {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 8px;
+    display: block;
+  }
+  .form-hint a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .form-hint a:hover {
+    text-decoration: underline;
+  }
+
+  .admin-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text-1);
+    transition: border-color 0.2s;
+  }
+  .admin-input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .checkbox-item input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  .checkbox-item span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .form-grid, .info-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+{% endblock %}

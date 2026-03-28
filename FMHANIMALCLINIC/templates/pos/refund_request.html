@@ -1,0 +1,203 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Request Refund{% endblock %}
+
+{% block content %}
+<style>
+  .refund-container {
+    max-width: 600px;
+  }
+
+  .refund-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .refund-sale-info {
+    background: var(--bg);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+
+  .refund-sale-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+
+  .refund-sale-row.total {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+
+  .refund-form-group {
+    margin-bottom: 20px;
+  }
+
+  .refund-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .refund-form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .refund-form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+
+  .refund-form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text-primary);
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+  }
+
+  .refund-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .refund-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .refund-btn.primary {
+    background: #e65100;
+    color: white;
+    border: none;
+  }
+
+  .refund-btn.secondary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+
+  .refund-btn:hover {
+    opacity: 0.9;
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <h1>Request Refund</h1>
+    <p class="page-subtitle">Create refund request for {{ sale.transaction_id }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'pos:sale_detail' sale.pk %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Back to Sale
+    </a>
+  </div>
+</div>
+
+<div class="refund-container">
+  <div class="refund-card">
+    <!-- Sale Summary -->
+    <div class="refund-sale-info">
+      <div class="refund-sale-row">
+        <span>Transaction ID</span>
+        <span style="font-family: monospace; font-weight: 600;">{{ sale.transaction_id }}</span>
+      </div>
+      <div class="refund-sale-row">
+        <span>Customer</span>
+        <span>{{ sale.customer_display_name }}</span>
+      </div>
+      <div class="refund-sale-row">
+        <span>Date</span>
+        <span>{{ sale.created_at|date:"M j, Y g:i A" }}</span>
+      </div>
+      <div class="refund-sale-row">
+        <span>Items</span>
+        <span>{{ sale.items.count }}</span>
+      </div>
+      <div class="refund-sale-row total">
+        <span>Total</span>
+        <span>₱{{ sale.total|floatformat:2 }}</span>
+      </div>
+    </div>
+
+    <!-- Refund Form -->
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="refund-form-group">
+        <label class="refund-form-label">Refund Type</label>
+        <select name="refund_type" class="refund-form-select" required>
+          <option value="FULL">Full Refund</option>
+          <option value="PARTIAL">Partial Refund</option>
+        </select>
+      </div>
+
+      <div class="refund-form-group">
+        <label class="refund-form-label">Refund Amount</label>
+        <input type="number" name="amount" class="refund-form-input" value="{{ sale.total }}" step="0.01" min="0.01" max="{{ sale.total }}" required>
+      </div>
+
+      <div class="refund-form-group">
+        <label class="refund-form-label">Reason for Refund *</label>
+        <textarea name="reason" class="refund-form-input" rows="3" required placeholder="Please provide a detailed reason for the refund request..."></textarea>
+      </div>
+
+      <div class="refund-form-group">
+        <label class="refund-form-label">Refund Method</label>
+        <select name="refund_method" class="refund-form-select" required>
+          <option value="CASH">Cash</option>
+          <option value="GCASH">GCash</option>
+          <option value="CARD">Credit/Debit Card</option>
+          <option value="BANK">Bank Transfer</option>
+        </select>
+      </div>
+
+      <div class="refund-form-group">
+        <label class="refund-form-label">Additional Notes</label>
+        <textarea name="notes" class="refund-form-input" rows="2" placeholder="Any additional notes..."></textarea>
+      </div>
+
+      <div class="refund-actions">
+        <a href="{% url 'pos:sale_detail' sale.pk %}" class="refund-btn secondary">Cancel</a>
+        <button type="submit" class="refund-btn primary">
+          <i class='bx bx-undo'></i> Submit Refund Request
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

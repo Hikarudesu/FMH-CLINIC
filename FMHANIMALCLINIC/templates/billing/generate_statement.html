@@ -1,0 +1,86 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Generate Statement{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Generate Statement</h1>
+    <p class="page-subtitle">Create a new billing statement for an account</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'billing:account_list' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Back to Accounts
+    </a>
+  </div>
+</div>
+
+<div class="dashboard-card">
+  <div class="card-header">
+    <h3><i class='bx bx-file-plus'></i> Statement Generation</h3>
+  </div>
+  <div class="card-body">
+    <form method="post" class="pet-form">
+      {% csrf_token %}
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="id_account">Account</label>
+          {{ form.account }}
+        </div>
+
+        <div class="form-group">
+          <label for="id_statement_date">Statement Date</label>
+          {{ form.statement_date }}
+        </div>
+
+        <div class="form-group">
+          <label for="id_due_date">Due Date</label>
+          {{ form.due_date }}
+        </div>
+
+        <div class="form-group">
+          <label for="id_period_start">Period Start</label>
+          {{ form.period_start }}
+        </div>
+
+        <div class="form-group">
+          <label for="id_period_end">Period End</label>
+          {{ form.period_end }}
+        </div>
+
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label for="id_notes">Notes</label>
+          {{ form.notes }}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-action primary">
+          <i class='bx bx-check'></i> Generate Statement
+        </button>
+        <a href="{% url 'billing:account_list' %}" class="btn-action outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if form.errors %}
+<div class="dashboard-card" style="margin-top: 16px;">
+  <div class="card-header" style="background: #fff5f5;">
+    <h3 style="color: #e63946;"><i class='bx bx-error-circle'></i> Form Errors</h3>
+  </div>
+  <div class="card-body">
+    {% for field, errors in form.errors.items %}
+      <div style="margin-bottom: 8px;">
+        <strong>{{ field|title }}:</strong>
+        {% for error in errors %}
+          <div style="color: #e63946;">{{ error }}</div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

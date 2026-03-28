@@ -1,0 +1,257 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Sales by Period{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Sales Report</h1>
+    <p class="page-subtitle">Sales analysis by date range and filters</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px; align-items: center;">
+    <a href="{% url 'reports:export_sales_csv' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="btn-action primary">
+      <i class='bx bx-download'></i> Export CSV
+    </a>
+    <a href="{% url 'reports:finance_dashboard' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <form method="GET" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">From Date</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="filter-input">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">To Date</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="filter-input">
+    </div>
+    {% if not request.user.is_branch_restricted %}
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Branch</label>
+      <select name="branch" class="filter-select">
+        <option value="">All Branches</option>
+        {% for branch in branches %}
+        <option value="{{ branch.pk }}" {% if selected_branch == branch.pk|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Category</label>
+      <select name="category" class="filter-select">
+        <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All Categories</option>
+        <option value="service" {% if selected_category == 'service' %}selected{% endif %}>Services</option>
+        <option value="product" {% if selected_category == 'product' %}selected{% endif %}>Products</option>
+        <option value="medication" {% if selected_category == 'medication' %}selected{% endif %}>Medications</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-action primary" style="height: 40px;">
+      <i class='bx bx-filter-alt'></i> Apply Filters
+    </button>
+  </form>
+</div>
+
+<!-- Summary -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-money' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Sales</div>
+        <div style="font-size: 22px; font-weight: 700; color: var(--primary);">₱{{ summary.total_sales|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-receipt' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Transactions</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ summary.total_transactions|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-trending-up' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Avg Transaction</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.avg_transaction|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fce4ec; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-gift' style="font-size: 24px; color: #c62828;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Discounts</div>
+        <div style="font-size: 22px; font-weight: 700;">₱{{ summary.total_discount|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Daily Chart -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Daily Sales</h3>
+    <div style="position: relative; height: 280px;">
+      <canvas id="dailyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Revenue by Category</h3>
+    <div style="position: relative; height: 280px;">
+      <canvas id="categoryChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Sales by Branch -->
+{% if sales_by_branch %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Sales by Branch</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Branch</th>
+          <th style="text-align: right;">Total Sales</th>
+          <th style="text-align: center;">Transactions</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for branch in sales_by_branch %}
+        <tr>
+          <td style="font-weight: 600;">{{ branch.branch__name }}</td>
+          <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ branch.total|floatformat:2 }}</td>
+          <td style="text-align: center;">{{ branch.count }}</td>
+          <td>
+            {% if summary.total_sales %}
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--primary); border-radius: 4px; width: {% widthratio branch.total summary.total_sales 100 %}%;"></div>
+              </div>
+              <span style="font-size: 12px; color: var(--text-secondary); min-width: 40px;">{% widthratio branch.total summary.total_sales 100 %}%</span>
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Daily Breakdown Table -->
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Daily Breakdown</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th style="text-align: right;">Total Sales</th>
+            <th style="text-align: center;">Transactions</th>
+            <th style="text-align: right;">Avg per Txn</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for day in daily_breakdown %}
+          <tr>
+            <td style="font-weight: 500;">{{ day.date|date:"M j, Y (D)" }}</td>
+            <td style="text-align: right; font-weight: 600; color: var(--primary);">₱{{ day.total|floatformat:2 }}</td>
+            <td style="text-align: center;">{{ day.count }}</td>
+            <td style="text-align: right; color: var(--text-secondary);">
+              {% if day.count > 0 %}₱{% widthratio day.total day.count 1 %}{% else %}₱0{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">No sales data for this period</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Daily Sales Chart
+  const dailyLabels = [{% for d in daily_breakdown %}'{{ d.date|date:"M j" }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const dailyData = [{% for d in daily_breakdown %}{{ d.total|floatformat:2 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  if (dailyLabels.length > 0) {
+    new Chart(document.getElementById('dailyChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: dailyLabels,
+        datasets: [{
+          label: 'Sales (₱)',
+          data: dailyData,
+          backgroundColor: 'rgba(21, 101, 192, 0.7)',
+          borderColor: '#1565c0',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { return '₱' + ctx.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2}); } } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: function(val) { return '₱' + val.toLocaleString(); } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Category Chart
+  const catLabels = [{% for c in items_by_category %}'{{ c.item_type }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const catData = [{% for c in items_by_category %}{{ c.revenue|floatformat:2 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const catColors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0'];
+
+  if (catLabels.length > 0) {
+    new Chart(document.getElementById('categoryChart').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: catLabels,
+        datasets: [{ data: catData, backgroundColor: catColors.slice(0, catLabels.length), borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 16 } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ₱' + ctx.parsed.toLocaleString(undefined, {minimumFractionDigits: 2}); } } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

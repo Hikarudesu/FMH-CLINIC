@@ -1,0 +1,423 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statement of Account - {{ statement.statement_number }}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #333;
+      background: white;
+    }
+
+    .statement-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .statement-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      border-bottom: 3px solid #2c3e50;
+      padding-bottom: 20px;
+    }
+
+    .clinic-info h1 {
+      font-size: 24px;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+
+    .clinic-info p {
+      margin: 2px 0;
+      color: #666;
+    }
+
+    .statement-info {
+      text-align: right;
+    }
+
+    .statement-info h2 {
+      font-size: 20px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .statement-details {
+      text-align: right;
+    }
+
+    .statement-details p {
+      margin: 3px 0;
+    }
+
+    .customer-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 4px solid #2c3e50;
+    }
+
+    .customer-section h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .customer-details {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .account-summary {
+      margin: 20px 0;
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+    }
+
+    .account-summary h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .summary-table td {
+      padding: 8px 15px;
+      border-bottom: 1px solid #bdc3c7;
+    }
+
+    .summary-table .label {
+      font-weight: 600;
+    }
+
+    .summary-table .amount {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+
+    .summary-table .total-row {
+      background: #2c3e50;
+      color: white;
+      font-weight: bold;
+    }
+
+    .transaction-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .transaction-table th,
+    .transaction-table td {
+      padding: 8px 6px;
+      text-align: left;
+      border: 1px solid #bdc3c7;
+      font-size: 11px;
+    }
+
+    .transaction-table th {
+      background: #2c3e50;
+      color: white;
+      font-weight: 600;
+    }
+
+    .transaction-table .amount {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+
+    .transaction-table .charge {
+      color: #e74c3c;
+    }
+
+    .transaction-table .payment {
+      color: #27ae60;
+    }
+
+    .opening-balance,
+    .closing-balance {
+      background: #ecf0f1;
+      font-weight: bold;
+    }
+
+    .services-breakdown {
+      margin: 20px 0;
+      page-break-inside: avoid;
+    }
+
+    .services-breakdown h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .services-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .service-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 10px;
+      background: #f8f9fa;
+      border-left: 3px solid #3498db;
+    }
+
+    .footer-info {
+      margin-top: 30px;
+      padding: 15px;
+      background: #e8f5e8;
+      border-radius: 5px;
+      page-break-inside: avoid;
+    }
+
+    .footer-info h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .balance-due {
+      font-size: 16px;
+      font-weight: bold;
+      color: #2c3e50;
+      text-align: center;
+      margin: 10px 0;
+      padding: 10px;
+      background: #fff;
+      border: 2px solid #2c3e50;
+    }
+
+    .print-info {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #bdc3c7;
+      font-size: 10px;
+      color: #7f8c8d;
+      text-align: center;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      .statement-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 15px;
+      }
+
+      .no-print {
+        display: none;
+      }
+    }
+
+    @page {
+      margin: 0.5cm;
+      size: A4;
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print" style="text-align: center; margin-bottom: 20px; padding: 10px; background: #f8f9fa;">
+  <button onclick="window.print()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin-right: 10px;">
+    Print Statement
+  </button>
+  <button onclick="window.close()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #95a5a6; color: white; border: none; border-radius: 4px;">
+    Close
+  </button>
+</div>
+
+<div class="statement-container">
+  <!-- Header -->
+  <div class="statement-header">
+    <div class="clinic-info">
+      <h1>FMH ANIMAL CLINIC</h1>
+      <p>Complete Veterinary Care Services</p>
+      <p>Multi-Branch Animal Healthcare System</p>
+    </div>
+    <div class="statement-info">
+      <h2>STATEMENT OF ACCOUNT</h2>
+      <div class="statement-details">
+        <p><strong>Statement #:</strong> {{ statement.statement_number }}</p>
+        <p><strong>Date:</strong> {{ statement.generated_at|date:"F j, Y" }}</p>
+        <p><strong>Period:</strong> {{ statement.period_start|date:"M j, Y" }} - {{ statement.period_end|date:"M j, Y" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Information -->
+  <div class="customer-section">
+    <h3>ACCOUNT HOLDER INFORMATION</h3>
+    <div class="customer-details">
+      <div>
+        <p><strong>Name:</strong> {{ customer.get_full_name|default:customer.email }}</p>
+        <p><strong>Email:</strong> {{ customer.email }}</p>
+        <p><strong>Phone:</strong> {{ customer.phone_number|default:"Not provided" }}</p>
+      </div>
+      <div>
+        <p><strong>Address:</strong></p>
+        <p>{{ customer.address|default:"Address not available" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Summary -->
+  <div class="account-summary">
+    <h3>ACCOUNT SUMMARY</h3>
+    <table class="summary-table">
+      <tr>
+        <td class="label">Opening Balance:</td>
+        <td class="amount">₱{{ statement.opening_balance|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td class="label">Total Charges This Period:</td>
+        <td class="amount charge">₱{{ statement.total_charges|floatformat:2 }}</td>
+      </tr>
+      <tr>
+        <td class="label">Total Payments This Period:</td>
+        <td class="amount payment">₱{{ statement.total_payments|floatformat:2 }}</td>
+      </tr>
+      <tr class="total-row">
+        <td class="label">Closing Balance:</td>
+        <td class="amount">₱{{ statement.closing_balance|floatformat:2 }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Transaction Details -->
+  <h3 style="color: #2c3e50; margin: 20px 0 10px 0;">TRANSACTION DETAILS</h3>
+
+  {% if transactions %}
+  <table class="transaction-table">
+    <thead>
+      <tr>
+        <th style="width: 12%">Date</th>
+        <th style="width: 35%">Service Description</th>
+        <th style="width: 15%">Pet</th>
+        <th style="width: 12%">Reference</th>
+        <th style="width: 13%">Charges</th>
+        <th style="width: 13%">Payments</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Opening Balance -->
+      <tr class="opening-balance">
+        <td>{{ statement.period_start|date:"M j, Y" }}</td>
+        <td><strong>OPENING BALANCE</strong></td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td class="amount">₱{{ statement.opening_balance|floatformat:2 }}</td>
+      </tr>
+
+      <!-- Transactions -->
+      {% for transaction in transactions %}
+      <tr>
+        <td>{{ transaction.date|date:"M j, Y" }}</td>
+        <td>{{ transaction.description }}</td>
+        <td>{{ transaction.pet.name|default:"-" }}</td>
+        <td>{{ transaction.reference_number|truncatechars:10|default:"-" }}</td>
+        <td class="amount charge">
+          {% if transaction.is_charge %}
+            ₱{{ transaction.amount|floatformat:2 }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td class="amount payment">
+          {% if transaction.is_payment %}
+            ₱{{ transaction.amount|floatformat:2|slice:"1:" }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+
+      <!-- Period Totals -->
+      <tr class="closing-balance">
+        <td>{{ statement.period_end|date:"M j, Y" }}</td>
+        <td><strong>PERIOD TOTALS</strong></td>
+        <td>-</td>
+        <td>-</td>
+        <td class="amount"><strong>₱{{ statement.total_charges|floatformat:2 }}</strong></td>
+        <td class="amount"><strong>₱{{ statement.total_payments|floatformat:2 }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  {% else %}
+  <p style="text-align: center; color: #7f8c8d; padding: 20px;">No transactions found for this period.</p>
+  {% endif %}
+
+  <!-- Services Breakdown -->
+  <div class="services-breakdown">
+    <h3>SERVICES SUMMARY</h3>
+    <div class="services-list">
+      {% regroup transactions|dictsort:"description" by description as service_groups %}
+      {% for service in service_groups %}
+        {% if service.grouper != "Manual payment" and service.grouper != "Payment" %}
+        <div class="service-item">
+          <span>{{ service.grouper }}</span>
+          <span class="amount">
+            {% for t in service.list %}
+              {% if t.is_charge %}₱{{ t.amount|floatformat:2 }}{% endif %}
+            {% endfor %}
+          </span>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Current Balance Due -->
+  <div class="balance-due">
+    CURRENT BALANCE DUE: ₱{{ account.current_balance|floatformat:2 }}
+  </div>
+
+  <!-- Payment Information -->
+  <div class="footer-info">
+    <h3>PAYMENT INFORMATION & TERMS</h3>
+    <p><strong>Credit Limit:</strong> ₱{{ account.credit_limit|floatformat:2 }}</p>
+    <p><strong>Available Credit:</strong> ₱{{ account.available_credit|floatformat:2 }}</p>
+
+    <div style="margin-top: 15px;">
+      <p><strong>Payment Instructions:</strong></p>
+      <p>Please settle your account balance at your nearest FMH Animal Clinic branch.</p>
+      <p>For payment arrangements or inquiries, please contact us immediately.</p>
+      <p><strong>Thank you for choosing FMH Animal Clinic for your pet's healthcare needs.</strong></p>
+    </div>
+  </div>
+
+  <!-- Print Timestamp -->
+  <div class="print-info">
+    <p>Statement generated on {{ statement.generated_at|date:"F j, Y g:i A" }} by {{ statement.generated_by.get_full_name|default:statement.generated_by.email }}</p>
+    <p>This is a computer-generated statement and serves as official documentation of account activity.</p>
+  </div>
+</div>
+
+</body>
+</html>

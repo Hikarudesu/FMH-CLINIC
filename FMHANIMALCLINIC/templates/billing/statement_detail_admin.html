@@ -1,0 +1,572 @@
+{% extends "base/portal_admin.html" %}
+{% load static %}
+
+{% block title %}Statement Details - {{ statement.statement_number }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1>Statement Details</h1>
+    <p class="page-subtitle">{{ statement.statement_number }} - {{ statement.patient_name }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'billing:statement_list' %}" class="btn-action outline">
+      <i class='bx bx-arrow-back'></i> Back to List
+    </a>
+    <a href="{% url 'billing:edit_statement' statement.id %}" class="btn-action secondary">
+      <i class='bx bx-edit'></i> Edit Statement
+    </a>
+    {% if statement.status == 'DRAFT' %}
+    <form method="post" action="{% url 'billing:release_statement' statement.id %}" style="display: inline;"
+          onsubmit="return confirm('Release this statement to customer? This action cannot be undone.')">
+      {% csrf_token %}
+      <button type="submit" class="btn-action success">
+        <i class='bx bx-paper-plane'></i> Release to Customer
+      </button>
+    </form>
+    {% endif %}
+    <button onclick="printStatement()" class="btn-action primary">
+      <i class='bx bx-printer'></i> Print Statement
+    </button>
+  </div>
+</div>
+
+<!-- Status Banner -->
+<div class="status-banner {% if statement.status == 'DRAFT' %}draft{% elif statement.status == 'RELEASED' %}released{% else %}sent{% endif %}">
+  <div class="status-icon">
+    {% if statement.status == 'DRAFT' %}
+      <i class='bx bx-edit-alt'></i>
+    {% elif statement.status == 'RELEASED' %}
+      <i class='bx bx-check-circle'></i>
+    {% else %}
+      <i class='bx bx-envelope-open'></i>
+    {% endif %}
+  </div>
+  <div class="status-text">
+    {% if statement.status == 'DRAFT' %}
+      <strong>Draft Statement</strong>
+      <span>This statement is not yet visible to the customer. Click "Release to Customer" to make it available.</span>
+    {% elif statement.status == 'RELEASED' %}
+      <strong>Released to Customer</strong>
+      <span>Customer can now view this statement in their portal.</span>
+    {% else %}
+      <strong>Viewed by Customer</strong>
+      <span>Customer has viewed this statement on {{ statement.sent_at|date:"M j, Y" }}.</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="statement-layout">
+  <!-- Statement Preview -->
+  <div class="statement-preview-card">
+    <div class="card-header-custom">
+      <h3><i class='bx bx-file'></i> Statement Preview</h3>
+    </div>
+
+    <!-- Statement Content (Printable) -->
+    <div class="statement-paper" id="printableStatement">
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem; font-weight: bold; margin: 0; letter-spacing: 3px;">FMH ANIMAL CLINIC</h2>
+        <h3 style="font-size: 1.4rem; margin: 0.5rem 0 0 0; font-weight: normal;">Statement of Account</h3>
+      </div>
+
+      <!-- Patient Info -->
+      <div style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+          <div style="flex: 1;">
+            <span><strong>Patient:</strong> {{ statement.patient_name }}</span>
+          </div>
+          <div style="flex: 1; text-align: right;">
+            <span><strong>Date:</strong> {{ statement.date|date:"F j, Y" }}</span>
+          </div>
+        </div>
+        <div>
+          <span><strong>Owner's Name:</strong> {{ statement.owner_name }}</span>
+        </div>
+      </div>
+
+      <!-- Services Table -->
+      <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 2rem;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid #000; padding: 0.75rem; text-align: left; background: #f8f9fa; font-weight: bold; font-size: 1rem;">Particulars</th>
+            <th style="border: 1px solid #000; padding: 0.75rem; text-align: center; background: #f8f9fa; font-weight: bold; width: 140px; font-size: 1rem;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if statement.consultation_fee > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Prof. Fee / Consultation</strong>
+              {% if statement.consultation_description %}<br>{{ statement.consultation_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.consultation_fee|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.treatment > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Treatment</strong>
+              {% if statement.treatment_description %}<br>{{ statement.treatment_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.treatment|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.boarding > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Boarding / Confinement</strong>
+              {% if statement.boarding_description %}<br>{{ statement.boarding_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.boarding|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.vaccination > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Vaccinations</strong>
+              {% if statement.vaccination_description %}<br>{{ statement.vaccination_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.vaccination|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.surgery > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Surgery</strong>
+              {% if statement.surgery_description %}<br>{{ statement.surgery_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.surgery|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.laboratory > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Laboratory Exam</strong>
+              {% if statement.laboratory_description %}<br>{{ statement.laboratory_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.laboratory|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.grooming > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Grooming</strong>
+              {% if statement.grooming_description %}<br>{{ statement.grooming_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.grooming|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.others > 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; vertical-align: top;">
+              <strong>Others</strong>
+              {% if statement.others_description %}<br>{{ statement.others_description }}{% endif %}
+            </td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; vertical-align: middle; font-size: 1rem;">₱{{ statement.others|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          <!-- Empty rows for unused services -->
+          {% if statement.consultation_fee == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Prof. Fee / Consultation</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.treatment == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Treatment</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.boarding == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Boarding / Confinement</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.vaccination == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Vaccinations</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.surgery == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Surgery</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.laboratory == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Laboratory Exam</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.grooming == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Grooming</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+          {% if statement.others == 0 %}
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem;"><strong>Others</strong></td>
+            <td style="border: 1px solid #000; padding: 0.75rem;"></td>
+          </tr>
+          {% endif %}
+
+          <!-- Totals Section -->
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; font-weight: bold; font-size: 1rem;">Amount</td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem;">Php {{ statement.total_amount|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; font-size: 1rem;">Deposit</td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; font-size: 1rem;">{{ statement.deposit|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 0.75rem; height: 3rem; font-weight: bold; font-size: 1rem;">Balance</td>
+            <td style="border: 1px solid #000; padding: 0.75rem; text-align: center; font-weight: bold; font-size: 1rem;">{{ statement.balance|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Signature -->
+      <div style="text-align: center; margin-top: 2rem;">
+        <div style="border-bottom: 2px solid #000; width: 250px; margin: 0 auto 0.75rem auto; height: 2rem;"></div>
+        <div style="font-weight: bold; font-size: 1rem;">Signature</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statement Info Sidebar -->
+  <div class="statement-info-card">
+    <div class="card-header-custom">
+      <h3><i class='bx bx-info-circle'></i> Statement Information</h3>
+    </div>
+    <div class="info-content">
+      <div class="info-row">
+        <label>Statement Number</label>
+        <span class="info-value primary">{{ statement.statement_number }}</span>
+      </div>
+
+      <div class="info-row">
+        <label>Status</label>
+        <span class="status-badge {% if statement.status == 'DRAFT' %}draft{% elif statement.status == 'RELEASED' %}released{% else %}sent{% endif %}">
+          {% if statement.status == 'DRAFT' %}Draft
+          {% elif statement.status == 'RELEASED' %}Released
+          {% else %}Viewed{% endif %}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <label>Customer Account</label>
+        {% if statement.customer %}
+          <span class="info-value">{{ statement.customer.get_full_name|default:statement.customer.email }}</span>
+        {% else %}
+          <span class="info-value warning">Walk-in Customer</span>
+        {% endif %}
+      </div>
+
+      <div class="info-row">
+        <label>Branch</label>
+        <span class="info-value">{{ statement.branch.name|default:"Default Branch" }}</span>
+      </div>
+
+      <div class="info-divider"></div>
+
+      <div class="info-row">
+        <label>Created</label>
+        <span class="info-value">{{ statement.created_at|date:"M j, Y g:i A" }}</span>
+      </div>
+
+      {% if statement.released_at %}
+      <div class="info-row">
+        <label>Released</label>
+        <span class="info-value">{{ statement.released_at|date:"M j, Y g:i A" }}</span>
+      </div>
+      {% endif %}
+
+      {% if statement.sent_at %}
+      <div class="info-row">
+        <label>First Viewed</label>
+        <span class="info-value">{{ statement.sent_at|date:"M j, Y g:i A" }}</span>
+      </div>
+      {% endif %}
+
+      <div class="info-divider"></div>
+
+      <div class="info-row total">
+        <label>Total Amount</label>
+        <span class="info-value">₱{{ statement.total_amount|floatformat:2 }}</span>
+      </div>
+
+      <div class="info-row">
+        <label>Deposit</label>
+        <span class="info-value">₱{{ statement.deposit|floatformat:2 }}</span>
+      </div>
+
+      <div class="info-row balance">
+        <label>Balance Due</label>
+        <span class="info-value {% if statement.balance > 0 %}warning{% else %}success{% endif %}">
+          ₱{{ statement.balance|floatformat:2 }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+}
+
+.status-banner.draft {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 1px solid #ffb74d;
+}
+
+.status-banner.released {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border: 1px solid #66bb6a;
+}
+
+.status-banner.sent {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #42a5f5;
+}
+
+.status-icon {
+  font-size: 2.5rem;
+}
+
+.status-banner.draft .status-icon { color: #e65100; }
+.status-banner.released .status-icon { color: #2e7d32; }
+.status-banner.sent .status-icon { color: #1565c0; }
+
+.status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-text strong {
+  font-size: 1.1rem;
+  color: var(--text-1);
+}
+
+.status-text span {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+
+.statement-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .statement-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statement-preview-card,
+.statement-info-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-header-custom {
+  background: var(--surface-2);
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header-custom h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-header-custom h3 i {
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.statement-paper {
+  max-width: 700px;
+  margin: 1.5rem auto;
+  border: 3px solid #000;
+  padding: 2.5rem;
+  background: white;
+  font-family: Arial, sans-serif;
+}
+
+.info-content {
+  padding: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row label {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.info-value {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.info-value.primary {
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.info-value.warning {
+  color: #f57c00;
+}
+
+.info-value.success {
+  color: #2e7d32;
+}
+
+.info-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.5rem 0;
+}
+
+.info-row.total label,
+.info-row.total .info-value,
+.info-row.balance label,
+.info-row.balance .info-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.draft {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-badge.released {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.sent {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-action.success {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.btn-action.success:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.btn-action.secondary {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: white;
+}
+
+.btn-action.secondary:hover {
+  background: #d97706;
+  border-color: #d97706;
+}
+</style>
+
+<script>
+function printStatement() {
+  const printContent = document.getElementById('printableStatement').innerHTML;
+  const printWindow = window.open('', '_blank');
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Statement - {{ statement.statement_number }}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; padding: 10mm; margin: 0; }
+          .statement-paper {
+            width: 100%;
+            max-width: 18cm;
+            margin: 0 auto;
+            border: 3px solid #000;
+            padding: 15mm;
+            font-size: 12px;
+          }
+          table { width: 100%; border-collapse: collapse; }
+          @media print {
+            body { padding: 5mm; }
+            .statement-paper { max-width: 100%; border: 3px solid #000; }
+            .no-print { display: none !important; }
+          }
+          @page { size: A4; margin: 10mm; }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="text-align:center; padding: 10px; background: #f0f0f0; margin-bottom: 15px;">
+          <button onclick="window.print()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #2c3e50; color: white; border: none; border-radius: 4px; margin-right: 8px;">Print</button>
+          <button onclick="window.close()" style="padding: 8px 20px; font-size: 14px; cursor: pointer; background: #95a5a6; color: white; border: none; border-radius: 4px;">Close</button>
+        </div>
+        <div class="statement-paper">
+          ${printContent}
+        </div>
+      </body>
+    </html>
+  `);
+}
+</script>
+
+{% endblock %}

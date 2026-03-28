@@ -1,0 +1,526 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}AI Diagnosis Result - {{ diagnosis.pet.name }}{% endblock %}
+
+{% block content %}
+
+<style>
+  .detail-container {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  @media (max-width: 1000px) {
+    .detail-container { grid-template-columns: 1fr; }
+  }
+
+  /* Main Result Card */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .result-header {
+    padding: 24px;
+    background: var(--primary-gradient);
+    color: #fff;
+  }
+  .result-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .result-pet {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .result-pet-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  .result-pet-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .result-pet-meta {
+    font-size: 0.85rem;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .result-date {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    text-align: right;
+  }
+
+  /* Primary Diagnosis Box */
+  .primary-diag-box {
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 16px 20px;
+    backdrop-filter: blur(8px);
+  }
+  .primary-diag-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+    margin-bottom: 6px;
+  }
+  .primary-diag-condition {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .primary-diag-reasoning {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    line-height: 1.5;
+  }
+
+  /* Body Sections */
+  .result-body {
+    padding: 24px;
+  }
+  .result-section {
+    margin-bottom: 24px;
+  }
+  .result-section:last-child { margin-bottom: 0; }
+  .result-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-section-title i {
+    color: var(--primary);
+    font-size: 1.1rem;
+  }
+
+  /* Differential Diagnoses */
+  .diff-diag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+  }
+  .diff-diag-item:last-child { margin-bottom: 0; }
+  .diff-diag-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .diff-diag-content { flex: 1; }
+  .diff-diag-condition {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .diff-diag-reasoning {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* List Items */
+  .result-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .result-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+  .result-list li:last-child { margin-bottom: 0; }
+  .result-list li i {
+    color: var(--primary);
+    font-size: 1rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .result-list.warning li i { color: #ff9800; }
+
+  /* Summary */
+  .result-summary {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 1px solid #a5d6a7;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    font-size: 0.9rem;
+    color: #2e7d32;
+    line-height: 1.6;
+  }
+
+  /* Sidebar */
+  .detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .sidebar-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .sidebar-card-header {
+    padding: 14px 18px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sidebar-card-header i { color: var(--primary); }
+  .sidebar-card-body { padding: 14px 18px; }
+
+  /* Review Form */
+  .review-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #e8f5e9;
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+  }
+  .review-status i {
+    font-size: 1.5rem;
+    color: #2e7d32;
+  }
+  .review-status-text {
+    flex: 1;
+  }
+  .review-status-label {
+    font-weight: 700;
+    color: #1b5e20;
+    font-size: 0.9rem;
+  }
+  .review-status-meta {
+    font-size: 0.75rem;
+    color: #558b2f;
+    margin-top: 2px;
+  }
+  .review-form-group {
+    margin-bottom: 12px;
+  }
+  .review-form-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .review-form-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    resize: vertical;
+    font-family: inherit;
+  }
+  .review-form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  .review-btn {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .review-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99,90,255,0.3);
+  }
+
+  /* Actions */
+  .detail-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .detail-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .detail-action-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .detail-action-btn i { font-size: 1rem; }
+
+  /* Disclaimer */
+  .diag-disclaimer-small {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 0.8rem;
+    color: #795548;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .diag-disclaimer-small i {
+    color: #f57f17;
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Related diagnoses */
+  .related-diag-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .related-diag-item:last-child { border-bottom: none; }
+  .related-diag-item:hover { opacity: 0.8; }
+</style>
+
+<!-- Actions Bar -->
+<div class="detail-actions">
+  <a href="{% url 'diagnostics:dashboard' %}" class="detail-action-btn">
+    <i class="bx bx-arrow-back"></i> Back to Dashboard
+  </a>
+  <a href="{% url 'diagnostics:run_diagnosis' diagnosis.pet.pk %}" class="detail-action-btn">
+    <i class="bx bx-refresh"></i> Run New Diagnosis
+  </a>
+</div>
+
+<div class="detail-container">
+  <!-- Main Result -->
+  <div class="result-card">
+    <div class="result-header">
+      <div class="result-header-top">
+        <div class="result-pet">
+          <div class="result-pet-avatar">
+            <i class="bx {% if diagnosis.pet.species == 'Dog' %}bxs-dog{% elif diagnosis.pet.species == 'Cat' %}bxs-cat{% else %}bx-paw{% endif %}"></i>
+          </div>
+          <div>
+            <div class="result-pet-name">{{ diagnosis.pet.name }}</div>
+            <div class="result-pet-meta">{{ diagnosis.pet.species }} &middot; {{ diagnosis.pet.breed }}</div>
+          </div>
+        </div>
+        <div class="result-date">
+          <div><i class="bx bx-calendar"></i> {{ diagnosis.created_at|date:"M j, Y" }}</div>
+          <div><i class="bx bx-time"></i> {{ diagnosis.created_at|time:"g:i A" }}</div>
+        </div>
+      </div>
+
+      <!-- Primary Diagnosis -->
+      <div class="primary-diag-box">
+        <div class="primary-diag-label">Primary Diagnosis</div>
+        <div class="primary-diag-condition">{{ diagnosis.primary_condition }}</div>
+        <div class="primary-diag-reasoning">{{ diagnosis.primary_reasoning }}</div>
+      </div>
+    </div>
+
+    <div class="result-body">
+      <!-- Differential Diagnoses -->
+      {% if diagnosis.differential_diagnoses %}
+      <div class="result-section">
+        <div class="result-section-title">
+          <i class="bx bx-list-check"></i>
+          Differential Diagnoses
+        </div>
+        {% for diff in diagnosis.differential_diagnoses %}
+        <div class="diff-diag-item">
+          <div class="diff-diag-badge">
+            <i class="bx bx-brain"></i>
+          </div>
+          <div class="diff-diag-content">
+            <div class="diff-diag-condition">{{ diff.condition }}</div>
+            <div class="diff-diag-reasoning">{{ diff.reasoning }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Recommended Tests -->
+      {% if diagnosis.recommended_tests %}
+      <div class="result-section">
+        <div class="result-section-title">
+          <i class="bx bx-test-tube"></i>
+          Recommended Tests
+        </div>
+        <ul class="result-list">
+          {% for test in diagnosis.recommended_tests %}
+          <li><i class="bx bx-check"></i> {{ test }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Warning Signs -->
+      {% if diagnosis.warning_signs %}
+      <div class="result-section">
+        <div class="result-section-title">
+          <i class="bx bx-error-circle"></i>
+          Warning Signs to Monitor
+        </div>
+        <ul class="result-list warning">
+          {% for sign in diagnosis.warning_signs %}
+          <li><i class="bx bx-error"></i> {{ sign }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Summary -->
+      <div class="result-section">
+        <div class="result-section-title">
+          <i class="bx bx-message-square-detail"></i>
+          Summary
+        </div>
+        <div class="result-summary">
+          {{ diagnosis.summary }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="detail-sidebar">
+    <!-- Review Status -->
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">
+        <i class="bx bx-check-shield"></i>
+        Veterinarian Review
+      </div>
+      <div class="sidebar-card-body">
+        {% if diagnosis.is_reviewed %}
+        <div class="review-status">
+          <i class="bx bx-check-circle"></i>
+          <div class="review-status-text">
+            <div class="review-status-label">Reviewed</div>
+            <div class="review-status-meta">
+              {% if diagnosis.reviewed_by %}by Dr. {{ diagnosis.reviewed_by.first_name }} {{ diagnosis.reviewed_by.last_name }}{% endif %}
+              on {{ diagnosis.reviewed_at|date:"M j, Y" }}
+            </div>
+          </div>
+        </div>
+        {% if diagnosis.review_notes %}
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-top: 10px;">
+          <strong>Notes:</strong> {{ diagnosis.review_notes }}
+        </div>
+        {% endif %}
+        {% else %}
+        <form method="post" action="{% url 'diagnostics:mark_reviewed' diagnosis.pk %}">
+          {% csrf_token %}
+          <div class="review-form-group">
+            <label class="review-form-label">Review Notes (optional)</label>
+            <textarea name="review_notes" class="review-form-textarea" placeholder="Add any clinical notes or observations..."></textarea>
+          </div>
+          <button type="submit" class="review-btn">
+            <i class="bx bx-check"></i>
+            Mark as Reviewed
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Related Diagnoses -->
+    {% if related_diagnoses %}
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">
+        <i class="bx bx-history"></i>
+        Other Diagnoses for {{ diagnosis.pet.name }}
+      </div>
+      <div class="sidebar-card-body">
+        {% for rel in related_diagnoses %}
+        <a href="{% url 'diagnostics:detail' rel.pk %}" class="related-diag-item">
+          <div class="diff-diag-badge" style="width:28px;height:28px;font-size:12px;">
+            <i class="bx bx-brain"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.85rem;">{{ rel.primary_condition|truncatechars:25 }}</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);">{{ rel.created_at|date:"M j, Y" }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Disclaimer -->
+    <div class="diag-disclaimer-small">
+      <i class="bx bx-info-circle"></i>
+      <div>
+        This AI diagnosis is for decision-support only and must be confirmed by a licensed veterinarian before any treatment.
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

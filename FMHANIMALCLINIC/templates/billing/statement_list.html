@@ -1,0 +1,625 @@
+{% extends "base/portal_admin.html" %}
+{% load static %}
+
+{% block title %}Statement of Account{% endblock %}
+
+{% block content %}
+<!-- ══════ STATEMENT OF ACCOUNT HERO ══════ -->
+{% url 'billing:statement_generator' as create_stmt_url %}
+{% include "components/page_hero.html" with title="Statement of Account" icon="bx-file-invoice" subtitle="Create and manage customer billing statements" action_url=create_stmt_url action_icon="bx-plus" action_label="Create Statement" %}
+
+<!-- Tab Bar for Status Filter -->
+<div class="c-tab-bar" style="margin-bottom: 20px;">
+  <div class="c-tab-bar__glow"></div>
+  <div class="c-tab-bar__indicator"></div>
+  <button class="c-tab-btn {% if not status_filter or status_filter == 'all' %}active{% endif %}"
+          data-tab="all" type="button" onclick="filterByStatus('all')">
+    <i class='bx bx-list-ul c-tab-btn__icon'></i> <span class="c-tab-btn__label">All</span>
+  </button>
+  <button class="c-tab-btn {% if status_filter == 'DRAFT' %}active{% endif %}"
+          data-tab="draft" type="button" onclick="filterByStatus('DRAFT')">
+    <i class='bx bx-edit c-tab-btn__icon'></i> <span class="c-tab-btn__label">Draft</span>
+    {% if draft_count > 0 %}<span class="c-tab-btn__badge">{{ draft_count }}</span>{% endif %}
+  </button>
+  <button class="c-tab-btn {% if status_filter == 'RELEASED' or status_filter == 'SENT' %}active{% endif %}"
+          data-tab="released" type="button" onclick="filterByStatus('RELEASED')">
+    <i class='bx bx-check-circle c-tab-btn__icon'></i> <span class="c-tab-btn__label">Released</span>
+  </button>
+</div>
+
+<!-- Search Bar -->
+<div class="dashboard-grid" style="grid-template-columns: 1fr; margin-bottom: 1rem;">
+  <div class="admin-table-card" style="padding: 1rem;">
+    <form method="get" class="d-flex" style="gap: 0.5rem; align-items: center;">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <i class='bx bx-search' style="font-size: 1.25rem; color: var(--text-3);"></i>
+      <input
+        type="text"
+        name="search"
+        value="{{ search_query }}"
+        placeholder="Search by statement #, patient name, or owner name..."
+        style="flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem;"
+      >
+      <button type="submit" class="btn-action outline" style="padding: 0.5rem 1rem;">
+        <i class='bx bx-search'></i> Search
+      </button>
+      {% if search_query %}
+        <a href="?status={{ status_filter }}" class="btn-action outline" style="padding: 0.5rem 1rem;">
+          <i class='bx bx-x'></i> Clear
+        </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Statements Table -->
+<div class="dashboard-grid" style="grid-template-columns: 1fr;">
+  <div class="admin-table-card">
+    <div class="table-responsive" style="overflow-x: auto;">
+      <table class="admin-table" style="min-width: 1000px;">
+        <thead>
+          <tr>
+            <th style="text-align: center; width: 130px;">Statement #</th>
+            <th style="text-align: left;">Patient</th>
+            <th style="text-align: left;">Owner</th>
+            <th style="text-align: center; width: 100px;">Date</th>
+            <th style="text-align: right; width: 100px;">Amount</th>
+            <th style="text-align: center; width: 80px;">Status</th>
+            <th style="text-align: center; width: 100px;">Customer</th>
+            <th style="text-align: center; width: 200px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for statement in page_obj %}
+          <tr>
+            <td style="text-align: center;">
+              <strong style="color: var(--primary); font-weight: 600; font-size: 0.85rem;">
+                {{ statement.statement_number }}
+              </strong>
+            </td>
+            <td style="font-weight: 600; color: var(--text-1);">
+              {{ statement.patient_name }}
+            </td>
+            <td style="color: var(--text-2);">
+              {{ statement.owner_name }}
+            </td>
+            <td style="text-align: center; color: var(--text-3); font-size: 0.85rem;">
+              {{ statement.date|date:"M j, Y" }}
+            </td>
+            <td style="text-align: right; font-weight: 600;">
+              ₱{{ statement.total_amount|floatformat:2 }}
+            </td>
+            <td style="text-align: center;">
+              {% if statement.status == 'DRAFT' %}
+                <span class="status-badge draft">Draft</span>
+              {% elif statement.status == 'RELEASED' or statement.status == 'SENT' %}
+                <span class="status-badge released">Released</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if statement.customer %}
+                <span class="status-badge linked" title="{{ statement.customer.get_full_name }}">
+                  <i class='bx bx-user'></i> Linked
+                </span>
+              {% else %}
+                <span class="status-badge walkin" title="Walk-in customer">
+                  <i class='bx bx-walk'></i> Walk-in
+                </span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              <div class="action-buttons">
+                <a href="{% url 'billing:statement_detail' statement.id %}"
+                   class="action-btn-sm primary" title="View">
+                  <i class='bx bx-show'></i>
+                </a>
+
+                <a href="{% url 'billing:edit_statement' statement.id %}"
+                   class="action-btn-sm edit" title="Edit">
+                  <i class='bx bx-edit'></i>
+                </a>
+
+                {% if statement.status == 'DRAFT' and statement.customer %}
+                  <form method="post" action="{% url 'billing:release_statement' statement.id %}"
+                        style="display: inline;"
+                        onsubmit="return confirm('Release to {{ statement.customer.get_full_name }}?')">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn-sm success" title="Release to Customer">
+                      <i class='bx bx-paper-plane'></i>
+                    </button>
+                  </form>
+                {% endif %}
+
+                <form method="post" action="{% url 'billing:delete_statement' statement.id %}"
+                      style="display: inline;"
+                      onsubmit="return confirm('Delete statement {{ statement.statement_number }}? This cannot be undone.')">
+                  {% csrf_token %}
+                  <button type="submit" class="action-btn-sm danger" title="Delete">
+                    <i class='bx bx-trash'></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 3rem;">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                <i class='bx bx-receipt' style="font-size: 4rem; color: var(--text-4); opacity: 0.3;"></i>
+                <div>
+                  <p style="font-weight: 600; color: var(--text-2); margin-bottom: 0.5rem;">No statements found</p>
+                  {% if search_query %}
+                    <p style="color: var(--text-3); font-size: 0.9rem;">Try adjusting your search terms</p>
+                  {% else %}
+                    <p style="color: var(--text-3); font-size: 0.9rem;">Create your first statement to get started</p>
+                  {% endif %}
+                </div>
+                {% if not search_query %}
+                  <a href="{% url 'billing:statement_generator' %}" class="btn-action primary" style="margin-top: 1rem;">
+                    <i class='bx bx-plus'></i> Create First Statement
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrapper">
+      <div class="pagination-info">
+        <i class='bx bx-file'></i>
+        <span>Showing <strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> of <strong>{{ page_obj.paginator.count }}</strong> statements</span>
+      </div>
+      <div class="pagination-controls">
+        <nav aria-label="Statements pagination">
+          <ul class="pagination-list">
+            <!-- First Page Button -->
+            {% if page_obj.has_previous %}
+              <li>
+                <a href="?page=1&status={{ status_filter }}&search={{ search_query }}"
+                   class="pagination-btn nav-btn" title="First Page">
+                  <i class='bx bx-chevrons-left'></i>
+                </a>
+              </li>
+            {% endif %}
+
+            <!-- Previous Button -->
+            {% if page_obj.has_previous %}
+              <li>
+                <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}"
+                   class="pagination-btn nav-btn" title="Previous">
+                  <i class='bx bx-chevron-left'></i>
+                </a>
+              </li>
+            {% else %}
+              <li>
+                <span class="pagination-btn nav-btn disabled">
+                  <i class='bx bx-chevron-left'></i>
+                </span>
+              </li>
+            {% endif %}
+
+            <!-- Page Numbers -->
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <li>
+                  <span class="pagination-btn active">
+                    {{ num }}
+                  </span>
+                </li>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li>
+                  <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}"
+                     class="pagination-btn">
+                    {{ num }}
+                  </a>
+                </li>
+              {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <li>
+                  <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}"
+                     class="pagination-btn">
+                    {{ num }}
+                  </a>
+                </li>
+              {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                <li>
+                  <span class="pagination-ellipsis">...</span>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            <!-- Next Button -->
+            {% if page_obj.has_next %}
+              <li>
+                <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search_query }}"
+                   class="pagination-btn nav-btn" title="Next">
+                  <i class='bx bx-chevron-right'></i>
+                </a>
+              </li>
+            {% else %}
+              <li>
+                <span class="pagination-btn nav-btn disabled">
+                  <i class='bx bx-chevron-right'></i>
+                </span>
+              </li>
+            {% endif %}
+
+            <!-- Last Page Button -->
+            {% if page_obj.has_next %}
+              <li>
+                <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&search={{ search_query }}"
+                   class="pagination-btn nav-btn" title="Last Page">
+                  <i class='bx bx-chevrons-right'></i>
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+
+        <!-- Quick Jump -->
+        <div class="page-jump">
+          <span>Go to</span>
+          <input type="number"
+                 id="pageJumpInput"
+                 min="1"
+                 max="{{ page_obj.paginator.num_pages }}"
+                 value="{{ page_obj.number }}"
+                 class="page-jump-input">
+          <button onclick="jumpToPage()" class="page-jump-btn" title="Jump to page">
+            <i class='bx bx-right-arrow-alt'></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.draft {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-badge.released {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.sent {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.status-badge.linked {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.walkin {
+  background: #f5f5f5;
+  color: #757575;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.action-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.action-btn-sm.primary {
+  background: var(--primary);
+  color: white;
+}
+
+.action-btn-sm.primary:hover {
+  background: var(--primary-dark);
+}
+
+.action-btn-sm.success {
+  background: #43a047;
+  color: white;
+}
+
+.action-btn-sm.success:hover {
+  background: #388e3c;
+}
+
+.action-btn-sm.edit {
+  background: #f59e0b;
+  color: white;
+}
+
+.action-btn-sm.edit:hover {
+  background: #d97706;
+}
+
+.action-btn-sm.danger {
+  background: #e53935;
+  color: white;
+}
+
+.action-btn-sm.danger:hover {
+  background: #c62828;
+}
+
+/* ══════════════════════════════════════════════ */
+/* MODERN PAGINATION STYLES */
+/* ══════════════════════════════════════════════ */
+.pagination-wrapper {
+  padding: 1.25rem 1.5rem;
+  border-top: 2px solid var(--border);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+
+.pagination-info i {
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.pagination-info strong {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination-list {
+  display: flex;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--text-1);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pagination-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.pagination-btn:hover::before {
+  opacity: 0.1;
+}
+
+.pagination-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.3);
+  transform: scale(1.05);
+}
+
+.pagination-btn.active:hover {
+  transform: scale(1.05);
+  color: white;
+}
+
+.pagination-btn.nav-btn {
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #f8f9fa, white);
+}
+
+.pagination-btn.nav-btn:hover {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-color: transparent;
+}
+
+.pagination-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f5f5f5;
+}
+
+.pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  color: var(--text-3);
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Page Jump Input */
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #f8f9fa, white);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.page-jump-input {
+  width: 60px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-1);
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.page-jump-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.page-jump-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.page-jump-btn:hover {
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+}
+
+.page-jump-btn:active {
+  transform: translateX(1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pagination-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 1rem;
+  }
+
+  .pagination-list {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .page-jump {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+function filterByStatus(status) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('status', status);
+  url.searchParams.delete('page');
+  window.location.href = url.toString();
+}
+
+function jumpToPage() {
+  const input = document.getElementById('pageJumpInput');
+  const pageNumber = parseInt(input.value);
+  const maxPages = parseInt(input.max);
+
+  if (pageNumber >= 1 && pageNumber <= maxPages) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', pageNumber);
+    window.location.href = url.toString();
+  } else {
+    input.value = {{ page_obj.number }};
+    alert('Please enter a valid page number between 1 and ' + maxPages);
+  }
+}
+
+// Allow Enter key to jump to page
+document.addEventListener('DOMContentLoaded', function() {
+  const pageInput = document.getElementById('pageJumpInput');
+  if (pageInput) {
+    pageInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        jumpToPage();
+      }
+    });
+  }
+});
+</script>
+
+{% endblock %}

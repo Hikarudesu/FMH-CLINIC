@@ -1,0 +1,464 @@
+{% extends "base/portal_user.html" %}
+{% load static %}
+
+{% block title %}My Statements{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Statement Hero Header -->
+  <div class="stmt-hero">
+    <div class="stmt-hero-inner">
+      <div class="stmt-hero-text">
+        <h1><i class="bx bx-receipt"></i> My Statements</h1>
+        <p>View your statements of account from FMH Animal Clinic</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modern Navigation Button - Shows when 6+ cards or multiple pages -->
+  {% if page_obj.paginator.count >= 6 and page_obj.paginator.num_pages > 1 %}
+  <div class="stmt-nav-section">
+    <div class="stmt-nav-badge">
+      <i class='bx bx-layer'></i>
+      <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Statements List -->
+  {% if page_obj %}
+  <div class="statements-grid">
+    {% for statement in page_obj %}
+    <div class="statement-card">
+      <div class="statement-card-header">
+        <div class="statement-number">{{ statement.statement_number }}</div>
+        <div class="statement-date">{{ statement.date|date:"F j, Y" }}</div>
+      </div>
+
+      <div class="statement-card-body">
+        <div class="statement-info-row">
+          <span class="label">Patient:</span><span class="value">{{ statement.patient_name }}</span>
+        </div>
+
+        <div class="statement-services">
+          {% if statement.consultation_fee > 0 %}<span class="service-tag">Consultation</span>{% endif %}
+          {% if statement.treatment > 0 %}<span class="service-tag">Treatment</span>{% endif %}
+          {% if statement.boarding > 0 %}<span class="service-tag">Boarding</span>{% endif %}
+          {% if statement.vaccination > 0 %}<span class="service-tag">Vaccination</span>{% endif %}
+          {% if statement.surgery > 0 %}<span class="service-tag">Surgery</span>{% endif %}
+          {% if statement.laboratory > 0 %}<span class="service-tag">Laboratory</span>{% endif %}
+          {% if statement.grooming > 0 %}<span class="service-tag">Grooming</span>{% endif %}
+          {% if statement.others > 0 %}<span class="service-tag">Others</span>{% endif %}
+        </div>
+
+        <div class="statement-totals">
+          <div class="total-row">
+            <span>Total Amount:</span>
+            <span class="amount">₱{{ statement.total_amount|floatformat:2 }}</span>
+          </div>
+          <div class="total-row">
+            <span>Deposit:</span>
+            <span>₱{{ statement.deposit|floatformat:2 }}</span>
+          </div>
+          <div class="total-row balance">
+            <span>Balance Due:</span>
+            <span class="{% if statement.balance > 0 %}unpaid{% else %}paid{% endif %}">
+              ₱{{ statement.balance|floatformat:2 }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="statement-card-footer">
+        <a href="{% url 'billing:view_statement' statement.id %}" class="btn-view">
+          <i class='bx bx-show'></i> View Statement
+        </a>
+        <a href="{% url 'billing:view_statement' statement.id %}" class="btn-print" target="_blank" title="Print">
+          <i class='bx bx-printer'></i>
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="statement-pagination">
+    <div class="pagination-info">
+      Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} statements
+    </div>
+    <div class="pagination-controls">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-btn">
+          <i class='bx bx-chevron-left'></i>
+        </a>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <span class="page-btn active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-btn">
+          <i class='bx bx-chevron-right'></i>
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="empty-state">
+    <i class='bx bx-receipt'></i>
+    <h3>No Statements Yet</h3>
+    <p>You don't have any statements of account available.</p>
+    <p class="small">Statements will appear here once your veterinarian creates them.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+.statement-page-header {
+  margin-bottom: 2rem;
+}
+
+.statement-page-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.statement-page-header p {
+  color: var(--text-2);
+  margin: 0;
+}
+
+.statements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  animation: fadeUp 0.4s ease both;
+}
+
+.statement-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.statement-card-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statement-number {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.statement-date {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.statement-card-body {
+  padding: 1.25rem;
+}
+
+.statement-info-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.statement-info-row .label {
+  color: var(--text-3);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.statement-info-row .value {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.statement-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.service-tag {
+  background: var(--surface-2);
+  color: var(--text-2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statement-totals {
+  background: var(--surface-2);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: 0.9rem;
+}
+
+.total-row .amount {
+  font-weight: 600;
+}
+
+.total-row.balance {
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.total-row.balance .unpaid {
+  color: #e65100;
+}
+
+.total-row.balance .paid {
+  color: #2e7d32;
+}
+
+.statement-card-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.2s ease;
+}
+
+.btn-view:hover {
+  background: var(--primary-dark);
+  color: white;
+}
+
+.btn-print {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-size: 1.25rem;
+  transition: background 0.2s ease;
+}
+
+.btn-print:hover {
+  background: var(--border);
+  color: var(--text-1);
+}
+
+.statement-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2.5rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pagination-info {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: var(--surface);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+}
+
+.page-btn:hover:not(.active) {
+  background: var(--bg);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 150, 136, 0.15);
+}
+
+.page-btn.active {
+  background: linear-gradient(135deg, var(--primary) 0%, #00a896 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(0, 150, 136, 0.3);
+  font-weight: 700;
+}
+
+.page-btn.active:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0, 150, 136, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .statements-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .statements-grid {
+    grid-template-columns: 1fr;
+  }
+  .statement-pagination {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .pagination-controls {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Modern Navigation Section ── */
+.stmt-nav-section {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0 1rem;
+  animation: fadeUp 0.4s ease both;
+}
+
+.stmt-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, rgba(0, 150, 136, 0.1) 0%, rgba(0, 150, 136, 0.05) 100%);
+  border: 1.5px solid rgba(0, 150, 136, 0.2);
+  border-radius: 24px;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.stmt-nav-badge:hover {
+  background: linear-gradient(135deg, rgba(0, 150, 136, 0.15) 0%, rgba(0, 150, 136, 0.08) 100%);
+  border-color: rgba(0, 150, 136, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 150, 136, 0.15);
+}
+
+.stmt-nav-badge i {
+  font-size: 1rem;
+  display: flex;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.empty-state i {
+  font-size: 5rem;
+  color: var(--text-4);
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  color: var(--text-2);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: var(--text-3);
+  margin-bottom: 0.25rem;
+}
+
+.empty-state .small {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .statements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .statement-pagination {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+</style>
+
+{% endblock %}

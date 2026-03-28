@@ -1,0 +1,593 @@
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENT — Filter Bar  ·  Premium Single-Row Layout
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Container ── */
+.c-filter-bar {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-bottom: 22px;
+  overflow: visible;
+  box-shadow: var(--shadow-card);
+  animation: filterBarIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+  z-index: 100;
+}
+
+@keyframes filterBarIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Animated gradient border glow */
+.c-filter-bar__glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 150, 136, 0.08) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 150, 136, 0.06) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.8;
+  transition: opacity 0.4s ease;
+}
+
+.c-filter-bar:hover .c-filter-bar__glow {
+  opacity: 1;
+}
+
+/* ── Form Layout ── */
+.c-filter-bar__form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  z-index: 2;
+}
+
+/* ─────────────────────────────────────────
+   SEARCH SECTION (Takes remaining space)
+   ───────────────────────────────────────── */
+.c-filter-bar__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 250px;
+  height: 48px;
+  z-index: 110;
+  background: rgba(0,0,0,0.02);
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.c-filter-bar__search:focus-within {
+  background: var(--surface);
+  border-color: rgba(0, 150, 136, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.08);
+}
+
+.c-filter-bar__search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 1.15rem;
+  color: var(--text-3);
+  pointer-events: none;
+  z-index: 3;
+  transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.c-filter-bar__search:focus-within .c-filter-bar__search-icon {
+  color: var(--primary);
+  transform: scale(1.08);
+}
+
+.c-filter-bar__search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 44px 0 42px;
+  border: none;
+  background: transparent;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-1);
+  font-family: inherit;
+  outline: none;
+  border-radius: inherit;
+  letter-spacing: 0.01em;
+}
+
+.c-filter-bar__search-input::placeholder {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+/* Search autocomplete dropdown wrapper */
+.c-filter-bar__search .search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 9999 !important;
+  display: none;
+  animation: dropdownIn 0.2s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.c-filter-bar__search .search-dropdown.active {
+  display: block;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Search Dropdown Items */
+.search-dropdown-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.search-dropdown-item:hover,
+.search-dropdown-item.active {
+  background: rgba(0, 150, 136, 0.06);
+}
+
+.search-dropdown-item i.bx-calendar-event,
+.search-dropdown-item i.bx-user,
+.search-dropdown-item i.bxs-dog {
+  font-size: 1.2rem;
+  color: var(--primary);
+  width: 24px;
+  text-align: center;
+}
+
+.search-dropdown-item .item-info {
+  flex: 1;
+}
+
+.search-dropdown-item .item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.search-dropdown-item .item-sub {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.search-dropdown-highlight {
+  background: rgba(0, 150, 136, 0.15);
+  color: var(--primary);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.search-dropdown-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-dropdown-empty i {
+  font-size: 1.5rem;
+  opacity: 0.5;
+}
+
+/* Keyboard shortcut badge */
+.c-filter-bar__shortcut {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-3);
+  pointer-events: none;
+  opacity: 1;
+  transition: all 0.3s ease;
+  z-index: 3;
+}
+
+.c-filter-bar__search:focus-within .c-filter-bar__shortcut {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+/* ─────────────────────────────────────────
+   FILTER DROPDOWNS ROW
+   ───────────────────────────────────────── */
+.c-filter-bar__filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 105;
+}
+
+/* Individual filter dropdown wrapper */
+.c-filter-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Elevate the container itself when active/focused so its dropdown doesn't render behind later siblings */
+.c-filter-dropdown:hover,
+.c-filter-dropdown:focus-within,
+.c-filter-dropdown:has(.sd-wrap.open) {
+  z-index: 9999;
+}
+
+/* Visual trigger button */
+.c-filter-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.c-filter-dropdown__trigger:hover {
+  background: rgba(0, 150, 136, 0.04);
+  color: var(--text-1);
+  border-color: rgba(0, 150, 136, 0.15);
+}
+
+/* Active state — filter is selected */
+.c-filter-dropdown__trigger.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 150, 136, 0.25);
+}
+
+.c-filter-dropdown__trigger .prefix {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.c-filter-dropdown__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.c-filter-dropdown__trigger.active .c-filter-dropdown__icon {
+  opacity: 1;
+}
+
+.c-filter-dropdown__arrow {
+  font-size: 0.8rem;
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+/* The native select — invisible */
+.c-filter-dropdown__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  z-index: 110;
+}
+
+/* ── Clear Button ── */
+.c-filter-bar__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(230, 57, 70, 0.1);
+  color: #e63946;
+  font-size: 1.2rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.c-filter-bar__clear span {
+  display: none; /* Hide text on clear to save space */
+}
+
+.c-filter-bar__clear:hover {
+  background: #e63946;
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* ═══════════════════════════
+   Z-INDEX FIXES FOR DROPDOWNS
+   ═══════════════════════════ */
+.c-filter-bar .sd-wrap {
+  z-index: 200;
+}
+.c-filter-bar .sd-wrap.open {
+  z-index: 9998;
+}
+.c-filter-bar .sd-dropdown {
+  z-index: 9998 !important;
+}
+
+/* Ensure the last dropdown aligns right instead of left to prevent clipping off-screen */
+.c-filter-bar__filters .c-filter-dropdown:last-of-type .sd-dropdown {
+  left: auto !important;
+  right: 0 !important;
+}
+
+/* ══════════════════════════
+    DARK MODE
+   ══════════════════════════ */
+[data-theme="dark"] .c-filter-bar {
+  background: rgba(25, 25, 25, 0.6);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+}
+
+[data-theme="dark"] .c-filter-bar__search {
+  background: rgba(0,0,0,0.15);
+}
+
+[data-theme="dark"] .c-filter-bar__search:focus-within {
+  background: rgba(0, 150, 136, 0.08);
+}
+
+[data-theme="dark"] .c-filter-bar__search .search-dropdown {
+  background: var(--surface);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .c-filter-dropdown__trigger {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .c-filter-dropdown__trigger.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ══════════════════════════
+    RESPONSIVE
+   ══════════════════════════ */
+@media (max-width: 1024px) {
+  .c-filter-bar {
+    border-radius: 14px;
+    margin-bottom: 18px;
+  }
+  
+  .c-filter-bar__form {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  
+  .c-filter-bar__search {
+    height: 44px;
+    min-width: 200px;
+  }
+  
+  .c-filter-dropdown__trigger {
+    height: 38px;
+    padding: 0 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .c-filter-bar__form {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .c-filter-bar__search {
+    width: 100%;
+    min-width: 100%;
+  }
+  .c-filter-bar__filters {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .c-filter-dropdown {
+    flex: 1 1 calc(50% - 4px); /* Two columns on mobile */
+    min-width: 140px;
+  }
+  .c-filter-dropdown__trigger {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 12px;
+  }
+  /* Remove width restriction for dropdown panels on mobile */
+  .c-filter-bar__filters .c-filter-dropdown .sd-dropdown {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .c-filter-bar {
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .c-filter-bar__form {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .c-filter-bar__search {
+    height: 42px;
+    border-radius: 10px;
+  }
+  
+  .c-filter-bar__search-input {
+    font-size: 0.88rem;
+    padding: 0 40px 0 38px;
+  }
+  
+  .c-filter-bar__search-icon {
+    left: 12px;
+    font-size: 1.1rem;
+  }
+  
+  .c-filter-bar__shortcut {
+    display: none;
+  }
+  
+  .c-filter-dropdown__trigger {
+    height: 36px;
+    font-size: 0.78rem;
+    border-radius: 8px;
+  }
+  
+  .c-filter-bar__clear {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .c-filter-bar__form {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .c-filter-bar__search {
+    height: 40px;
+  }
+  
+  .c-filter-bar__search-input {
+    font-size: 0.85rem;
+  }
+  
+  .c-filter-dropdown {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 120px;
+  }
+  
+  .c-filter-dropdown__trigger {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 0.75rem;
+    gap: 6px;
+  }
+  
+  .c-filter-dropdown__icon {
+    font-size: 0.9rem;
+  }
+  
+  .c-filter-bar__clear {
+    width: 34px;
+    height: 34px;
+  }
+  
+  /* Search dropdown mobile optimization */
+  .c-filter-bar__search .search-dropdown {
+    max-height: 250px;
+    border-radius: 10px;
+  }
+  
+  .search-dropdown-item {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+  
+  .search-dropdown-item .item-name {
+    font-size: 0.82rem;
+  }
+  
+  .search-dropdown-item .item-sub {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .c-filter-bar__form {
+    padding: 8px;
+  }
+  
+  .c-filter-dropdown {
+    flex: 1 1 100%; /* Single column on very small screens */
+  }
+  
+  .c-filter-dropdown__trigger {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 0.78rem;
+  }
+  
+  .c-filter-dropdown__trigger .prefix {
+    display: none; /* Hide prefix text on small mobile */
+  }
+  
+  .c-filter-bar__clear {
+    width: 100%;
+    border-radius: 8px;
+    height: 36px;
+  }
+  
+  .c-filter-bar__clear span {
+    display: inline; /* Show text on small screens where button is full width */
+    margin-left: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+}

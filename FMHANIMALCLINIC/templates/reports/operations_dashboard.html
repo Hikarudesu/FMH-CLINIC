@@ -1,0 +1,217 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Operations Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Operations Dashboard</h1>
+    <p class="page-subtitle">Appointments, inventory, and patient analytics</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px; align-items: center;">
+    <a href="{% url 'reports:finance_dashboard' %}" class="btn-action outline">
+      <i class='bx bx-dollar-circle'></i> Finance
+    </a>
+    <a href="{% url 'reports:customer_analytics' %}" class="btn-action outline">
+      <i class='bx bx-group'></i> Customers
+    </a>
+  </div>
+</div>
+
+<!-- Today's Appointments -->
+<div class="admin-card" style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Today's Appointments</h3>
+    <a href="{% url 'appointments:admin_list' %}" style="font-size: 13px; color: var(--primary); text-decoration: none;">View All <i class='bx bx-right-arrow-alt'></i></a>
+  </div>
+  <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+    <div style="text-align: center; padding: 16px; background: var(--bg); border-radius: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: var(--text-primary);">{{ today_stats.total }}</div>
+      <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total</div>
+    </div>
+    <div style="text-align: center; padding: 16px; background: #fff3e0; border-radius: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: #e65100;">{{ today_stats.pending }}</div>
+      <div style="font-size: 12px; color: #e65100; text-transform: uppercase;">Pending</div>
+    </div>
+    <div style="text-align: center; padding: 16px; background: #e3f2fd; border-radius: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: #1565c0;">{{ today_stats.confirmed }}</div>
+      <div style="font-size: 12px; color: #1565c0; text-transform: uppercase;">Confirmed</div>
+    </div>
+    <div style="text-align: center; padding: 16px; background: #e8f5e9; border-radius: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: #2e7d32;">{{ today_stats.completed }}</div>
+      <div style="font-size: 12px; color: #2e7d32; text-transform: uppercase;">Completed</div>
+    </div>
+    <div style="text-align: center; padding: 16px; background: #ffebee; border-radius: 12px;">
+      <div style="font-size: 28px; font-weight: 700; color: #c62828;">{{ today_stats.cancelled }}</div>
+      <div style="font-size: 12px; color: #c62828; text-transform: uppercase;">Cancelled</div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Monthly Appointments -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">This Month's Appointments</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+      <div style="text-align: center; padding: 16px; background: var(--bg); border-radius: 12px;">
+        <div style="font-size: 24px; font-weight: 700;">{{ month_stats.total }}</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Total</div>
+      </div>
+      <div style="text-align: center; padding: 16px; background: var(--bg); border-radius: 12px;">
+        <div style="font-size: 24px; font-weight: 700; color: var(--primary);">{{ month_stats.completion_rate }}%</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Completion Rate</div>
+      </div>
+    </div>
+    <!-- Completion Rate Progress Bar -->
+    <div style="margin-top: 8px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+        <span style="font-size: 12px; color: var(--text-secondary);">Completed: {{ month_stats.completed }}</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">Cancelled: {{ month_stats.cancelled }}</span>
+      </div>
+      <div style="height: 8px; background: #ffebee; border-radius: 4px; overflow: hidden;">
+        <div style="height: 100%; background: #4caf50; border-radius: 4px; width: {{ month_stats.completion_rate }}%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory Alerts -->
+  <div class="admin-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Inventory Alerts</h3>
+      <a href="{% url 'inventory:super_admin_stock_monitoring' %}" style="font-size: 13px; color: var(--primary); text-decoration: none;">View All <i class='bx bx-right-arrow-alt'></i></a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; {% if low_stock > 0 %}background: #fff3e0;{% else %}background: var(--bg);{% endif %}">
+        <div style="width: 40px; height: 40px; background: {% if low_stock > 0 %}#ff9800{% else %}#9e9e9e{% endif %}; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <i class='bx bx-error-alt' style="font-size: 20px; color: white;"></i>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">Low Stock Items</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">Items below minimum stock level</div>
+        </div>
+        <div style="font-size: 24px; font-weight: 700; {% if low_stock > 0 %}color: #e65100;{% else %}color: var(--text-secondary);{% endif %}">{{ low_stock }}</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; {% if out_of_stock > 0 %}background: #ffebee;{% else %}background: var(--bg);{% endif %}">
+        <div style="width: 40px; height: 40px; background: {% if out_of_stock > 0 %}#c62828{% else %}#9e9e9e{% endif %}; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <i class='bx bx-x-circle' style="font-size: 20px; color: white;"></i>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">Out of Stock</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">Items with zero stock</div>
+        </div>
+        <div style="font-size: 24px; font-weight: 700; {% if out_of_stock > 0 %}color: #c62828;{% else %}color: var(--text-secondary);{% endif %}">{{ out_of_stock }}</div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; {% if expiring_soon > 0 %}background: #fff8e1;{% else %}background: var(--bg);{% endif %}">
+        <div style="width: 40px; height: 40px; background: {% if expiring_soon > 0 %}#f9a825{% else %}#9e9e9e{% endif %}; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <i class='bx bx-time-five' style="font-size: 20px; color: white;"></i>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">Expiring Soon</div>
+          <div style="font-size: 12px; color: var(--text-secondary);">Items expiring within 30 days</div>
+        </div>
+        <div style="font-size: 24px; font-weight: 700; {% if expiring_soon > 0 %}color: #f57f17;{% else %}color: var(--text-secondary);{% endif %}">{{ expiring_soon }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Appointments by Reason -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Appointments by Reason (This Month)</h3>
+    <div style="position: relative; height: 280px;">
+      <canvas id="reasonChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Patient Stats -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Patient Statistics</h3>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: var(--bg); border-radius: 12px;">
+        <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <i class='bx bxs-dog' style="font-size: 24px; color: #1565c0;"></i>
+        </div>
+        <div>
+          <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Active Patients</div>
+          <div style="font-size: 24px; font-weight: 700;">{{ total_patients }}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: var(--bg); border-radius: 12px;">
+        <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <i class='bx bx-plus-circle' style="font-size: 24px; color: #2e7d32;"></i>
+        </div>
+        <div>
+          <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">New This Month</div>
+          <div style="font-size: 24px; font-weight: 700; color: #2e7d32;">{{ new_patients_month }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Appointments by Branch (Admin only) -->
+{% if by_branch %}
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Appointments by Branch (This Month)</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Branch</th>
+          <th style="text-align: center;">Appointments</th>
+          <th>Distribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for branch in by_branch %}
+        <tr>
+          <td style="font-weight: 600;">{{ branch.branch__name }}</td>
+          <td style="text-align: center; font-weight: 600;">{{ branch.count }}</td>
+          <td>
+            {% if month_stats.total > 0 %}
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--primary); border-radius: 4px; width: {% widthratio branch.count month_stats.total 100 %}%;"></div>
+              </div>
+              <span style="font-size: 12px; color: var(--text-secondary); min-width: 40px;">{% widthratio branch.count month_stats.total 100 %}%</span>
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const reasonLabels = [{% for r in by_reason %}'{{ r.reason }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const reasonData = [{% for r in by_reason %}{{ r.count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const reasonColors = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#607d8b'];
+
+  if (reasonLabels.length > 0) {
+    new Chart(document.getElementById('reasonChart').getContext('2d'), {
+      type: 'pie',
+      data: {
+        labels: reasonLabels,
+        datasets: [{ data: reasonData, backgroundColor: reasonColors.slice(0, reasonLabels.length), borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

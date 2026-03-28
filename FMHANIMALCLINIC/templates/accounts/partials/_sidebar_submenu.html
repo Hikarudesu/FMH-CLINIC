@@ -1,0 +1,24 @@
+{% load static %}
+{# Sidebar submenu partial template for permission-based rendering #}
+{% if has_items %}
+<div class="sidebar-item has-submenu">
+  <a
+    href="#"
+    class="sidebar-link"
+    id="{{ menu_id }}Toggle"
+  >
+    <i class="bx {{ icon }}"></i><span>{{ label }}</span>
+    <span class="submenu-arrow"><i class="bx bx-chevron-right"></i></span>
+  </a>
+  <div class="sidebar-submenu" id="{{ menu_id }}">
+    {% for item in items %}
+    <a
+      href="{% url item.url_name %}"
+      class="sidebar-submenu-link"
+    >
+      <i class="bx {{ item.icon }}"></i><span>{{ item.label }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

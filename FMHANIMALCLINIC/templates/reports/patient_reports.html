@@ -1,0 +1,203 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Patient Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Patient Reports</h1>
+    <p class="page-subtitle">Patient census, treatments, and follow-up compliance</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px;">
+    <a href="{% url 'reports:operations_dashboard' %}" class="btn-action outline"><i class='bx bx-arrow-back'></i> Dashboard</a>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bxs-dog' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Patients</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ total_patients }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-plus-circle' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">New This Month</div>
+        <div style="font-size: 22px; font-weight: 700; color: #2e7d32;">{{ new_this_month }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-injection' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Treatments (Month)</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ treatments_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: {% if followup_rate >= 80 %}#e8f5e9{% elif followup_rate >= 50 %}#fff3e0{% else %}#ffebee{% endif %}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-revision' style="font-size: 24px; color: {% if followup_rate >= 80 %}#2e7d32{% elif followup_rate >= 50 %}#e65100{% else %}#c62828{% endif %};"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Follow-up Rate</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ followup_rate }}%</div>
+        <div style="font-size: 11px; color: var(--text-secondary);">{{ completed_followups }}/{{ total_followups }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- By Species -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Patient Census by Species</h3>
+    {% for s in by_species %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">{{ s.species|default:"Unknown" }}</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 120px; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="height: 100%; width: {% widthratio s.count total_patients 100 %}%; background: #1565c0; border-radius: 3px;"></div>
+        </div>
+        <span style="font-weight: 600; min-width: 30px; text-align: right;">{{ s.count }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No patients registered</p>
+    {% endfor %}
+  </div>
+
+  <!-- By Clinical Status -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Clinical Status</h3>
+    {% for s in by_status %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 500;
+        {% if s.status == 'CRITICAL' %}background: #ffebee; color: #c62828;
+        {% elif s.status == 'ACTIVE' or s.status == 'HEALTHY' %}background: #e8f5e9; color: #2e7d32;
+        {% elif s.status == 'ONGOING' or s.status == 'MONITORING' %}background: #fff3e0; color: #e65100;
+        {% else %}background: var(--bg-secondary); color: var(--text-secondary);{% endif %}
+      ">{{ s.status }}</span>
+      <span style="font-weight: 600;">{{ s.count }}</span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No data</p>
+    {% endfor %}
+  </div>
+
+  <!-- Treatments by Action -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Treatments by Type (This Month)</h3>
+    {% for a in by_action %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">{{ a.action_required }}</span>
+      <span style="font-weight: 600;">{{ a.count }}</span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No treatments this month</p>
+    {% endfor %}
+  </div>
+
+  <!-- Treatments by Vet -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Treatments by Veterinarian</h3>
+    {% for v in by_vet %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">Dr. {{ v.vet__first_name }} {{ v.vet__last_name }}</span>
+      <span style="font-weight: 600;">{{ v.count }}</span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No vet-assigned treatments</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Critical Patients -->
+{% if critical_pets %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">
+    <i class='bx bx-error-circle' style="color: #c62828;"></i> Critical Patients
+  </h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Species</th>
+            <th>Breed</th>
+            <th>Owner</th>
+            <th>Contact</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pet in critical_pets %}
+          <tr>
+            <td style="font-weight: 600;">{{ pet.name }}</td>
+            <td>{{ pet.species }}</td>
+            <td>{{ pet.breed|default:"-" }}</td>
+            <td>{{ pet.owner.get_full_name|default:"-" }}</td>
+            <td style="font-size: 13px; color: var(--text-secondary);">{{ pet.owner.phone_number|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Upcoming Follow-ups -->
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">
+    <i class='bx bx-calendar-event' style="color: #1565c0;"></i> Upcoming Follow-ups (Next 7 Days)
+  </h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Follow-up Date</th>
+            <th>Patient</th>
+            <th>Veterinarian</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in upcoming_followups %}
+          <tr>
+            <td style="font-weight: 600;">{{ entry.ff_up|date:"M j, Y" }}</td>
+            <td>{{ entry.record.pet.name|default:"-" }}</td>
+            <td>{{ entry.vet.get_full_name|default:"-" }}</td>
+            <td>
+              <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+                {% if entry.action_required == 'CRITICAL' %}background: #ffebee; color: #c62828;
+                {% elif entry.action_required == 'TREATMENT' or entry.action_required == 'SURGERY' %}background: #fff3e0; color: #e65100;
+                {% else %}background: #e3f2fd; color: #1565c0;{% endif %}
+              ">{{ entry.action_required }}</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 30px;">No follow-ups scheduled in the next 7 days</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

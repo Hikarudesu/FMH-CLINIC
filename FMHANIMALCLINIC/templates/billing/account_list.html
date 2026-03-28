@@ -1,0 +1,460 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Customer Accounts{% endblock %}
+
+{% block content %}
+<!-- ══════ CUSTOMER ACCOUNTS HERO ══════ -->
+{% include "components/page_hero.html" with title="Customer Accounts" icon="bx-credit-card" subtitle="Manage customer credit accounts and balances" %}
+
+<!-- Summary Cards -->
+<div class="stats-grid" style="margin-bottom: 30px;">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class='bx bx-group'></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ total_accounts }}</h3>
+      <p>Total Accounts</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class='bx bx-money'></i>
+    </div>
+    <div class="stat-content">
+      <h3>₱{{ total_balance|floatformat:2 }}</h3>
+      <p>Total Outstanding</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class='bx bx-credit-card'></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ page_obj.paginator.count }}</h3>
+      <p>Active Accounts</p>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class='bx bx-error'></i>
+    </div>
+    <div class="stat-content">
+      <h3 id="overdueCount">-</h3>
+      <p>Over Limit</p>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Options -->
+<div class="filter-section" style="margin-bottom: 20px;">
+  <div class="filter-group">
+    <label>Balance Filter:</label>
+    <select onchange="filterByBalance(this.value)">
+      <option value="all" {% if balance_filter == 'all' %}selected{% endif %}>All Accounts</option>
+      <option value="with_balance" {% if balance_filter == 'with_balance' %}selected{% endif %}>With Outstanding Balance</option>
+      <option value="over_limit" {% if balance_filter == 'over_limit' %}selected{% endif %}>Over Credit Limit</option>
+    </select>
+  </div>
+</div>
+
+<!-- Accounts Table -->
+<div class="table-container">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Contact</th>
+        <th>Current Balance</th>
+        <th>Credit Limit</th>
+        <th>Available Credit</th>
+        <th>Last Statement</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for account in page_obj %}
+      <tr class="{% if account.current_balance > account.credit_limit %}over-limit{% elif account.current_balance > 0 %}has-balance{% endif %}">
+        <td>
+          <div class="customer-info">
+            <strong>{{ account.customer.get_full_name|default:account.customer.email }}</strong>
+            <small style="display: block; color: var(--text-2);">
+              ID: {{ account.customer.id }}
+            </small>
+          </div>
+        </td>
+        <td>
+          <div class="contact-info">
+            <div>{{ account.customer.email }}</div>
+            <small>{{ account.customer.phone_number|default:"No phone" }}</small>
+          </div>
+        </td>
+        <td class="balance-cell">
+          <span class="balance-amount {% if account.current_balance > 0 %}has-balance{% endif %}">
+            ₱{{ account.current_balance|floatformat:2 }}
+          </span>
+        </td>
+        <td>
+          <span class="credit-limit">₱{{ account.credit_limit|floatformat:2 }}</span>
+        </td>
+        <td>
+          <span class="available-credit {% if account.available_credit < 0 %}negative{% endif %}">
+            ₱{{ account.available_credit|floatformat:2 }}
+          </span>
+        </td>
+        <td>
+          {% if account.last_statement_date %}
+            {{ account.last_statement_date|date:"M j, Y" }}
+          {% else %}
+            <span style="color: var(--text-3);">Never</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="action-buttons">
+            <a href="{% url 'billing:account_detail' account.customer.id %}"
+               class="btn-action small" title="View Account">
+              <i class='bx bx-folder-open'></i>
+            </a>
+
+            {% if account.current_balance > 0 %}
+            <a href="{% url 'billing:generate_statement' account.customer.id %}"
+               class="btn-action small primary" title="Generate Statement">
+              <i class='bx bx-receipt'></i>
+            </a>
+            {% endif %}
+
+            <button onclick="addPaymentModal({{ account.customer.id }}, '{{ account.customer.get_full_name|default:account.customer.email }}', {{ account.current_balance }})"
+                    class="btn-action small success" title="Add Payment">
+              <i class='bx bx-plus'></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="empty-state">
+          <div style="text-align: center; padding: 40px;">
+            <i class='bx bx-group' style="font-size: 48px; color: var(--text-3);"></i>
+            <h4>No customer accounts found</h4>
+            <p>Customer accounts will appear here when created through POS credit sales.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  <span class="pagination-info">
+    Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} accounts
+  </span>
+
+  <div class="pagination-controls">
+    {% if page_obj.has_previous %}
+      <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if balance_filter != 'all' %}&balance={{ balance_filter }}{% endif %}">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if balance_filter != 'all' %}&balance={{ balance_filter }}{% endif %}">Previous</a>
+    {% endif %}
+
+    <span class="current-page">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if balance_filter != 'all' %}&balance={{ balance_filter }}{% endif %}">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if balance_filter != 'all' %}&balance={{ balance_filter }}{% endif %}">Last &raquo;</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Add Payment Modal -->
+<div id="paymentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Add Payment</h3>
+      <span class="modal-close">&times;</span>
+    </div>
+    <form id="paymentForm" onsubmit="submitPayment(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Customer:</label>
+          <input type="text" id="paymentCustomer" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Current Balance:</label>
+          <input type="text" id="currentBalance" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="paymentAmount">Payment Amount: *</label>
+          <input type="number" id="paymentAmount" step="0.01" min="0.01" required>
+        </div>
+
+        <div class="form-group">
+          <label for="paymentDescription">Description:</label>
+          <input type="text" id="paymentDescription" placeholder="Payment description">
+        </div>
+
+        <div class="form-group">
+          <label for="paymentReference">Reference Number:</label>
+          <input type="text" id="paymentReference" placeholder="Receipt/Check number">
+        </div>
+
+        <input type="hidden" id="customerId">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancel</button>
+        <button type="submit" class="btn-primary">Add Payment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.has-balance {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.over-limit {
+  background: #fff5f5;
+  border-left: 4px solid #e74c3c;
+}
+
+.over-limit .available-credit,
+.negative {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.balance-amount.has-balance {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.filter-section {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 15px;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.filter-group select {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.customer-info strong {
+  color: var(--text);
+}
+
+.contact-info div {
+  font-size: 14px;
+}
+
+.contact-info small {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action.small {
+  padding: 6px 8px;
+  font-size: 12px;
+  min-width: auto;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: var(--surface);
+  margin: 5% auto;
+  padding: 0;
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.modal-close {
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-2);
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 25px;
+}
+
+.modal-footer {
+  padding: 20px 25px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.form-group input:readonly {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+</style>
+
+<script>
+function searchAccounts() {
+  const query = document.querySelector('input[placeholder="Search customers..."]').value;
+  const url = new URL(window.location);
+  if (query) {
+    url.searchParams.set('search', query);
+  } else {
+    url.searchParams.delete('search');
+  }
+  url.searchParams.delete('page');
+  window.location.href = url;
+}
+
+function filterByBalance(value) {
+  const url = new URL(window.location);
+  if (value === 'all') {
+    url.searchParams.delete('balance');
+  } else {
+    url.searchParams.set('balance', value);
+  }
+  url.searchParams.delete('page');
+  window.location.href = url;
+}
+
+function addPaymentModal(customerId, customerName, currentBalance) {
+  document.getElementById('customerId').value = customerId;
+  document.getElementById('paymentCustomer').value = customerName;
+  document.getElementById('currentBalance').value = '₱' + currentBalance.toFixed(2);
+  document.getElementById('paymentAmount').value = '';
+  document.getElementById('paymentDescription').value = '';
+  document.getElementById('paymentReference').value = '';
+  document.getElementById('paymentModal').style.display = 'block';
+}
+
+function closePaymentModal() {
+  document.getElementById('paymentModal').style.display = 'none';
+}
+
+function submitPayment(event) {
+  event.preventDefault();
+
+  const formData = new FormData();
+  formData.append('amount', document.getElementById('paymentAmount').value);
+  formData.append('description', document.getElementById('paymentDescription').value || 'Manual payment');
+  formData.append('reference', document.getElementById('paymentReference').value);
+  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+  const customerId = document.getElementById('customerId').value;
+
+  fetch(`/billing/accounts/${customerId}/payment/`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      location.reload();
+    } else {
+      alert('Error: ' + data.error);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while processing the payment.');
+  });
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('paymentModal');
+  if (event.target === modal) {
+    closePaymentModal();
+  }
+}
+
+// Calculate over limit count
+document.addEventListener('DOMContentLoaded', function() {
+  const overLimitRows = document.querySelectorAll('tr.over-limit');
+  document.getElementById('overdueCount').textContent = overLimitRows.length;
+});
+</script>
+
+{% csrf_token %}
+{% endblock %}

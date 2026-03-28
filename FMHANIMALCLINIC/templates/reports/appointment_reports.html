@@ -1,0 +1,239 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Appointment Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Appointment Reports</h1>
+    <p class="page-subtitle">Comprehensive appointment analytics and trends</p>
+  </div>
+  <div class="page-header-actions" style="display: flex; gap: 12px;">
+    <a href="{% url 'reports:operations_dashboard' %}" class="btn-action outline"><i class='bx bx-arrow-back'></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="admin-card" style="margin-bottom: 24px;">
+  <form method="GET" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">From</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="filter-input">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">To</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="filter-input">
+    </div>
+    <button type="submit" class="btn-action primary" style="height: 40px;"><i class='bx bx-filter-alt'></i> Apply</button>
+  </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e3f2fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-calendar-check' style="font-size: 24px; color: #1565c0;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Total Appts</div>
+        <div style="font-size: 22px; font-weight: 700;">{{ total }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-check-circle' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Completed</div>
+        <div style="font-size: 22px; font-weight: 700; color: #2e7d32;">{{ completed }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #ffebee; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-x-circle' style="font-size: 24px; color: #c62828;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Cancelled</div>
+        <div style="font-size: 22px; font-weight: 700; color: #c62828;">{{ cancelled }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #fff3e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-error' style="font-size: 24px; color: #e65100;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Cancel Rate</div>
+        <div style="font-size: 22px; font-weight: 700; color: #e65100;">{{ no_show_rate }}%</div>
+      </div>
+    </div>
+  </div>
+  <div class="admin-card">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 48px; height: 48px; background: #e8f5e9; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <i class='bx bx-dollar-circle' style="font-size: 24px; color: #2e7d32;"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase;">Conversion</div>
+        <div style="font-size: 22px; font-weight: 700; color: #2e7d32;">{{ conversion_rate }}%</div>
+        <div style="font-size: 11px; color: var(--text-secondary);">{{ with_sale }} → ₱{{ conversion_revenue|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- By Status -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Status</h3>
+    {% for s in by_status %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">{{ s.status }}</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 100px; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="height: 100%; width: {% widthratio s.count total 100 %}%; background: var(--primary); border-radius: 3px;"></div>
+        </div>
+        <span style="font-weight: 600; min-width: 30px; text-align: right;">{{ s.count }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No data</p>
+    {% endfor %}
+  </div>
+
+  <!-- By Branch -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Branch</h3>
+    {% for b in by_branch %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">{{ b.branch__name }}</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 100px; height: 6px; background: var(--bg-secondary); border-radius: 3px; overflow: hidden;">
+          <div style="height: 100%; width: {% widthratio b.count total 100 %}%; background: #1565c0; border-radius: 3px;"></div>
+        </div>
+        <span style="font-weight: 600; min-width: 30px; text-align: right;">{{ b.count }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No data</p>
+    {% endfor %}
+  </div>
+
+  <!-- By Veterinarian -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Veterinarian</h3>
+    {% for v in by_vet %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">Dr. {{ v.preferred_vet__first_name }} {{ v.preferred_vet__last_name }}</span>
+      <span style="font-weight: 600;">{{ v.count }}</span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No vet-assigned appointments</p>
+    {% endfor %}
+  </div>
+
+  <!-- By Source -->
+  <div class="admin-card">
+    <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Source</h3>
+    {% for s in by_source %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+      <span style="font-weight: 500;">
+        <span style="padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+          {% if s.source == 'PORTAL' %}background: #e3f2fd; color: #1565c0;
+          {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}
+        ">{{ s.source }}</span>
+      </span>
+      <span style="font-weight: 600;">{{ s.count }}</span>
+    </div>
+    {% empty %}
+    <p style="color: var(--text-secondary); text-align: center; padding: 20px;">No data</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- By Reason -->
+{% if by_reason %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">By Reason</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Reason</th>
+          <th style="text-align: center;">Count</th>
+          <th style="text-align: center;">% of Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in by_reason %}
+        <tr>
+          <td style="font-weight: 500;">{{ r.reason|default:"Not Specified" }}</td>
+          <td style="text-align: center;">{{ r.count }}</td>
+          <td style="text-align: center;">{% widthratio r.count total 100 %}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Peak Hours -->
+{% if peak_hours %}
+<div class="admin-card" style="margin-bottom: 24px;">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Peak Hours</h3>
+  <div style="display: flex; gap: 8px; align-items: flex-end; height: 150px; padding: 0 16px;">
+    {% for h in peak_hours %}
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <span style="font-size: 11px; font-weight: 600;">{{ h.count }}</span>
+      <div style="width: 100%; background: var(--primary); border-radius: 4px 4px 0 0; min-height: 4px;
+        {% if peak_hours.0.count %}height: {% widthratio h.count peak_hours.0.count 120 %}px;{% endif %}
+      "></div>
+      <span style="font-size: 10px; color: var(--text-secondary);">{{ h.appointment_time__hour }}:00</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Daily Trend -->
+{% if peak_days %}
+<div class="admin-card">
+  <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Daily Appointment Volume</h3>
+  <div class="admin-table-card" style="box-shadow: none; border: none;">
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th style="text-align: center;">Appointments</th>
+            <th>Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in peak_days %}
+          <tr>
+            <td style="font-weight: 500;">{{ d.day|date:"M j, Y (D)" }}</td>
+            <td style="text-align: center; font-weight: 600;">{{ d.count }}</td>
+            <td>
+              <div style="width: 200px; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; background: var(--primary); border-radius: 4px;
+                  {% with max_count=peak_days.0.count %}width: {% widthratio d.count max_count 100 %}%;{% endwith %}
+                "></div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base/portal_admin.html' %}
+
+{% block title %}Branch Management{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-building-house'></i> Branch Management</h1>
+      <p>Manage clinic locations and their operations</p>
+    </div>
+    <div class="page-hero-actions">
+      <a href="{% url 'branches:add' %}" class="page-hero-btn">
+        <i class='bx bx-plus-circle'></i> Add Branch
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" style="display:contents;" id="branchFilterForm">
+    <div class="portal-search" style="margin-bottom:0; flex:1; min-width:200px;">
+      <i class='bx bx-search'></i>
+      <input type="text" name="q" placeholder="Search by name..." value="{{ q }}" id="branchSearch">
+    </div>
+    <div class="filter-actions">
+      <a href="{% url 'branches:list' %}" class="filter-btn clear"><i class='bx bx-x'></i> Clear</a>
+    </div>
+  </form>
+</div>
+
+{% if branches %}
+<!-- Branch Table -->
+<div class="admin-table-card full-width">
+  <div class="table-responsive" style="padding: 0;">
+    <table class="admin-table staff-table">
+      <thead>
+        <tr>
+          <th style="text-align: center;">Branch Info</th>
+          <th style="text-align: center;">Location</th>
+          <th style="text-align: center;">Contact</th>
+          <th style="text-align: center;">Status</th>
+          <th style="text-align: center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for branch in branches %}
+        <tr>
+          <td style="text-align: center;">
+            <div class="staff-name-cell" style="justify-content: center;">
+              <div style="text-align: left;">
+                <strong>{{ branch.name }}</strong>
+                <span class="staff-email">Code: {{ branch.branch_code|default:"N/A" }}</span>
+              </div>
+            </div>
+          </td>
+          <td style="text-align: center;">
+            <div style="font-size: 0.9rem; color: var(--text-color);">{{ branch.address }}</div>
+            <div class="text-muted" style="font-size: 0.8rem;">{{ branch.city }}, {{ branch.state }} {{ branch.zip_code }}</div>
+          </td>
+          <td style="text-align: center;">
+            <div style="font-size: 0.9rem;"><i class='bx bx-phone'></i> {{ branch.phone_number }}</div>
+            <div class="text-muted" style="font-size: 0.8rem;">{{ branch.email|default:"No email" }}</div>
+          </td>
+          <td style="text-align: center;">
+            {% if branch.is_active %}
+              <span class="admin-badge active">Active</span>
+            {% else %}
+              <span class="admin-badge pending">Inactive</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            <div onclick="event.stopPropagation();" class="rec-action-grid" style="margin: 0 auto; width: max-content;">
+              <a href="{% url 'branches:edit' branch.pk %}" class="action-btn" title="Edit">
+                <i class='bx bx-edit-alt'></i>
+              </a>
+              <a href="{% url 'branches:delete' branch.pk %}" class="action-btn danger" title="Delete">
+                <i class='bx bx-trash'></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="dashboard-card full-width">
+  <div class="card-body">
+    <div class="empty-state-large">
+      <div class="empty-state-icon">
+        <i class='bx bx-building-house'></i>
+      </div>
+      <h3>No branches found</h3>
+      <p>Click the "Add Branch" button above to register a new clinic location.</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

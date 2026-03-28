@@ -1,0 +1,291 @@
+{% extends 'base/portal_admin.html' %}
+{% load currency_filters %}
+{% load static %}
+
+{% block title %}Stock Level Monitor{% endblock %}
+
+{% block content %}
+<!-- Page Hero -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-check-shield'></i> Stock Level Monitor</h1>
+      <p>Monitor low stock levels across branches</p>
+    </div>
+    <div class="page-hero-actions">
+      <a href="{% url 'inventory:super_admin_stock_monitoring' %}" class="page-hero-btn">
+        <i class='bx bx-refresh'></i> Refresh
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" action="{% url 'inventory:super_admin_stock_monitoring' %}" style="display:flex; align-items:center; gap:8px;">
+    <i class='bx bx-filter-alt'></i>
+    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-2);">Filters</span>
+    <select name="branch_id" class="filter-select sd-convert" onchange="this.form.submit()" style="min-width: 200px; margin-left: 8px;">
+      <option value="">All Branches</option>
+      {% for branch in branches %}
+        <option value="{{ branch.id }}" {% if selected_branch.id == branch.id %}selected{% endif %}>
+          {{ branch.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+<!-- Alert Summary Stats -->
+<div class="stats-grid" style="margin-bottom: 30px;">
+  <div class="stat-card orange">
+    <div class="stat-icon-bg"><i class='bx bx-error-alt'></i></div>
+    <div class="stat-label">Low Stock Items</div>
+    <div class="stat-value">{{ low_stock_count }}</div>
+    <div class="stat-sub">Below minimum threshold</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon-bg"><i class='bx bx-info-circle'></i></div>
+    <div class="stat-label">Out of Stock</div>
+    <div class="stat-value">{{ out_of_stock_count }}</div>
+    <div class="stat-sub">Immediate attention needed</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon-bg"><i class='bx bx-package'></i></div>
+    <div class="stat-label">Total Products</div>
+    <div class="stat-value">{{ total_products }}</div>
+    <div class="stat-sub">Active tracked items</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon-bg"><i class='bx bx-wallet'></i></div>
+    <div class="stat-label">Inventory Value</div>
+    <div class="stat-value">₱{{ total_inventory_value|peso }}</div>
+    <div class="stat-sub">Total asset valuation</div>
+  </div>
+</div>
+
+<!-- Branch-wise Breakdown (if applicable) -->
+{% if branch_breakdown %}
+<div class="dashboard-card" style="margin-bottom: 30px;">
+  <div class="card-header">
+    <h3>Branch-wise Stock Summary</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th>Branch</th>
+          <th>Total Products</th>
+          <th>Low Stock</th>
+          <th>Out of Stock</th>
+          <th>Inventory Value</th>
+          <th style="text-align: center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for branch_id, stats in branch_breakdown.items %}
+          <tr style="background-color: {% if stats.total > 0 %}#fff3cd{% else %}transparent{% endif %};">
+            <td style="font-weight: 600;">{{ stats.name }}</td>
+            <td>
+              <span style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+                {{ stats.product_count }}
+              </span>
+            </td>
+            <td>
+              <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+                {{ stats.low }}
+              </span>
+            </td>
+            <td>
+              <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+                {{ stats.out }}
+              </span>
+            </td>
+            <td style="font-weight: 600;">₱{{ stats.inventory_value|peso }}</td>
+            <td style="text-align: center;">
+              <a href="{% url 'inventory:super_admin_stock_monitoring' %}?branch_id={{ branch_id }}" class="small-badge">
+                View Details
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Low Stock Items Section -->
+<div class="dashboard-card" style="margin-bottom: 30px;">
+  <div class="card-header">
+    <h3 style="display: flex; align-items: center; gap: 8px;">
+      <i class='bx bx-error-alt' style="color: #ff9800;"></i>
+      Low Stock Items ({{ low_stock_count }})
+    </h3>
+  </div>
+
+  {% if low_stock %}
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Branch</th>
+          <th>Current Stock</th>
+          <th>Min. Threshold</th>
+          <th>Variance</th>
+          <th>Type</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in low_stock %}
+        <tr style="background-color: #fffbea; border-left: 4px solid #ff9800;">
+          <td style="font-weight: 600; color: var(--text-1);">{{ item.name }}</td>
+          <td>
+            <span style="background: var(--primary-light); color: var(--primary-dark); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
+              {{ item.branch.name }}
+            </span>
+          </td>
+          <td style="font-weight: 600; font-size: 1.1rem;">{{ item.stock_quantity }}</td>
+          <td style="color: var(--text-2);">{{ item.min_stock_level }}</td>
+          <td style="color: #d32f2f; font-weight: 600;">
+            -{{ item.min_stock_level|add:"-"|add:item.stock_quantity }} units
+          </td>
+          <td>
+            <span style="
+              {% if item.item_type == 'Medication' %}
+                background: #e8eaf6; color: #3949ab;
+              {% else %}
+                background: #e0f2f1; color: #00897b;
+              {% endif %}
+              padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+              {{ item.item_type }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <a href="{% url 'inventory:product_edit' item.pk %}" class="small-badge" title="Edit item">
+              <i class='bx bx-edit-alt'></i> Edit
+            </a>
+            <a href="{% url 'inventory:adjustment_new' %}?product_id={{ item.pk }}" class="small-badge" title="Adjust stock">
+              <i class='bx bx-transfer'></i> Adjust
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div style="padding: 40px; text-align: center; color: var(--text-2);">
+      <i class='bx bx-check-circle' style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; display: block;"></i>
+      <p>All items are adequately stocked!</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Out of Stock Items Section -->
+<div class="dashboard-card">
+  <div class="card-header">
+    <h3 style="display: flex; align-items: center; gap: 8px;">
+      <i class='bx bx-info-circle' style="color: #d32f2f;"></i>
+      Out of Stock Items ({{ out_of_stock_count }})
+    </h3>
+  </div>
+
+  {% if out_of_stock %}
+  <div class="table-responsive">
+    <table class="portal-table">
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Branch</th>
+          <th>Min. Threshold</th>
+          <th>Type</th>
+          <th>Last Updated</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in out_of_stock %}
+        <tr style="background-color: #ffebee; border-left: 4px solid #d32f2f;">
+          <td style="font-weight: 600; color: #d32f2f;">{{ item.name }}</td>
+          <td>
+            <span style="background: var(--primary-light); color: var(--primary-dark); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
+              {{ item.branch.name }}
+            </span>
+          </td>
+          <td style="color: var(--text-2);">{{ item.min_stock_level }}</td>
+          <td>
+            <span style="
+              {% if item.item_type == 'Medication' %}
+                background: #e8eaf6; color: #3949ab;
+              {% else %}
+                background: #e0f2f1; color: #00897b;
+              {% endif %}
+              padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+              {{ item.item_type }}
+            </span>
+          </td>
+          <td style="color: var(--text-3); font-size: 0.9rem;">
+            {{ item.updated_at|date:"M d, H:i" }}
+          </td>
+          <td style="text-align: right;">
+            <a href="{% url 'inventory:product_edit' item.pk %}" class="small-badge" title="Edit item">
+              <i class='bx bx-edit-alt'></i> Edit
+            </a>
+            <a href="{% url 'inventory:adjustment_new' %}?product_id={{ item.pk }}" class="small-badge" title="Restock">
+              <i class='bx bx-plus'></i> Restock
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div style="padding: 40px; text-align: center; color: var(--text-2);">
+      <i class='bx bx-check-circle' style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; display: block;"></i>
+      <p>No out-of-stock items!</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Custom Styles for this page -->
+<style>
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.small-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s var(--ease);
+  cursor: pointer;
+  border: none;
+}
+
+.small-badge:hover {
+  background: var(--primary);
+  color: white;
+}
+</style>
+
+{% endblock %}

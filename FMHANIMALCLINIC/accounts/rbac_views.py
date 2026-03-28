@@ -1,0 +1,458 @@
+"""Views for Role-Based Access Control (RBAC) management.
+
+Admin-only role management views. All views require:
+- User must be logged in
+- User must be admin (hierarchy >= 10) OR superuser
+- User must have appropriate 'roles' or 'staff' module permissions
+"""
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import models, transaction
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from .decorators import module_permission_required, admin_only
+from .models import User
+from .rbac_models import Module, ModulePermission, Role, SpecialPermission
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'VIEW')
+def role_list(request):
+    """List all roles with their permissions summary."""
+    from django.db.models import Count
+
+    roles = Role.objects.prefetch_related(
+        'module_permissions__module',
+        'special_permissions__permission'
+    ).annotate(
+        user_count=Count('users')
+    ).order_by('-hierarchy_level', 'name')
+
+    context = {
+        'roles': roles,
+        'active_tab': 'roles',
+    }
+    return render(request, 'accounts/roles/role_list.html', context)
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'CREATE')
+def role_create(request):
+    """Create a new role."""
+    modules = Module.objects.filter(is_active=True).order_by('display_order')
+    permission_types = ModulePermission.PermissionType.choices
+    special_permissions = SpecialPermission.objects.all()
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        # Auto-generate code from name
+        import re
+        code = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+        description = request.POST.get('description', '').strip()
+        hierarchy_level = int(request.POST.get('hierarchy_level', 0))
+        is_staff_role = request.POST.get('is_staff_role') == 'on'
+        restrict_to_branch = request.POST.get('restrict_to_branch') == 'on'
+        is_system_role = request.POST.get('is_system_role') == 'on' and request.user.is_superuser
+
+        # Validate
+        errors = []
+        if not name:
+            errors.append('Role name is required.')
+        if Role.objects.filter(code=code).exists():
+            errors.append(f'A role with a similar name already exists.')
+        if Role.objects.filter(name=name).exists():
+            errors.append(f'Role name "{name}" already exists.')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'accounts/roles/role_form.html', {
+                'modules': modules,
+                'permission_types': permission_types,
+                'special_permissions': special_permissions,
+                'form_data': request.POST,
+            })
+
+        with transaction.atomic():
+            role = Role.objects.create(
+                name=name,
+                code=code,
+                description=description,
+                hierarchy_level=hierarchy_level,
+                is_staff_role=is_staff_role,
+                restrict_to_branch=restrict_to_branch,
+                is_system_role=is_system_role,
+            )
+
+            # Add module permissions
+            for module in modules:
+                for perm_type, _ in permission_types:
+                    if request.POST.get(f'perm_{module.code}_{perm_type}'):
+                        ModulePermission.objects.create(
+                            role=role,
+                            module=module,
+                            permission_type=perm_type
+                        )
+
+            # Add special permissions
+            for sp in special_permissions:
+                if request.POST.get(f'special_{sp.code}'):
+                    role.special_permissions.create(permission=sp)
+
+        messages.success(request, f'Role "{name}" created successfully.')
+        return redirect('accounts:role_list')
+
+    context = {
+        'modules': modules,
+        'permission_types': permission_types,
+        'special_permissions': special_permissions,
+        'form_data': {},
+        'active_tab': 'roles',
+    }
+    return render(request, 'accounts/roles/role_form.html', context)
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'EDIT')
+def role_edit(request, role_id):
+    """Edit an existing role."""
+    role = get_object_or_404(Role, pk=role_id)
+
+    # Prevent editing system roles (unless superuser)
+    if role.is_system_role and not request.user.is_superuser:
+        messages.warning(request, 'System roles cannot be edited. Contact administrator.')
+        return redirect('accounts:role_list')
+
+    modules = Module.objects.filter(is_active=True).order_by('display_order')
+    permission_types = ModulePermission.PermissionType.choices
+    special_permissions = SpecialPermission.objects.all()
+
+    # Get current permissions
+    current_perms = set(
+        role.module_permissions.values_list('module__code', 'permission_type')
+    )
+    current_special = set(
+        role.special_permissions.values_list('permission__code', flat=True)
+    )
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        hierarchy_level = int(request.POST.get('hierarchy_level', 0))
+        is_staff_role = request.POST.get('is_staff_role') == 'on'
+        restrict_to_branch = request.POST.get('restrict_to_branch') == 'on'
+        is_system_role = request.POST.get('is_system_role') == 'on' and request.user.is_superuser
+
+        # Validate
+        errors = []
+        if not name:
+            errors.append('Role name is required.')
+        if Role.objects.filter(name=name).exclude(pk=role_id).exists():
+            errors.append(f'Role name "{name}" already exists.')
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, 'accounts/roles/role_form.html', {
+                'role': role,
+                'modules': modules,
+                'permission_types': permission_types,
+                'special_permissions': special_permissions,
+                'current_perms': current_perms,
+                'current_special': current_special,
+                'form_data': request.POST,
+            })
+
+        with transaction.atomic():
+            role.name = name
+            role.description = description
+            role.hierarchy_level = hierarchy_level
+            role.is_staff_role = is_staff_role
+            role.restrict_to_branch = restrict_to_branch
+            role.is_system_role = is_system_role
+            role.save()
+
+            # Update module permissions
+            role.module_permissions.all().delete()
+            for module in modules:
+                for perm_type, _ in permission_types:
+                    if request.POST.get(f'perm_{module.code}_{perm_type}'):
+                        ModulePermission.objects.create(
+                            role=role,
+                            module=module,
+                            permission_type=perm_type
+                        )
+
+            # Update special permissions
+            role.special_permissions.all().delete()
+            for sp in special_permissions:
+                if request.POST.get(f'special_{sp.code}'):
+                    role.special_permissions.create(permission=sp)
+
+        messages.success(request, f'Role "{name}" updated successfully.')
+        return redirect('accounts:role_list')
+
+    context = {
+        'role': role,
+        'modules': modules,
+        'permission_types': permission_types,
+        'special_permissions': special_permissions,
+        'current_perms': current_perms,
+        'current_special': current_special,
+        'form_data': {},
+        'active_tab': 'roles',
+    }
+    return render(request, 'accounts/roles/role_form.html', context)
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'DELETE')
+@require_POST
+def role_delete(request, role_id):
+    """Delete a role."""
+    role = get_object_or_404(Role, pk=role_id)
+
+    # Prevent deleting system roles (unless superuser)
+    if role.is_system_role and not request.user.is_superuser:
+        messages.error(request, 'System roles cannot be deleted. Contact administrator.')
+        return redirect('accounts:role_list')
+
+    # Check if role is in use
+    user_count = role.users.count()
+
+    # Non-superusers cannot delete roles with assigned users
+    if user_count > 0 and not request.user.is_superuser:
+        messages.error(
+            request,
+            f'Cannot delete role "{role.name}". It is assigned to {user_count} user(s).'
+        )
+        return redirect('accounts:role_list')
+
+    name = role.name
+
+    # If deleting a role with users, unassign them first (they'll use legacy roles)
+    if user_count > 0:
+        role.users.all().update(assigned_role=None)
+        messages.warning(
+            request,
+            f'{user_count} user(s) were unassigned from this role and reverted to legacy roles.'
+        )
+
+    role.delete()
+    messages.success(request, f'Role "{name}" deleted successfully.')
+    return redirect('accounts:role_list')
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'VIEW')
+def role_detail(request, role_id):
+    """View role details and assigned users."""
+    role = get_object_or_404(
+        Role.objects.prefetch_related(
+            'module_permissions__module',
+            'special_permissions__permission',
+            'users'
+        ),
+        pk=role_id
+    )
+
+    # Group permissions by module
+    module_perms = {}
+    for mp in role.module_permissions.all():
+        if mp.module.code not in module_perms:
+            module_perms[mp.module.code] = {
+                'module': mp.module,
+                'permissions': []
+            }
+        module_perms[mp.module.code]['permissions'].append(mp.permission_type)
+
+    context = {
+        'role': role,
+        'module_perms': module_perms,
+        'assigned_users': role.users.select_related('branch')[:50],
+        'active_tab': 'roles',
+    }
+    return render(request, 'accounts/roles/role_detail.html', context)
+
+
+# ============================================================================
+# User Role Assignment Views
+# ============================================================================
+
+@login_required
+@admin_only
+@module_permission_required('staff', 'EDIT')
+def user_role_list(request):
+    """List staff users with their role assignments.
+    
+    Pet Owners are "Shadow Users" - they are not shown in this management UI.
+    Only staff members (users with is_staff_role=True or superusers) appear here.
+    """
+    search_query = request.GET.get('q', '').strip()
+    role_filter = request.GET.get('role', '')
+
+    # Base queryset - ONLY show staff users (not Pet Owners)
+    # Pet Owners are "Shadow Users" that never appear in Role Management
+    users = User.objects.select_related('assigned_role', 'branch').filter(
+        models.Q(assigned_role__is_staff_role=True) | models.Q(is_superuser=True)
+    ).distinct()
+
+    # Apply search filter
+    if search_query:
+        users = users.filter(
+            models.Q(username__icontains=search_query) |
+            models.Q(first_name__icontains=search_query) |
+            models.Q(last_name__icontains=search_query) |
+            models.Q(email__icontains=search_query)
+        )
+
+    # Apply role filter (only staff roles)
+    if role_filter:
+        try:
+            users = users.filter(assigned_role_id=int(role_filter))
+        except ValueError:
+            pass
+
+    users = users.order_by('username')
+
+    # Get only staff roles for the filter dropdown (exclude pet owner role)
+    roles = Role.objects.filter(is_staff_role=True).order_by('-hierarchy_level', 'name')
+
+    context = {
+        'users': users,
+        'roles': roles,
+        'active_tab': 'staff',
+    }
+    return render(request, 'accounts/roles/user_role_list.html', context)
+
+
+@login_required
+@admin_only
+@module_permission_required('staff', 'EDIT')
+@require_POST
+def assign_user_role(request, user_id):
+    """Assign a role to a staff user.
+    
+    Only staff users can be modified here. Pet Owners cannot be promoted.
+    """
+    from employees.models import StaffMember
+
+    user = get_object_or_404(User, pk=user_id)
+    role_id = request.POST.get('role_id')
+
+    old_role = user.assigned_role
+
+    if role_id:
+        role = get_object_or_404(Role, pk=role_id)
+        user.assigned_role = role
+        user.save()
+
+        # Auto-create or update StaffMember if staff role
+        if role.is_staff_role:
+            # Map role codes to StaffMember positions
+            role_to_position = {
+                'veterinarian': StaffMember.Position.VETERINARIAN,
+                'vet_assistant': StaffMember.Position.VET_ASSISTANT,
+                'receptionist': StaffMember.Position.RECEPTIONIST,
+                'branch_admin': StaffMember.Position.ADMIN,
+                'superadmin': StaffMember.Position.ADMIN,
+                'admin': StaffMember.Position.ADMIN,
+            }
+            position = role_to_position.get(role.code, StaffMember.Position.RECEPTIONIST)
+
+            # Create or update StaffMember record
+            StaffMember.objects.update_or_create(
+                user=user,
+                defaults={
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'phone': user.phone_number or '',
+                    'position': position,
+                    'branch': user.branch,
+                    'is_active': True,
+                }
+            )
+
+        messages.success(request, f'Role "{role.name}" assigned to {user.username}.')
+    else:
+        user.assigned_role = None
+        user.save()
+
+        # Deactivate StaffMember if removing staff role
+        if old_role and old_role.is_staff_role:
+            try:
+                staff_profile = user.staff_profile
+                staff_profile.is_active = False
+                staff_profile.save()
+            except ObjectDoesNotExist:
+                pass  # No staff profile exists
+
+        messages.success(request, f'Role removed from {user.username}.')
+
+    # Return JSON for AJAX requests
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': f'Role updated for {user.username}',
+            'role_name': role.name if role_id else user.get_display_role()
+        })
+
+    return redirect('accounts:user_role_list')
+
+
+# ============================================================================
+# API Endpoints
+# ============================================================================
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'VIEW')
+def get_role_permissions(request, role_id):
+    """API endpoint to get role permissions (for AJAX)."""
+    role = get_object_or_404(Role, pk=role_id)
+
+    permissions = {}
+    for mp in role.module_permissions.select_related('module').all():
+        if mp.module.code not in permissions:
+            permissions[mp.module.code] = []
+        permissions[mp.module.code].append(mp.permission_type)
+
+    special = list(
+        role.special_permissions.values_list('permission__code', flat=True)
+    )
+
+    return JsonResponse({
+        'permissions': permissions,
+        'special_permissions': special,
+        'hierarchy_level': role.hierarchy_level,
+        'is_staff_role': role.is_staff_role,
+        'restrict_to_branch': role.restrict_to_branch,
+    })
+
+
+@login_required
+@admin_only
+@module_permission_required('roles', 'VIEW')
+def module_list_api(request):
+    """API endpoint to get all modules."""
+    modules = Module.objects.filter(is_active=True).order_by('display_order')
+
+    data = []
+    for module in modules:
+        data.append({
+            'code': module.code,
+            'name': module.name,
+            'icon': module.icon,
+            'description': module.description,
+        })
+
+    return JsonResponse({'modules': data})

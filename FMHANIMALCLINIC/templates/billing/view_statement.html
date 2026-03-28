@@ -1,0 +1,389 @@
+{% extends "base/portal_user.html" %}
+{% load static %}
+
+{% block title %}Statement {{ statement.statement_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="view-header">
+    <a href="{% url 'billing:my_statements' %}" class="back-btn">
+      <i class='bx bx-arrow-back'></i> Back to Statements
+    </a>
+    <button onclick="printStatement()" class="print-btn">
+      <i class='bx bx-printer'></i> Print Statement
+    </button>
+  </div>
+
+  <!-- Statement Paper -->
+  <div class="statement-wrapper">
+    <div class="statement-paper" id="printableStatement">
+
+      <!-- Header -->
+      <div class="paper-header">
+        <h1>FMH ANIMAL CLINIC</h1>
+        <h2>Statement of Account</h2>
+      </div>
+
+      <!-- Patient Info -->
+      <div class="paper-info">
+        <div class="info-line">
+          <span><strong>Patient:</strong> {{ statement.patient_name }}</span>
+          <span><strong>Date:</strong> {{ statement.date|date:"F j, Y" }}</span>
+        </div>
+        <div class="info-line">
+          <span><strong>Owner's Name:</strong> {{ statement.owner_name }}</span>
+        </div>
+      </div>
+
+      <!-- Services Table -->
+      <table class="paper-table">
+        <thead>
+          <tr>
+            <th>Particulars</th>
+            <th class="amount-col">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if statement.consultation_fee > 0 %}
+          <tr>
+            <td>
+              <strong>Prof. Fee / Consultation</strong>
+              {% if statement.consultation_description %}<br>{{ statement.consultation_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.consultation_fee|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.treatment > 0 %}
+          <tr>
+            <td>
+              <strong>Treatment</strong>
+              {% if statement.treatment_description %}<br>{{ statement.treatment_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.treatment|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.boarding > 0 %}
+          <tr>
+            <td>
+              <strong>Boarding / Confinement</strong>
+              {% if statement.boarding_description %}<br>{{ statement.boarding_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.boarding|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.vaccination > 0 %}
+          <tr>
+            <td>
+              <strong>Vaccinations</strong>
+              {% if statement.vaccination_description %}<br>{{ statement.vaccination_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.vaccination|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.surgery > 0 %}
+          <tr>
+            <td>
+              <strong>Surgery</strong>
+              {% if statement.surgery_description %}<br>{{ statement.surgery_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.surgery|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.laboratory > 0 %}
+          <tr>
+            <td>
+              <strong>Laboratory Exam</strong>
+              {% if statement.laboratory_description %}<br>{{ statement.laboratory_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.laboratory|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.grooming > 0 %}
+          <tr>
+            <td>
+              <strong>Grooming</strong>
+              {% if statement.grooming_description %}<br>{{ statement.grooming_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.grooming|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          {% if statement.others > 0 %}
+          <tr>
+            <td>
+              <strong>Others</strong>
+              {% if statement.others_description %}<br>{{ statement.others_description }}{% endif %}
+            </td>
+            <td class="amount-col">₱{{ statement.others|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+
+          <!-- Empty rows -->
+          {% if statement.consultation_fee == 0 %}
+          <tr><td><strong>Prof. Fee / Consultation</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.treatment == 0 %}
+          <tr><td><strong>Treatment</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.boarding == 0 %}
+          <tr><td><strong>Boarding / Confinement</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.vaccination == 0 %}
+          <tr><td><strong>Vaccinations</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.surgery == 0 %}
+          <tr><td><strong>Surgery</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.laboratory == 0 %}
+          <tr><td><strong>Laboratory Exam</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.grooming == 0 %}
+          <tr><td><strong>Grooming</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+          {% if statement.others == 0 %}
+          <tr><td><strong>Others</strong></td><td class="amount-col"></td></tr>
+          {% endif %}
+
+          <!-- Totals -->
+          <tr class="total-row">
+            <td><strong>Amount</strong></td>
+            <td class="amount-col"><strong>Php {{ statement.total_amount|floatformat:2 }}</strong></td>
+          </tr>
+          <tr>
+            <td>Deposit</td>
+            <td class="amount-col">{{ statement.deposit|floatformat:2 }}</td>
+          </tr>
+          <tr class="total-row">
+            <td><strong>Balance</strong></td>
+            <td class="amount-col"><strong>{{ statement.balance|floatformat:2 }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Signature -->
+      <div class="paper-signature">
+        <div class="signature-line"></div>
+        <div class="signature-label">Signature</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<style>
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-1);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.back-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.print-btn:hover {
+  background: var(--primary-dark);
+}
+
+.statement-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.statement-paper {
+  width: 100%;
+  max-width: 500px;
+  border: 2px solid #000;
+  padding: 1.5rem;
+  background: white;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+}
+
+.paper-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.paper-header h1 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.paper-header h2 {
+  font-size: 0.95rem;
+  margin: 0.25rem 0 0 0;
+  font-weight: normal;
+}
+
+.paper-info {
+  margin-bottom: 1rem;
+}
+
+.info-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.paper-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #000;
+  margin-bottom: 1rem;
+}
+
+.paper-table th,
+.paper-table td {
+  border: 1px solid #000;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+  font-size: 11px;
+}
+
+.paper-table th {
+  background: #f5f5f5;
+  font-weight: bold;
+}
+
+.paper-table .amount-col {
+  text-align: center;
+  width: 90px;
+}
+
+.paper-table .total-row td {
+  font-weight: bold;
+}
+
+.paper-signature {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.signature-line {
+  border-bottom: 1px solid #000;
+  width: 180px;
+  margin: 0 auto 0.5rem auto;
+  height: 1.5rem;
+}
+
+.signature-label {
+  font-weight: bold;
+  font-size: 11px;
+}
+
+@media print {
+  /* Hide everything except the statement paper */
+  body * {
+    visibility: hidden;
+  }
+
+  .statement-paper,
+  .statement-paper * {
+    visibility: visible;
+  }
+
+  .statement-paper {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    width: 80mm;
+    max-width: 80mm;
+    padding: 10mm;
+    margin: 0;
+    border: 2px solid #000;
+    font-size: 10px;
+  }
+
+  .paper-header h1 {
+    font-size: 14px;
+  }
+
+  .paper-header h2 {
+    font-size: 11px;
+  }
+
+  .paper-table th,
+  .paper-table td {
+    font-size: 9px;
+    padding: 3px 4px;
+  }
+
+  .paper-table .amount-col {
+    width: 60px;
+  }
+
+  .signature-line {
+    width: 120px;
+  }
+
+  .signature-label {
+    font-size: 9px;
+  }
+
+  .view-header,
+  .back-btn,
+  .print-btn,
+  nav,
+  header,
+  aside,
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+}
+</style>
+
+<script>
+function printStatement() {
+  window.print();
+}
+</script>
+
+{% endblock %}
