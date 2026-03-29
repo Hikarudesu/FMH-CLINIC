@@ -139,16 +139,8 @@
         </select>
       </div>
 
-      {% if current_filters.q or current_filters.priority or current_filters.branch %}
+      {% if current_filters.q and current_filters.q|length or current_filters.priority and current_filters.priority|length or current_filters.branch and current_filters.branch|length %}
       <a href="{% url 'inquiries:list' %}" class="c-filter-bar__clear" title="Clear Filters"><i class='bx bx-x'></i></a>
-      {% endif %}
-
-      {% if inquiries %}
-      <div style="margin-left: auto;">
-        <button type="button" class="btn-clear-all" onclick="clearAllInquiries()">
-          <i class='bx bx-trash'></i> Clear All
-        </button>
-      </div>
       {% endif %}
     </div>
   </form>
@@ -165,10 +157,7 @@
      data-phone="{{ inquiry.phone }}"
      data-branch="{% if inquiry.branch %}{{ inquiry.branch.name }}{% endif %}"
      data-href="{% url 'inquiries:detail' inquiry.pk %}">
-    
-    <!-- Status accent bar -->
-    <div class="inquiry-accent-bar"></div>
-    
+
     <div class="inquiry-card-body">
       <!-- Avatar -->
       <div class="inquiry-avatar {% if inquiry.status == 'NEW' %}avatar-new{% endif %}">
@@ -277,29 +266,6 @@
   margin: 0 auto;
 }
 
-.btn-clear-all {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 14px;
-  height: 40px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1.5px solid rgba(239, 68, 68, 0.2);
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.82rem;
-  font-family: inherit;
-}
-
-.btn-clear-all:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
 /* Stats Cards */
 .inquiry-stats {
   display: grid;
@@ -386,11 +352,12 @@
   background: var(--surface);
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  overflow: visible;
+  overflow: hidden;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
   position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .inquiry-card:hover {
@@ -435,13 +402,6 @@
   transform: scale(0.95);
 }
 
-/* Accent Bar */
-.inquiry-accent-bar {
-  width: 4px;
-  flex-shrink: 0;
-  background: var(--border-color);
-}
-
 /* Card Body */
 .inquiry-card-body {
   flex: 1;
@@ -449,6 +409,7 @@
   align-items: center;
   gap: 16px;
   padding: 16px 20px;
+  box-shadow: var(--shadow-card);
 }
 
 /* Avatar */
@@ -695,6 +656,7 @@
 
   .inquiry-card-body {
     flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   }
 
   .inquiry-header {
@@ -768,51 +730,6 @@ function deleteInquiry(event, inquiryId) {
   .catch(error => {
     console.error('Error:', error);
     alert('Error deleting inquiry. Please try again.');
-  });
-}
-
-// Clear all inquiries
-function clearAllInquiries() {
-  const inquiryCards = document.querySelectorAll('.inquiry-card');
-  if (inquiryCards.length === 0) return;
-  
-  if (!confirm(`Are you sure you want to delete all ${inquiryCards.length} inquiries on this page? This action cannot be undone.`)) {
-    return;
-  }
-  
-  const inquiryIds = Array.from(inquiryCards).map(card => {
-    const deleteBtn = card.querySelector('.inquiry-delete-btn-inline');
-    const onclickAttr = deleteBtn.getAttribute('onclick');
-    const match = onclickAttr.match(/deleteInquiry\(event,\s*(\d+)\)/);
-    return match ? parseInt(match[1]) : null;
-  }).filter(id => id !== null);
-  
-  if (inquiryIds.length === 0) return;
-  
-  const csrftoken = getCookie('csrftoken');
-  
-  fetch('{% url "inquiries:bulk_action" %}', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': csrftoken
-    },
-    body: JSON.stringify({
-      ids: inquiryIds,
-      action: 'delete'
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      window.location.reload();
-    } else {
-      alert('Error deleting inquiries: ' + (data.error || 'Unknown error'));
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('Error deleting inquiries. Please try again.');
   });
 }
 

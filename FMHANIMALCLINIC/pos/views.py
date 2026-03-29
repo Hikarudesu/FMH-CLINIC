@@ -468,6 +468,8 @@ def cancel_sale(request, sale_id):
 @module_permission_required('pos', 'VIEW')
 def sales_list(request):
     """View list of sales."""
+    from branches.models import Branch
+
     branch = request.user.branch
     sales = Sale.objects.filter(branch=branch).exclude(status=Sale.Status.PENDING)
 
@@ -475,6 +477,14 @@ def sales_list(request):
     status = request.GET.get('status')
     if status:
         sales = sales.filter(status=status)
+
+    customer_type = request.GET.get('customer_type')
+    if customer_type:
+        sales = sales.filter(customer_type=customer_type)
+
+    branch_filter = request.GET.get('branch')
+    if branch_filter:
+        sales = sales.filter(branch_id=branch_filter)
 
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
@@ -506,6 +516,8 @@ def sales_list(request):
         'sales': sales,
         'totals': totals,
         'status_choices': Sale.Status.choices,
+        'customer_type_choices': Sale.CustomerType.choices,
+        'branches': Branch.objects.filter(is_active=True).order_by('name'),
     }
     return render(request, 'pos/sales_list.html', context)
 
@@ -758,12 +770,33 @@ def refund_request(request, sale_id):
 @module_permission_required('pos', 'VIEW')
 def refund_list(request):
     """View and manage refund requests."""
+    from branches.models import Branch
+
     branch = request.user.branch
     refunds = Refund.objects.filter(sale__branch=branch).order_by('-created_at')
 
+    # Filters
     status = request.GET.get('status')
     if status:
         refunds = refunds.filter(status=status)
+
+    refund_type = request.GET.get('refund_type')
+    if refund_type:
+        refunds = refunds.filter(refund_type=refund_type)
+
+    branch_filter = request.GET.get('branch')
+    if branch_filter:
+        refunds = refunds.filter(sale__branch_id=branch_filter)
+
+    search = request.GET.get('q')
+    if search:
+        refunds = refunds.filter(
+            Q(refund_id__icontains=search) |
+            Q(sale__transaction_id__icontains=search) |
+            Q(sale__customer__first_name__icontains=search) |
+            Q(sale__customer__last_name__icontains=search) |
+            Q(sale__guest_name__icontains=search)
+        )
 
     paginator = Paginator(refunds, 10)
     page = request.GET.get('page', 1)
@@ -772,6 +805,8 @@ def refund_list(request):
     context = {
         'refunds': refunds,
         'status_choices': Refund.Status.choices,
+        'refund_type_choices': Refund.RefundType.choices,
+        'branches': Branch.objects.filter(is_active=True).order_by('name'),
     }
     return render(request, 'pos/refund_list.html', context)
 

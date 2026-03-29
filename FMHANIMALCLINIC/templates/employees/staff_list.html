@@ -83,8 +83,8 @@
 
       <!-- Clear Button -->
       {% if q or selected_branch or selected_position %}
-      <a href="{% url 'employees:staff_list' %}" class="c-filter-bar__clear">
-        <i class='bx bx-x'></i> <span>Clear</span>
+      <a href="{% url 'employees:staff_list' %}" class="c-filter-bar__clear" title="Clear Filters">
+        <i class='bx bx-x'></i>
       </a>
       {% endif %}
     </div>

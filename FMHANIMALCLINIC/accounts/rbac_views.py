@@ -24,7 +24,9 @@ from branches.models import Branch
 @module_permission_required('roles', 'VIEW')
 def role_list(request):
     """List all roles with their permissions summary."""
-    from django.db.models import Count
+    from django.db.models import Count, Q
+
+    search_query = request.GET.get('q', '').strip()
 
     roles = Role.objects.prefetch_related(
         'module_permissions__module',
@@ -33,8 +35,16 @@ def role_list(request):
         user_count=Count('users')
     ).order_by('-hierarchy_level', 'name')
 
+    if search_query:
+        roles = roles.filter(
+            Q(name__icontains=search_query) |
+            Q(code__icontains=search_query)
+        )
+
     context = {
         'roles': roles,
+        'search_value': search_query,
+        'show_clear': bool(search_query),
         'active_tab': 'roles',
     }
     return render(request, 'accounts/roles/role_list.html', context)

@@ -6,7 +6,9 @@
 
 {% block content %}
 <style>
-  /* ══════ MODERN & PREMIUM MY PETS UI ══════ */
+  /* ══════════════════════════════════════════════════════════════
+     MODERN & PREMIUM MY PETS UI
+     ══════════════════════════════════════════════════════════════ */
   
   :root {
     --glass-bg: rgba(255, 255, 255, 0.7);
@@ -199,15 +201,16 @@
     background: var(--card-gradient);
     border-radius: var(--card-radius);
     overflow: hidden;
-    box-shadow: var(--glass-shadow);
+    box-shadow: var(--shadow-card);
     border: 1px solid rgba(255, 255, 255, 0.8);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
   }
   
   .premium-pet-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 0 0 2px var(--primary);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--primary);
   }
   
   /* Decorative Card Header */
@@ -451,12 +454,13 @@
 
   /* ── Activity Sections (Lists) ── */
   .premium-activity-card {
-    background: var(--glass-bg);
-    border: 1px solid rgba(255,255,255,0.8);
-    border-radius: var(--card-radius);
-    padding: 8px;
-    box-shadow: var(--glass-shadow);
+    background: transparent;
+    border: none;
+    padding: 0;
     margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
   
   .premium-activity-item {
@@ -464,16 +468,19 @@
     align-items: center;
     gap: 16px;
     padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 16px;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
-    background: transparent;
+    box-shadow: var(--shadow-card);
   }
   
   .premium-activity-item:hover {
-    background: #ffffff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-    transform: scale(1.01);
+    background: var(--surface-light);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
   }
   
   .act-icon {
@@ -592,140 +599,6 @@
     margin: 0 auto 32px;
   }
 
-  /* ── Filter & Search Bar ── */
-  .mypets-filter-bar {
-    display: flex;
-    align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 24px;
-    height: 54px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-    position: relative;
-    z-index: 10;
-  }
-  .mypets-search-wrap-inner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 200px;
-    height: 100%;
-  }
-  .mypets-search-wrap-inner i {
-    position: absolute;
-    left: 18px;
-    font-size: 1.1rem;
-    color: var(--text-3);
-    pointer-events: none;
-  }
-  .mypets-search-input {
-    width: 100%;
-    height: 100%;
-    padding: 0 16px 0 48px;
-    border: none;
-    background: transparent;
-    font-size: 0.9rem;
-    color: var(--text-1);
-    outline: none;
-  }
-  .mypets-search-input::placeholder { color: var(--text-3); }
-  
-  .mypets-filter-divider {
-    width: 1px;
-    height: 28px;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-  
-  .mypets-filter-group {
-    display: flex;
-    align-items: center;
-    height: 100%;
-  }
-  
-  .mypets-filter-select {
-    height: 100%;
-    padding: 0 36px 0 16px;
-    border: none;
-    border-left: 1px solid var(--border);
-    background: transparent;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-1);
-    cursor: pointer;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%239197a3' d='M5 7L1 2h8z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    min-width: 140px;
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .mypets-filter-select:hover { background-color: var(--bg); color: var(--primary); }
-  .mypets-filter-select:first-child { border-left: none; }
-  
-  @media (max-width: 768px) {
-    .mypets-filter-bar { flex-direction: column; height: auto; padding: 0; }
-    .mypets-search-wrap-inner { width: 100%; height: 50px; border-bottom: 1px solid var(--border); }
-    .mypets-filter-divider { display: none; }
-    .mypets-filter-group { width: 100%; flex-wrap: wrap; height: auto; }
-    .mypets-filter-select { width: 50%; min-width: 50%; height: 50px; border-bottom: 1px solid var(--border); border-left: none; }
-    .mypets-filter-select:nth-child(even) { border-left: 1px solid var(--border); }
-  }
-
-  .mypets-no-results {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-3);
-    font-size: 0.95rem;
-    display: none;
-  }
-
-  /* ── Search Dropdown ── */
-  .search-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-    max-height: 280px;
-    overflow-y: auto;
-    z-index: 1000;
-    display: none;
-    margin-top: 4px;
-    padding: 6px 0;
-  }
-  .search-dropdown.active { display: block; }
-  .search-dropdown-item {
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-    border-bottom: 1px solid var(--border);
-  }
-  .search-dropdown-item:last-child { border-bottom: none; }
-  .search-dropdown-item:hover, .search-dropdown-item.active { background: var(--bg); }
-  .search-dropdown-item i { font-size: 18px; color: var(--primary); text-align: center; }
-  .search-dropdown-item .item-info { flex: 1; }
-  .search-dropdown-item .item-name { font-size: 0.9rem; font-weight: 600; color: var(--text-1); }
-  .search-dropdown-item .item-sub { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
-  .search-dropdown-empty { padding: 16px; text-align: center; color: var(--text-3); font-size: 0.85rem; }
-  .search-dropdown-highlight { background: rgba(0, 150, 136, 0.15); color: var(--primary); font-weight: 700; border-radius: 2px; padding: 0 2px; }
-
-  @keyframes spin { 100% { transform: rotate(360deg); } }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
   @media (max-width: 768px) {
     .mypets-premium-hero-inner { flex-direction: column; text-align: center; }
     .hero-action-group { justify-content: center; }
@@ -737,47 +610,80 @@
   }
 </style>
 
-{% if active_pets_data or inactive_pets_data %}
+{% if has_any_pets %}
   <!-- Hero Section -->
   {% url 'appointments:portal_book' as book_url %}
   {% url 'patients:add_pet' as add_pet_url %}
   {% include "components/page_hero.html" with title="My Pets" icon="bxs-dog" subtitle="Your pets' health, history, and appointments — all in one place." action_url=book_url action_label="Book Appointment" action_icon="bx-calendar-plus" action_url_2=add_pet_url action_label_2="Add Pet" action_icon_2="bx-plus-circle" icons_theme="pets" %}
 
-  {% if active_pets_data %}
-  <!-- Filter Bar -->
-  <div class="mypets-filter-bar">
-    <div class="mypets-search-wrap-inner">
-      <i class='bx bx-search'></i>
-      <input type="text" id="petSearchInput" class="mypets-search-input" placeholder="Search by owner, pet..." autocomplete="off">
-      <div class="search-dropdown" id="petSearchDropdown"></div>
-    </div>
-    <div class="mypets-filter-divider"></div>
-    <div class="mypets-filter-group">
-      <select id="statusFilter" class="mypets-filter-select sd-convert">
-        <option value="all">All Status</option>
-        <option value="healthy">Healthy</option>
-        <option value="monitor">Under Monitoring</option>
-        <option value="treatment">In Treatment</option>
-        <option value="surgery">In Surgery</option>
-        <option value="diagnostics">Pending Diagnostics</option>
-        <option value="critical">Critical</option>
-      </select>
-      <select id="sourceFilter" class="mypets-filter-select sd-convert">
-        <option value="all">All Sources</option>
-      </select>
-      <select id="branchFilter" class="mypets-filter-select sd-convert">
-        <option value="all">All Branches</option>
-      </select>
-      <select id="speciesFilter" class="mypets-filter-select sd-convert">
-        <option value="all">All Species</option>
-        <option value="dog">Dog</option>
-        <option value="cat">Cat</option>
-        <option value="bird">Bird</option>
-        <option value="other">Other</option>
-      </select>
-    </div>
+  <!-- ══════ SEARCH & FILTER BAR ══════ -->
+  <div class="c-filter-bar" id="petsFilterBar">
+    <div class="c-filter-bar__glow"></div>
+    <form method="get" action="" class="c-filter-bar__form" autocomplete="off" id="petsFilterForm">
+
+      <!-- Search Row -->
+      <div class="c-filter-bar__search">
+        <i class='bx bx-search c-filter-bar__search-icon'></i>
+        <input type="text" name="q" value="{{ search_query|default:'' }}"
+               placeholder="Search by pet, owner..." id="petsSearch"
+               class="c-filter-bar__search-input" autocomplete="off">
+        <div class="search-dropdown" id="petsSearchDropdown"></div>
+        <div class="c-filter-bar__shortcut"><span>⌘</span><span>K</span></div>
+      </div>
+
+      <!-- Filter Dropdowns Row -->
+      <div class="c-filter-bar__filters">
+        <div class="c-filter-dropdown">
+          <div class="c-filter-dropdown__trigger{% if selected_status %} active{% endif %}" id="statusFilterTrigger">
+            <i class='bx bx-loader-circle c-filter-dropdown__icon'></i>
+            <span class="c-filter-dropdown__label">
+              <span class="prefix" id="statusPrefix" {% if not selected_status %}style="display: none;"{% endif %}>Status:</span>
+              <span id="statusLabel">{% if selected_status_name %}{{ selected_status_name }}{% else %}All Status{% endif %}</span>
+            </span>
+            <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+          </div>
+          <select class="c-filter-dropdown__select sd-convert" name="status" id="statusFilter" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            {% for status_obj in statuses %}
+            <option value="{{ status_obj.id }}" {% if selected_status|stringformat:"s" == status_obj.id|stringformat:"s" %}selected{% endif %}>{{ status_obj.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="c-filter-dropdown">
+          <div class="c-filter-dropdown__trigger{% if selected_species %} active{% endif %}" id="speciesFilterTrigger">
+            <i class='bx bxs-dog c-filter-dropdown__icon'></i>
+            <span class="c-filter-dropdown__label">
+              <span class="prefix" id="speciesPrefix" {% if not selected_species %}style="display: none;"{% endif %}>Species:</span>
+              <span id="speciesLabel">{% if selected_species %}{{ selected_species|title }}{% else %}All Species{% endif %}</span>
+            </span>
+            <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+          </div>
+          <select class="c-filter-dropdown__select sd-convert" name="species" id="speciesFilter" onchange="this.form.submit()">
+            <option value="">All Species</option>
+            {% for sp in species_list %}
+            <option value="{{ sp }}" {% if selected_species|lower == sp|lower %}selected{% endif %}>{{ sp }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <a href="{% url 'patients:my_pets' %}" class="c-filter-bar__clear" id="petsClearBtn" title="Clear Filters" {% if not search_query and not selected_status and not selected_species %}style="display: none;"{% endif %}><i class='bx bx-x'></i></a>
+      </div>
+    </form>
   </div>
 
+  {% if not active_pets_data and not inactive_pets_data %}
+    <div class="premium-empty" style="padding: 40px 20px; background: transparent; box-shadow: none; border: 1px dashed rgba(0,0,0,0.1);">
+      <div class="premium-empty-icon" style="width: 80px; height: 80px; font-size: 2.5rem; margin-bottom: 16px;">
+        <i class='bx bx-search'></i>
+      </div>
+      <h3 style="font-size: 1.5rem; color: var(--text-2); margin-bottom: 8px;">No pets found</h3>
+      <p style="font-size: 1rem; color: var(--text-3);">Try adjusting your filters or search query.</p>
+      <a href="{% url 'patients:my_pets' %}" class="premium-hero-btn outline" style="margin-top: 16px; color: var(--primary); border-color: var(--primary);">Clear Filters</a>
+    </div>
+  {% endif %}
+
+  {% if active_pets_data or inactive_pets_data %}
   <!-- All Pets Grid -->
   <div class="premium-section-header">
     <div class="premium-section-title">
@@ -868,8 +774,8 @@
          data-species="{{ pet.species|lower }}"
          data-owner="{{ request.user.get_full_name|default:request.user.username }}"
          data-breed="{{ pet.breed|default:'' }}"
-         style="border-color: #e0e0e0; opacity: 0.85;">
-      <div class="card-top-accent" style="background: linear-gradient(135deg, #90a4ae 0%, #546e7a 100%);">
+         style="background: #f8f9fa; border-color: #e0e0e0; opacity: 0.9; filter: grayscale(100%);">
+      <div class="card-top-accent" style="background: linear-gradient(135deg, #b0bec5 0%, #78909c 100%);">
         <div class="premium-status-badge" style="background: rgba(255,255,255,0.95); color: #546e7a;">
           <i class='bx bx-archive-in'></i> Inactive
         </div>
@@ -954,7 +860,7 @@
     </button>
   </div>
 
-  <div class="mypets-no-results" id="petNoResults">No pets match your search.</div>
+
   {% endif %}
   {% if upcoming_appointments %}
   <div class="premium-section-header">
@@ -971,9 +877,9 @@
     <div class="premium-activity-item" onclick="window.location='{% url 'appointments:my_appointments' %}';">
       <div class="act-icon appt"><i class='bx bx-calendar'></i></div>
       <div class="act-details">
-        <h4 class="act-title">{{ appt.pet.name }} — {{ appt.get_reason_display }}</h4>
+        <h4 class="act-title">{{ appt.pet.name }} — {{ appt.reason_display }}</h4>
         <div class="act-meta">
-          {{ appt.appointment_date|date:"M j, Y" }} at {{ appt.appointment_time|time:"g:i A" }} • {{ appt.branch.name }}
+          {{ appt.appointment_date|date:"M j, Y" }} at {{ appt.appointment_time_display }} • {{ appt.branch.name }}
         </div>
       </div>
       <div class="act-status {{ appt.status|lower }}">{{ appt.get_status_display }}</div>
@@ -1056,193 +962,137 @@
 
 <script>
 (function () {
-  const input = document.getElementById('petSearchInput');
-  const dropdown = document.getElementById('petSearchDropdown');
-  const noResults = document.getElementById('petNoResults');
+  const searchInput = document.getElementById('petsSearch');
+  const searchDropdown = document.getElementById('petsSearchDropdown');
+  const statusFilter = document.getElementById('statusFilter');
+  const speciesFilter = document.getElementById('speciesFilter');
+  const filterForm = document.getElementById('petsFilterForm');
 
-  // For searchable dropdowns: get value from hidden input by name
-  function getFilterValue(name) {
-    const hiddenInput = document.querySelector('.mypets-filter-group input[type="hidden"][name="' + name + '"]');
-    return hiddenInput ? hiddenInput.value.toLowerCase() : 'all';
-  }
-  
-  if (!input) return;
+  if (!searchInput) return;
 
-  function buildData() {
-    const list = [];
+  // Build searchable data from pet cards
+  function buildPetData() {
+    const data = [];
     document.querySelectorAll('.premium-pet-card').forEach(card => {
-      list.push({
-        name: card.querySelector('.premium-pet-name')?.innerText || '',
-        species: card.dataset.species || '',
-        breed: card.dataset.breed || '',
-        owner: card.dataset.owner || '',
-        status: card.dataset.status || 'healthy',
-        speciesData: card.dataset.species || 'other',
-        searchStr: card.dataset.search || '',
-        url: card.querySelector('.premium-action-btn')?.getAttribute('href') || '#',
-        card: card
+      const name = card.querySelector('.premium-pet-name')?.textContent || '';
+      const species = card.dataset.species || '';
+      const breed = card.dataset.breed || '';
+      const owner = card.dataset.owner || '';
+      const profileUrl = card.querySelector('.premium-action-btn.view')?.href || '#';
+      const avatarHtml = card.querySelector('.premium-pet-avatar')?.innerHTML || '';
+
+      data.push({
+        cardElement: card,
+        name: name,
+        species: species,
+        breed: breed,
+        owner: owner,
+        profileUrl: profileUrl,
+        avatarHtml: avatarHtml,
+        searchText: `${name} ${species} ${breed} ${owner}`.toLowerCase()
       });
     });
-    return list;
+    return data;
   }
 
-  let pets = buildData();
+  let petData = buildPetData();
 
-  function escapeHtml(str) { return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-  function highlight(text, q) {
-    if (!q) return text;
-    return text.replace(new RegExp('(' + escapeHtml(q) + ')', 'gi'), '<span class="search-dropdown-highlight">$1</span>');
+  // Utility functions
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
   }
 
-  function renderDropdown(results, q) {
-    if (!dropdown) return;
-    if (!results.length) {
-      dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No pets found</div>';
-    } else {
-      dropdown.innerHTML = results.slice(0, 5).map(p => {
-        const speciesIcon = p.speciesData === 'dog' ? 'bxs-dog' : 'bx-paw';
-        const subParts = [p.owner, p.speciesData, p.breed].filter(Boolean);
-        return `
-        <div class="search-dropdown-item" data-url="${p.url}">
-          <div style="width: 32px; display: flex; justify-content: center;">
-            <i class='bx ${speciesIcon}' style="font-size:24px; color:var(--primary);"></i>
-          </div>
-          <div class="item-info" style="margin-left: 8px;">
-            <div class="item-name">${highlight(p.name, q)}</div>
-            <div class="item-sub">${subParts.map(s => highlight(s, q)).join(' • ')}</div>
-          </div>
-          <i class='bx bx-chevron-right' style="color:var(--text-3); font-size:1.2rem; margin-left: auto;"></i>
-        </div>`;
-      }).join('');
-        
-      dropdown.querySelectorAll('.search-dropdown-item').forEach(item => {
-        item.addEventListener('mousedown', e => {
-          e.preventDefault();
-          window.location.href = item.dataset.url;
-        });
-      });
-    }
-    dropdown.style.display = 'block';
-    dropdown.classList.add('active');
+  function highlightMatch(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${escapeHtml(query)})`, 'gi');
+    return text.replace(regex, '<span class="search-dropdown-highlight">$1</span>');
   }
 
-  function hideDropdown() {
-    if (dropdown) {
-      dropdown.classList.remove('active');
-      dropdown.style.display = 'none';
-    }
-  }
-
-  // ══ PAGINATION ══
-  const CARDS_PER_PAGE = 6;
-  let currentPage = 1;
-  let visibleCards = [];
-
-  const paginationEl = document.getElementById('petsPagination');
-  const prevBtn     = document.getElementById('petsPrevBtn');
-  const nextBtn     = document.getElementById('petsNextBtn');
-  const pageLabel   = document.getElementById('petsPageLabel');
-
-  function updatePagination() {
-    const totalPages = Math.max(1, Math.ceil(visibleCards.length / CARDS_PER_PAGE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
-
-    const start = (currentPage - 1) * CARDS_PER_PAGE;
-    const end   = start + CARDS_PER_PAGE;
-
-    // Show only cards for this page
-    visibleCards.forEach((c, i) => { c.style.display = (i >= start && i < end) ? '' : 'none'; });
-
-    // Show/hide pagination bar
-    if (paginationEl) {
-      if (visibleCards.length >= CARDS_PER_PAGE) {
-        paginationEl.style.display = 'flex';
-        if (prevBtn) { prevBtn.disabled = currentPage <= 1; prevBtn.style.opacity = currentPage <= 1 ? '0.3' : '1'; }
-        if (nextBtn) { nextBtn.disabled = currentPage >= totalPages; nextBtn.style.opacity = currentPage >= totalPages ? '0.3' : '1'; }
-
-        // Render segment-bar dot indicators
-        const dotWrap = document.getElementById('petsDotWrap');
-        if (dotWrap) {
-          dotWrap.innerHTML = Array.from({ length: totalPages }, (_, i) => {
-            const isActive = i + 1 === currentPage;
-            return `<button onclick="changePage(${i + 1 - currentPage})" title="Page ${i+1}" style="
-              width: ${isActive ? '32px' : '8px'};
-              height: ${isActive ? '8px' : '8px'};
-              border-radius: 999px;
-              border: none;
-              cursor: pointer;
-              background: ${isActive ? 'var(--primary)' : 'var(--border)'};
-              transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-              padding: 0;
-            "></button>`;
-          }).join('');
-        }
-      } else {
-        paginationEl.style.display = 'none';
+  // Filter cards on the page
+  function filterCards(query) {
+    let visibleCount = 0;
+    petData.forEach(p => {
+      const matchesSearch = !query || p.searchText.includes(query);
+      p.cardElement.style.display = matchesSearch ? '' : 'none';
+      if (matchesSearch) visibleCount++;
+    });
+    
+    // Optional: Hide/Show sections based on if there are visible cards
+    const petsGrid = document.getElementById('petsGrid');
+    const sectionHeader = document.querySelector('.premium-section-header');
+    
+    if (petsGrid && sectionHeader) {
+      if (visibleCount === 0) {
+        // You could show an empty message here if desired
       }
     }
   }
 
-  window.changePage = function(dir) {
-    currentPage += dir;
-    updatePagination();
-    document.getElementById('petsGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  function filterPets() {
-    const q = input.value.toLowerCase().trim();
-    const statusVal = getFilterValue('statusFilter');
-    const speciesVal = getFilterValue('speciesFilter');
-
-    visibleCards = [];
-    pets.forEach(p => {
-      let match = true;
-      if (q && !p.searchStr.includes(q)) match = false;
-      if (statusVal !== 'all' && p.status !== statusVal) match = false;
-      if (speciesVal !== 'all' && p.speciesData !== speciesVal) match = false;
-
-      // Temporarily show all matching (pagination will re-hide them)
-      p.card.style.display = match ? '' : 'none';
-      if (match) visibleCards.push(p.card);
-    });
-
-    currentPage = 1;
-    updatePagination();
-
-    // Auto-complete dropdown rendering
-    if (q) {
-      const results = pets.filter(p => p.searchStr.includes(q));
-      renderDropdown(results, q);
-    } else {
-      hideDropdown();
+  // Render search dropdown
+  function renderSearchDropdown(query) {
+    if (!query.trim()) {
+      searchDropdown.classList.remove('active');
+      return;
     }
 
-    if (noResults) noResults.style.display = (visibleCards.length === 0) ? 'block' : 'none';
+    const filtered = petData.filter(p =>
+      p.searchText.includes(query.toLowerCase())
+    ).slice(0, 8);
+
+    if (filtered.length === 0) {
+      searchDropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search"></i> No pets found</div>';
+    } else {
+      searchDropdown.innerHTML = filtered.map(pet => `
+        <div class="search-dropdown-item" data-url="${pet.profileUrl}">
+          <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #eee; font-weight: bold; font-size: 14px; color: var(--primary);">
+            ${pet.avatarHtml}
+          </div>
+          <div class="item-info" style="margin-left: 12px; flex: 1;">
+            <div class="item-name">${highlightMatch(pet.name, query)}</div>
+            <div class="item-sub">${[pet.owner, pet.species, pet.breed].filter(Boolean).map(t => highlightMatch(t, query)).join(' • ')}</div>
+          </div>
+          <i class='bx bx-chevron-right' style="color:var(--text-3);"></i>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      searchDropdown.querySelectorAll('.search-dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+          window.location.href = item.dataset.url;
+        });
+      });
+    }
+
+    searchDropdown.classList.add('active');
   }
 
-  // Initial render
-  visibleCards = pets.map(p => p.card);
-  updatePagination();
-
-  input.addEventListener('input', filterPets);
-  
-  input.addEventListener('focus', function () {
-    if (this.value.trim()) filterPets();
+  // Event listeners
+  searchInput.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    renderSearchDropdown(e.target.value);
+    filterCards(q);
   });
-  
-  input.addEventListener('blur', function () {
-    setTimeout(hideDropdown, 150);
-  });
-  
-  if (statusFilter) statusFilter.addEventListener('change', filterPets);
-  if (speciesFilter) speciesFilter.addEventListener('change', filterPets);
 
-  // Listen for searchable dropdown changes
-  const filterGroup = document.querySelector('.mypets-filter-group');
-  if (filterGroup) {
-    filterGroup.addEventListener('sd-change', filterPets);
-  }
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim()) {
+      renderSearchDropdown(searchInput.value);
+    }
+  });
+
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => searchDropdown.classList.remove('active'), 150);
+  });
+
+  // Listen for searchable dropdown library changes
+  document.addEventListener('sd-change', () => {
+    filterForm.submit();
+  });
 })();
 </script>
 

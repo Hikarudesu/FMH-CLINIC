@@ -573,7 +573,7 @@
         <div class="pd-list-item appt-item" data-index="{{ forloop.counter0 }}">
           <div class="pd-list-icon appt"><i class='bx bx-calendar-event'></i></div>
           <div class="pd-list-info">
-            <div class="list-title">{{ appt.appointment_date|date:"M j, Y" }} at {{ appt.appointment_time|time:"g:i A" }}</div>
+            <div class="list-title">{{ appt.appointment_date|date:"M j, Y" }} at {{ appt.appointment_time_display }}</div>
             <div class="list-meta">
               {{ appt.get_reason_display }} · {{ appt.branch.name|default:"—" }}
               <span class="admin-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>

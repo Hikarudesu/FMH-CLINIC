@@ -19,7 +19,7 @@
 </div>
 
 <!-- Filter Bar -->
-{% include "components/filter_bar.html" with form_action="/branches/" form_id="branchFilterForm" search_name="q" search_value=q search_placeholder="Search by branch name..." search_id="branchSearch" search_dropdown_id="branchSearchDropdown" filters=filters active_filters=active_filters clear_url="/branches/" show_clear=show_clear %}
+{% include "components/filter_bar.html" with form_action="/branches/" form_id="branchFilterForm" filters=filters active_filters=active_filters clear_url="/branches/" show_clear=show_clear %}
 
 {% if branches %}
 <!-- Branch Table -->

@@ -129,11 +129,32 @@ def inventory_management_view(request):
 
     branches = Branch.objects.filter(is_active=True)
     selected_branch_id = request.GET.get('branch')
+    selected_status = request.GET.get('status', '')
+    search_query = request.GET.get('q', '').strip()
     products = Product.objects.all().select_related('branch')
 
     if selected_branch_id:
         adjustments = adjustments.filter(branch_id=selected_branch_id)
         products = products.filter(branch_id=selected_branch_id)
+
+    # Apply search filter
+    if search_query:
+        from django.db.models import Q
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(sku__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Apply status filter
+    if selected_status:
+        filtered_products = []
+        for p in products:
+            if p.status == selected_status:
+                filtered_products.append(p)
+        products = filtered_products
+    else:
+        products = list(products)
 
     # Health Metrics
     total_value = sum(p.inventory_value for p in products)
@@ -153,11 +174,52 @@ def inventory_management_view(request):
             product__branch_id=selected_branch_id
         )
 
+    # Build filter list for filter_bar component
+    status_filters = [
+        {
+            'name': 'status',
+            'icon': 'bx-pulse',
+            'default_label': 'All Status',
+            'has_value': bool(selected_status),
+            'selected_label': selected_status,
+            'options': [
+                {'value': 'In Stock', 'label': 'In Stock', 'selected': selected_status == 'In Stock'},
+                {'value': 'Low Stock', 'label': 'Low Stock', 'selected': selected_status == 'Low Stock'},
+                {'value': 'Out of Stock', 'label': 'Out of Stock', 'selected': selected_status == 'Out of Stock'},
+            ]
+        },
+        {
+            'name': 'branch',
+            'icon': 'bx-building-house',
+            'default_label': 'All Branches',
+            'has_value': bool(selected_branch_id),
+            'selected_label': '',
+            'options': []
+        }
+    ]
+
+    # Populate branch filter options
+    for branch in branches:
+        is_selected = str(branch.id) == str(selected_branch_id) if selected_branch_id else False
+        status_filters[1]['options'].append({
+            'value': branch.id,
+            'label': branch.name,
+            'selected': is_selected
+        })
+        if is_selected:
+            status_filters[1]['selected_label'] = branch.name
+
+    show_clear = bool(search_query or selected_status or selected_branch_id)
+
     return render(request, 'inventory/management.html', {
         'adjustments': adjustments,
         'products': products,
         'branches': branches,
         'selected_branch_id': selected_branch_id,
+        'selected_status': selected_status,
+        'search_value': search_query,
+        'status_filters': status_filters,
+        'show_clear': show_clear,
         'total_value': total_value,
         'low_stock_count': low_stock_count,
         'out_of_stock_count': out_of_stock_count,
@@ -439,7 +501,11 @@ def cancel_reservation_view(request, pk):
 @login_required
 @module_permission_required('stock_transfers', 'VIEW')
 def stock_transfer_list_view(request):
-    """List all stock transfers for the user's branch."""
+    """List all stock transfers for the user's branch with filtering and search."""
+    search_query = request.GET.get('q', '').strip()
+    selected_status = request.GET.get('status', '')
+    selected_branch_id = request.GET.get('branch_id', '')
+
     if hasattr(request.user, 'staff_profile') and request.user.staff_profile.branch:
         branch = request.user.staff_profile.branch
         transfers = StockTransfer.objects.filter(  # pylint: disable=no-member
@@ -455,9 +521,75 @@ def stock_transfer_list_view(request):
             'destination_branch', 'requested_by', 'processed_by'
         )
 
+    # Apply search filter (only on field lookups, no method calls)
+    if search_query:
+        transfers = transfers.filter(
+            Q(source_product__name__icontains=search_query) |
+            Q(destination_branch__name__icontains=search_query) |
+            Q(requested_by__username__icontains=search_query) |
+            Q(requested_by__first_name__icontains=search_query) |
+            Q(requested_by__last_name__icontains=search_query)
+        )
+
+    # Apply status filter
+    if selected_status:
+        transfers = transfers.filter(status=selected_status)
+
+    # Apply branch filter
+    if selected_branch_id:
+        transfers = transfers.filter(
+            Q(source_product__branch_id=selected_branch_id) |
+            Q(destination_branch_id=selected_branch_id)
+        )
+
+    # Get branches for filter dropdown
+    branches = Branch.objects.filter(is_active=True)
+
+    # Build filter list for filter_bar component
+    status_filters = [
+        {
+            'name': 'status',
+            'icon': 'bx-pulse',
+            'default_label': 'All Status',
+            'has_value': bool(selected_status),
+            'selected_label': selected_status,
+            'options': [
+                {'value': 'Pending', 'label': 'Pending', 'selected': selected_status == 'Pending'},
+                {'value': 'Approved', 'label': 'Approved', 'selected': selected_status == 'Approved'},
+                {'value': 'Rejected', 'label': 'Rejected', 'selected': selected_status == 'Rejected'},
+                {'value': 'Completed', 'label': 'Completed', 'selected': selected_status == 'Completed'},
+            ]
+        },
+        {
+            'name': 'branch_id',
+            'icon': 'bx-building-house',
+            'default_label': 'All Branches',
+            'has_value': bool(selected_branch_id),
+            'selected_label': '',
+            'options': []
+        }
+    ]
+
+    # Populate branch filter options
+    for branch in branches:
+        is_selected = str(branch.id) == str(selected_branch_id) if selected_branch_id else False
+        status_filters[1]['options'].append({
+            'value': branch.id,
+            'label': branch.name,
+            'selected': is_selected
+        })
+        if is_selected:
+            status_filters[1]['selected_label'] = branch.name
+
+    show_clear = bool(selected_status or selected_branch_id)
+
     context = {
         'transfers': transfers,
-        'page_title': 'Stock Transfers'
+        'page_title': 'Stock Transfers',
+        'search_value': search_query,
+        'selected_status': selected_status,
+        'status_filters': status_filters,
+        'show_clear': show_clear,
     }
     return render(request, 'inventory/stock_transfer_list.html', context)
 
@@ -561,9 +693,11 @@ def super_admin_stock_view(request):
     """
     Stock Level Monitor for Super Admin.
     Displays Low Stock alerts per branch using min_stock_level threshold.
-    Allows filtering by Branch.
+    Allows filtering by Branch, Status, and Search.
     """
     branch_id = request.GET.get('branch_id')
+    selected_status = request.GET.get('status', '')
+    search_query = request.GET.get('q', '').strip()
     branches = Branch.objects.filter(is_active=True)
 
     products = Product.objects.filter(is_deleted=False).select_related('branch')
@@ -573,6 +707,14 @@ def super_admin_stock_view(request):
         selected_branch = get_object_or_404(Branch, pk=branch_id)
     else:
         selected_branch = None
+
+    # Apply search filter
+    if search_query:
+        from django.db.models import Q
+        products = products.filter(
+            Q(name__icontains=search_query) |
+            Q(sku__icontains=search_query)
+        )
 
     # Low Stock: current quantity <= min_stock_level
     low_stock = products.filter(
@@ -584,11 +726,30 @@ def super_admin_stock_view(request):
     # Out of Stock: quantity = 0
     out_of_stock = products.filter(stock_quantity=0).order_by('name')
 
+    # In Stock: quantity > min_stock_level
+    in_stock = products.filter(
+        stock_quantity__gt=F('min_stock_level')
+    ).order_by('name')
+
+    # Apply status filter
+    if selected_status == 'Low Stock':
+        low_stock_list = list(low_stock)
+        out_of_stock_list = []
+    elif selected_status == 'Out of Stock':
+        low_stock_list = []
+        out_of_stock_list = list(out_of_stock)
+    elif selected_status == 'In Stock':
+        low_stock_list = []
+        out_of_stock_list = []
+    else:
+        low_stock_list = list(low_stock)
+        out_of_stock_list = list(out_of_stock)
+
     # Calculate stats
     low_stock_count = low_stock.count()
     out_of_stock_count = out_of_stock.count()
     total_critical = low_stock_count + out_of_stock_count
-    
+
     # Total products and inventory value (across filtered products)
     total_products = products.count()
     total_inventory_value = sum(p.inventory_value for p in products)
@@ -596,7 +757,7 @@ def super_admin_stock_view(request):
     # Branch-wise breakdown - show ALL branches if no filter, or selected branch only
     branch_breakdown = {}
     branches_to_display = [selected_branch] if selected_branch else branches
-    
+
     for branch in branches_to_display:
         branch_products = Product.objects.filter(
             branch=branch,
@@ -616,11 +777,48 @@ def super_admin_stock_view(request):
             'inventory_value': branch_value
         }
 
+    # Build filter list for filter_bar component
+    status_filters = [
+        {
+            'name': 'status',
+            'icon': 'bx-pulse',
+            'default_label': 'All Status',
+            'has_value': bool(selected_status),
+            'selected_label': selected_status,
+            'options': [
+                {'value': 'In Stock', 'label': 'In Stock', 'selected': selected_status == 'In Stock'},
+                {'value': 'Low Stock', 'label': 'Low Stock', 'selected': selected_status == 'Low Stock'},
+                {'value': 'Out of Stock', 'label': 'Out of Stock', 'selected': selected_status == 'Out of Stock'},
+            ]
+        },
+        {
+            'name': 'branch_id',
+            'icon': 'bx-building-house',
+            'default_label': 'All Branches',
+            'has_value': bool(branch_id),
+            'selected_label': '',
+            'options': []
+        }
+    ]
+
+    # Populate branch filter options
+    for branch in branches:
+        is_selected = str(branch.id) == str(branch_id) if branch_id else False
+        status_filters[1]['options'].append({
+            'value': branch.id,
+            'label': branch.name,
+            'selected': is_selected
+        })
+        if is_selected:
+            status_filters[1]['selected_label'] = branch.name
+
+    show_clear = bool(search_query or selected_status or branch_id)
+
     return render(request, 'inventory/stock_level_monitor.html', {
         'branches': branches,
         'selected_branch': selected_branch,
-        'low_stock': low_stock,
-        'out_of_stock': out_of_stock,
+        'low_stock': low_stock_list,
+        'out_of_stock': out_of_stock_list,
         'low_stock_count': low_stock_count,
         'out_of_stock_count': out_of_stock_count,
         'total_critical': total_critical,
@@ -628,6 +826,10 @@ def super_admin_stock_view(request):
         'total_inventory_value': total_inventory_value,
         'branch_breakdown': branch_breakdown,
         'page_title': 'Stock Level Monitor',
+        'search_value': search_query,
+        'selected_status': selected_status,
+        'status_filters': status_filters,
+        'show_clear': show_clear,
     })
 
 

@@ -341,9 +341,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 0;
+  width: 40px;
   height: 40px;
-  padding: 0 14px;
+  padding: 0;
   border: 1.5px solid rgba(230, 57, 70, 0.3);
   border-radius: 10px;
   background: rgba(230, 57, 70, 0.08);
@@ -358,7 +359,7 @@
 }
 
 .c-filter-bar__clear i {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
 }
 
 .c-filter-bar__clear:hover {

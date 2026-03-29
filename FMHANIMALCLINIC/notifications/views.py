@@ -30,6 +30,12 @@ def user_notifications(request):
     page_num = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_num)
 
+    tab_list = [
+        {'id': 'all', 'label': 'All', 'icon': 'bx-list-ul', 'url': f'?filter=all&type={notif_type}'},
+        {'id': 'unread', 'label': 'Unread', 'icon': 'bx-envelope', 'count': unread_count, 'url': f'?filter=unread&type={notif_type}'},
+        {'id': 'read', 'label': 'Read', 'icon': 'bx-envelope-open', 'url': f'?filter=read&type={notif_type}'},
+    ]
+
     return render(request, 'notifications/notification_list.html', {
         'page_obj': page_obj,
         'notifications': page_obj.object_list,
@@ -37,6 +43,7 @@ def user_notifications(request):
         'current_filter': current_filter,
         'notif_type': notif_type,
         'notification_types': Notification.NotificationType.choices,
+        'tab_list': tab_list,
     })
 
 
@@ -99,6 +106,12 @@ def admin_notification_list(request):
     page_num = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_num)
 
+    tab_list = [
+        {'id': 'all', 'label': 'All', 'icon': 'bx-list-ul', 'url': f'?filter=all&type={notif_type}'},
+        {'id': 'unread', 'label': 'Unread', 'icon': 'bx-envelope', 'count': unread_count, 'url': f'?filter=unread&type={notif_type}'},
+        {'id': 'read', 'label': 'Read', 'icon': 'bx-envelope-open', 'url': f'?filter=read&type={notif_type}'},
+    ]
+
     return render(request, 'notifications/admin_notification_list.html', {
         'page_obj': page_obj,
         'notifications': page_obj.object_list,
@@ -106,4 +119,5 @@ def admin_notification_list(request):
         'current_filter': current_filter,
         'notif_type': notif_type,
         'notification_types': Notification.NotificationType.choices,
+        'tab_list': tab_list,
     })

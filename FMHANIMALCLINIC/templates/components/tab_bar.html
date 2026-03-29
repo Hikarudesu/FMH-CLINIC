@@ -19,6 +19,15 @@
   <div class="c-tab-bar__glow"></div>
 
   {% for tab in tabs %}
+  {% if tab.url %}
+  <a href="{{ tab.url }}" class="c-tab-btn {% if active_tab == tab.id %}active{% endif %}" id="tab-btn-{{ tab.id }}" style="text-decoration: none;">
+    <i class='bx {{ tab.icon }} c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">{{ tab.label }}</span>
+    {% if tab.count is not None %}
+    <span class="c-tab-btn__badge">{{ tab.count }}</span>
+    {% endif %}
+  </a>
+  {% else %}
   <button
     class="c-tab-btn {% if active_tab == tab.id %}active{% endif %}"
     data-tab="{{ tab.id }}"
@@ -31,5 +40,6 @@
     <span class="c-tab-btn__badge">{{ tab.count }}</span>
     {% endif %}
   </button>
+  {% endif %}
   {% endfor %}
 </div>

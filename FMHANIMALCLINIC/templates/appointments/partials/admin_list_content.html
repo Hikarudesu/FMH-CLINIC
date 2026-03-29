@@ -121,7 +121,7 @@
         <td style="text-align: center;">
           <div class="cell-stack" style="align-items: center;">
             <span class="cell-primary">{{ appt.appointment_date|date:"M d, Y" }}</span>
-            <span class="cell-secondary">{{ appt.appointment_time|time:"g:i A" }}</span>
+            <span class="cell-secondary">{{ appt.appointment_time_display }}</span>
           </div>
         </td>
         <td style="text-align: center;"><span class="admin-badge source-{{ appt.source|lower }}">{{ appt.get_source_display }}</span></td>

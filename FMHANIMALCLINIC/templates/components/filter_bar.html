@@ -49,7 +49,8 @@
     <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
     {% endfor %}
 
-    <!-- ── Search Input ── -->
+    <!-- ── Search Input (optional) ── -->
+    {% if show_search|default:True %}
     <div class="c-filter-bar__search">
       <i class='bx bx-search c-filter-bar__search-icon'></i>
       <input
@@ -68,6 +69,7 @@
         <span>⌘</span><span>K</span>
       </div>
     </div>
+    {% endif %}
 
     <!-- ── Filter Dropdowns Row ── -->
     <div class="c-filter-bar__filters">
@@ -95,8 +97,8 @@
       {% endfor %}
 
       {% if show_clear %}
-      <a href="{{ clear_url }}" class="c-filter-bar__clear">
-        <i class='bx bx-x'></i> Clear
+      <a href="{{ clear_url }}" class="c-filter-bar__clear" title="Clear Filters">
+        <i class='bx bx-x'></i>
       </a>
       {% endif %}
     </div>

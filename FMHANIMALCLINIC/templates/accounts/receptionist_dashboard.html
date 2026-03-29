@@ -48,7 +48,7 @@
           {% for appointment in todays_appointments %}
           <div class="appointment-item">
             <div class="appointment-time">
-              {{ appointment.appointment_time|date:"g:i A" }}
+              {{ appointment.appointment_time_display }}
             </div>
             <div class="appointment-details">
               <div class="patient-name">{{ appointment.pet.name }}</div>
@@ -148,7 +148,7 @@
           <div class="appointment-item">
             <div class="appointment-date">
               {{ appointment.appointment_date|date:"M j" }}<br>
-              <small>{{ appointment.appointment_time|date:"g:i A" }}</small>
+              <small>{{ appointment.appointment_time_display }}</small>
             </div>
             <div class="appointment-details">
               <div class="patient-name">{{ appointment.pet.name }}</div>

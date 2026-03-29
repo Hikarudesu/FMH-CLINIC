@@ -33,29 +33,16 @@
     padding: 24px;
     display: flex;
     flex-direction: column;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--border);
-    transition: background 0.3s ease;
+    box-shadow: var(--shadow-card);
 }
 
 .stat-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 150, 136, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 150, 136, 0.08);
-}
-
-.stat-card:hover::before {
-    background: var(--primary);
 }
 
 .stat-card-header {

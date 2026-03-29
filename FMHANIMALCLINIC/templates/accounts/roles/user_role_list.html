@@ -21,7 +21,7 @@
 </div>
 
 <!-- Filter Bar -->
-{% include "components/filter_bar.html" with form_action="/accounts/users/roles/" form_id="userFilterForm" search_name="q" search_value=search_value search_placeholder="Search by name, email, or username..." search_id="userSearch" search_dropdown_id="userSearchDropdown" filters=role_filters active_filters=active_filters clear_url="/accounts/users/roles/" show_clear=show_clear %}
+{% include "components/filter_bar.html" with form_action="/accounts/users/roles/" form_id="userFilterForm" filters=role_filters active_filters=active_filters clear_url="/accounts/users/roles/" show_clear=show_clear %}
 
 {% if users %}
 <!-- Users Table -->
@@ -38,7 +38,11 @@
     </thead>
     <tbody>
       {% for u in users %}
-      <tr data-user-id="{{ u.pk }}">
+      <tr class="searchable-row"
+          data-user-id="{{ u.pk }}"
+          data-name="{{ u.get_full_name|default:u.username }}"
+          data-email="{{ u.email }}"
+          data-username="{{ u.username }}">
         <td>
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="user-avatar {% if u.is_superuser %}superuser{% endif %}">
@@ -117,158 +121,6 @@
 {% endif %}
 
 <style>
-  /* ══════════════════════════════════════════════ */
-  /* STAFF FILTER CARD */
-  /* ══════════════════════════════════════════════ */
-  .staff-filter-card {
-    margin-bottom: 20px;
-    padding: 16px 20px;
-    border-radius: 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    transition: all 0.2s ease;
-  }
-
-  .staff-filter-card form {
-    margin: 0;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .portal-search {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .portal-search i {
-    position: absolute;
-    left: 14px;
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    pointer-events: none;
-  }
-
-  .portal-search input {
-    width: 100%;
-    padding: 10px 14px 10px 42px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    background: var(--surface);
-    transition: all 0.2s ease;
-  }
-
-  .portal-search input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-  }
-
-  .filter-select {
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    background: var(--surface);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--text-secondary);
-  }
-
-  .filter-select:hover {
-    border-color: var(--primary);
-    background: rgba(0, 150, 136, 0.02);
-  }
-
-  .filter-select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
-  }
-
-  .filter-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .filter-btn {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    color: var(--text-secondary);
-    text-decoration: none;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-
-  .filter-btn:hover {
-    background: rgba(0, 150, 136, 0.06);
-    border-color: var(--primary);
-    color: var(--primary);
-  }
-
-  .filter-btn.clear {
-    color: #d32f2f;
-    border-color: #ffcdd2;
-  }
-
-  .filter-btn.clear:hover {
-    background: rgba(211, 47, 47, 0.06);
-    border-color: #d32f2f;
-  }
-
-  /* ══════════════════════════════════════════════ */
-  /* DARK MODE SUPPORT */
-  /* ══════════════════════════════════════════════ */
-  [data-theme="dark"] .staff-filter-card {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  [data-theme="dark"] .filter-btn:hover {
-    background: rgba(0, 150, 136, 0.08);
-  }
-
-  [data-theme="dark"] .portal-search input:focus {
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
-  }
-
-  /* ══════════════════════════════════════════════ */
-  /* RESPONSIVE */
-  /* ══════════════════════════════════════════════ */
-  @media (max-width: 768px) {
-    .staff-filter-card {
-      padding: 12px 16px;
-    }
-
-    .staff-filter-card form {
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .staff-filter-card form .portal-search {
-      width: 100%;
-    }
-
-    .staff-filter-card form .filter-select {
-      width: 100%;
-    }
-
-    .staff-filter-card form .filter-actions {
-      width: 100%;
-      justify-content: flex-end;
-    }
-  }
-
 .user-avatar {
     width: 38px;
     height: 38px;
@@ -447,6 +299,112 @@
   if (window.SearchableDropdown) {
     SearchableDropdown.init();
   }
+
+  // ══════ SEARCH AUTOCOMPLETE + LIVE FILTER ══════
+  (function initUserSearch() {
+    const searchInput = document.getElementById('userSearch');
+    const dropdown    = document.getElementById('userSearchDropdown');
+    if (!searchInput || !dropdown) return;
+
+    function buildData() {
+      return Array.from(document.querySelectorAll('tr.searchable-row')).map(row => ({
+        name     : row.dataset.name    || '',
+        email    : row.dataset.email   || '',
+        username : row.dataset.username || '',
+        row      : row
+      }));
+    }
+
+    let users = buildData();
+
+    function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    function highlight(text, q) {
+      if (!q) return text;
+      return text.replace(new RegExp('(' + esc(q) + ')', 'gi'),
+        '<span class="search-dropdown-highlight">$1</span>');
+    }
+
+    function renderDropdown(results, q) {
+      if (!results.length) {
+        dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No staff members found</div>';
+      } else {
+        dropdown.innerHTML = results.slice(0, 8).map(u => `
+          <div class="search-dropdown-item" data-username="${u.username}">
+            <i class='bx bxs-user'></i>
+            <div class="item-info">
+              <div class="item-name">${highlight(u.name, q)}</div>
+              <div class="item-sub">${highlight(u.email, q)} &bull; ${highlight(u.username, q)}</div>
+            </div>
+            <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+          </div>`).join('');
+        dropdown.querySelectorAll('.search-dropdown-item').forEach((item, idx) => {
+          item.addEventListener('mousedown', e => {
+            e.preventDefault();
+            searchInput.value = results[idx].name;
+            filterRows(results[idx].name.toLowerCase());
+            hideDropdown();
+          });
+        });
+      }
+      dropdown.style.display = 'block';
+      dropdown.classList.add('active');
+    }
+
+    function hideDropdown() {
+      dropdown.classList.remove('active');
+      dropdown.style.display = '';
+    }
+
+    function filterRows(q) {
+      users.forEach(u => {
+        const nl = u.name.toLowerCase();
+        const el = u.email.toLowerCase();
+        const ul = u.username.toLowerCase();
+        const matchesSearch = !q || nl.includes(q) || el.includes(q) || ul.includes(q);
+        u.row.style.display = matchesSearch ? '' : 'none';
+      });
+    }
+
+    searchInput.addEventListener('input', function () {
+      const q = this.value.toLowerCase().trim();
+      filterRows(q);
+      if (!q) { hideDropdown(); return; }
+      const results = users.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q));
+      renderDropdown(results, q);
+    });
+
+    searchInput.addEventListener('focus', function () {
+      if (this.value.trim()) this.dispatchEvent(new Event('input'));
+    });
+
+    searchInput.addEventListener('blur', function () {
+      setTimeout(hideDropdown, 150);
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+      const items = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+      let idx = items.findIndex(i => i.classList.contains('active'));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        items[idx]?.classList.remove('active');
+        idx = (idx + 1) % items.length;
+        items[idx]?.classList.add('active');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[idx]?.classList.remove('active');
+        idx = (idx - 1 + items.length) % items.length;
+        items[idx]?.classList.add('active');
+      } else if (e.key === 'Enter' && idx >= 0) {
+        e.preventDefault(); items[idx]?.click();
+      } else if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+  }());
 </script>
 
 {% endblock %}
