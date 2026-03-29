@@ -1,0 +1,682 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Contact Inquiries{% endblock %}
+
+{% block content %}
+<div class="inquiry-page">
+
+<!-- Page Hero -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-text">
+      <h1><i class='bx bx-envelope'></i> Contact Inquiries</h1>
+      <p>Manage and respond to customer inquiries from the contact form</p>
+    </div>
+    <div class="page-hero-actions">
+      {% if stats.new > 0 %}
+      <span class="inquiry-new-badge">
+        <i class='bx bx-bell'></i> {{ stats.new }} New
+      </span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="inquiry-stats">
+  <div class="inquiry-stat-card total">
+    <div class="stat-icon"><i class='bx bx-envelope'></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ stats.total }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+  </div>
+  <div class="inquiry-stat-card new">
+    <div class="stat-icon"><i class='bx bx-bell'></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ stats.new }}</span>
+      <span class="stat-label">New</span>
+    </div>
+  </div>
+  <div class="inquiry-stat-card read">
+    <div class="stat-icon"><i class='bx bx-envelope-open'></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ stats.read }}</span>
+      <span class="stat-label">Read</span>
+    </div>
+  </div>
+  <div class="inquiry-stat-card responded">
+    <div class="stat-icon"><i class='bx bx-check-circle'></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ stats.responded }}</span>
+      <span class="stat-label">Responded</span>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="c-tab-bar" id="inquiryTabs">
+  <div class="c-tab-bar__glow"></div>
+  <div class="c-tab-bar__indicator" id="inquiryTabs-indicator"></div>
+
+  <button class="c-tab-btn {% if not current_filters.status %}active{% endif %}" type="button" onclick="window.location.href='{% url 'inquiries:list' %}'">
+    <i class='bx bx-list-ul c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">All</span>
+    <span class="c-tab-btn__badge">{{ stats.total }}</span>
+  </button>
+  <button class="c-tab-btn {% if current_filters.status == 'NEW' %}active{% endif %}" type="button" onclick="window.location.href='?status=NEW'">
+    <i class='bx bx-bell c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">New</span>
+    {% if stats.new > 0 %}<span class="c-tab-btn__badge">{{ stats.new }}</span>{% endif %}
+  </button>
+  <button class="c-tab-btn {% if current_filters.status == 'READ' %}active{% endif %}" type="button" onclick="window.location.href='?status=READ'">
+    <i class='bx bx-envelope-open c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Read</span>
+  </button>
+  <button class="c-tab-btn {% if current_filters.status == 'RESPONDED' %}active{% endif %}" type="button" onclick="window.location.href='?status=RESPONDED'">
+    <i class='bx bx-check-circle c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Responded</span>
+  </button>
+  <button class="c-tab-btn {% if current_filters.status == 'ARCHIVED' %}active{% endif %}" type="button" onclick="window.location.href='?status=ARCHIVED'">
+    <i class='bx bx-archive c-tab-btn__icon'></i>
+    <span class="c-tab-btn__label">Archived</span>
+  </button>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="inquiry-filter-bar">
+  <form method="GET" class="search-form">
+    <div class="search-input-wrapper">
+      <i class='bx bx-search'></i>
+      <input type="text" name="q" placeholder="Search by name, email, phone..." value="{{ current_filters.q }}">
+    </div>
+    <select name="branch" onchange="this.form.submit()">
+      <option value="">All Branches</option>
+      {% for branch in branches %}
+      <option value="{{ branch.id }}" {% if current_filters.branch == branch.id|stringformat:'i' %}selected{% endif %}>{{ branch.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="priority" onchange="this.form.submit()">
+      <option value="">All Priorities</option>
+      {% for code, label in priority_choices %}
+      <option value="{{ code }}" {% if current_filters.priority == code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if current_filters.status %}<input type="hidden" name="status" value="{{ current_filters.status }}">{% endif %}
+    <button type="submit" class="filter-btn"><i class='bx bx-filter'></i> Filter</button>
+  </form>
+</div>
+
+{% if inquiries %}
+<!-- Inquiry List -->
+<div class="inquiry-list">
+  {% for inquiry in inquiries %}
+  <a href="{% url 'inquiries:detail' inquiry.pk %}" class="inquiry-card {% if inquiry.status == 'NEW' %}unread{% endif %}">
+    
+    <!-- Status accent bar -->
+    <div class="inquiry-accent-bar 
+      {% if inquiry.status == 'NEW' %}accent-new
+      {% elif inquiry.status == 'READ' %}accent-read
+      {% elif inquiry.status == 'RESPONDED' %}accent-responded
+      {% else %}accent-archived{% endif %}"></div>
+    
+    <div class="inquiry-card-body">
+      <!-- Avatar -->
+      <div class="inquiry-avatar {% if inquiry.status == 'NEW' %}avatar-new{% endif %}">
+        {{ inquiry.full_name|make_list|first|upper }}
+      </div>
+      
+      <!-- Content -->
+      <div class="inquiry-content">
+        <div class="inquiry-header">
+          <h4 class="inquiry-name">
+            {{ inquiry.full_name }}
+            {% if inquiry.status == 'NEW' %}
+            <span class="new-badge"><span class="pulse-dot"></span> New</span>
+            {% endif %}
+          </h4>
+          <span class="inquiry-time">
+            <i class='bx bx-time-five'></i>
+            {{ inquiry.created_at|timesince }} ago
+          </span>
+        </div>
+        
+        <div class="inquiry-meta">
+          <span class="meta-item"><i class='bx bx-envelope'></i> {{ inquiry.email }}</span>
+          <span class="meta-item"><i class='bx bx-phone'></i> {{ inquiry.phone }}</span>
+          {% if inquiry.branch %}
+          <span class="meta-item"><i class='bx bx-building'></i> {{ inquiry.branch.name }}</span>
+          {% endif %}
+        </div>
+        
+        <p class="inquiry-preview">{{ inquiry.message|truncatewords:25 }}</p>
+        
+        <div class="inquiry-footer">
+          <span class="status-chip status-{{ inquiry.status|lower }}">
+            <span class="chip-dot"></span>
+            {{ inquiry.get_status_display }}
+          </span>
+          <span class="priority-chip priority-{{ inquiry.priority|lower }}">
+            {{ inquiry.get_priority_display }}
+          </span>
+        </div>
+      </div>
+      
+      <!-- Arrow -->
+      <div class="inquiry-arrow">
+        <i class='bx bx-chevron-right'></i>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if inquiries.has_other_pages %}
+<div class="inquiry-pagination">
+  {% if inquiries.has_previous %}
+    <a href="?page=1{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}" class="page-btn">
+      <i class='bx bx-chevrons-left'></i>
+    </a>
+    <a href="?page={{ inquiries.previous_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}" class="page-btn">
+      <i class='bx bx-chevron-left'></i>
+    </a>
+  {% endif %}
+  
+  <span class="page-info">
+    Page {{ inquiries.number }} of {{ inquiries.paginator.num_pages }}
+  </span>
+  
+  {% if inquiries.has_next %}
+    <a href="?page={{ inquiries.next_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}" class="page-btn">
+      <i class='bx bx-chevron-right'></i>
+    </a>
+    <a href="?page={{ inquiries.paginator.num_pages }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.q %}&q={{ current_filters.q }}{% endif %}" class="page-btn">
+      <i class='bx bx-chevrons-right'></i>
+    </a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="inquiry-empty">
+  <div class="empty-visual">
+    <div class="empty-ring ring-1"></div>
+    <div class="empty-ring ring-2"></div>
+    <div class="empty-ring ring-3"></div>
+    <div class="empty-center-icon">
+      <i class='bx bx-envelope'></i>
+    </div>
+  </div>
+  <h2>No inquiries found</h2>
+  <p>{% if current_filters.status or current_filters.q %}Try adjusting your filters{% else %}Contact form submissions will appear here{% endif %}</p>
+</div>
+{% endif %}
+
+</div>
+
+<style>
+/* ══════ INQUIRY PAGE STYLES ══════ */
+.inquiry-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Stats Cards */
+.inquiry-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.inquiry-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.inquiry-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.inquiry-stat-card.total .stat-icon { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+.inquiry-stat-card.new .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.inquiry-stat-card.read .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.inquiry-stat-card.responded .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* New Badge in Hero */
+.inquiry-new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* Filter Bar */
+.inquiry-filter-bar {
+  background: var(--surface);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.search-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+}
+
+.search-input-wrapper i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.search-form select {
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background: var(--primary-dark);
+}
+
+/* Inquiry List */
+.inquiry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inquiry-card {
+  display: flex;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.inquiry-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateX(4px);
+}
+
+.inquiry-card.unread {
+  background: linear-gradient(to right, rgba(239, 68, 68, 0.03), var(--surface));
+}
+
+/* Accent Bar */
+.inquiry-accent-bar {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.accent-new { background: linear-gradient(to bottom, #ef4444, #dc2626); }
+.accent-read { background: linear-gradient(to bottom, #3b82f6, #2563eb); }
+.accent-responded { background: linear-gradient(to bottom, #22c55e, #16a34a); }
+.accent-archived { background: linear-gradient(to bottom, #9ca3af, #6b7280); }
+
+/* Card Body */
+.inquiry-card-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+/* Avatar */
+.inquiry-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.inquiry-avatar.avatar-new {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Content */
+.inquiry-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.inquiry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.inquiry-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #fef2f2;
+  color: #ef4444;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+.inquiry-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inquiry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.meta-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inquiry-preview {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.inquiry-footer {
+  display: flex;
+  gap: 10px;
+}
+
+/* Status & Priority Chips */
+.status-chip, .priority-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-chip.status-new { background: #fef2f2; color: #dc2626; }
+.status-chip.status-new .chip-dot { background: #dc2626; }
+
+.status-chip.status-read { background: #eff6ff; color: #2563eb; }
+.status-chip.status-read .chip-dot { background: #2563eb; }
+
+.status-chip.status-responded { background: #f0fdf4; color: #16a34a; }
+.status-chip.status-responded .chip-dot { background: #16a34a; }
+
+.status-chip.status-archived { background: #f3f4f6; color: #6b7280; }
+.status-chip.status-archived .chip-dot { background: #6b7280; }
+
+.priority-chip.priority-low { background: #f3f4f6; color: #6b7280; }
+.priority-chip.priority-normal { background: #eff6ff; color: #2563eb; }
+.priority-chip.priority-high { background: #fff7ed; color: #ea580c; }
+.priority-chip.priority-urgent { background: #fef2f2; color: #dc2626; }
+
+/* Arrow */
+.inquiry-arrow {
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  transition: transform 0.2s ease;
+}
+
+.inquiry-card:hover .inquiry-arrow {
+  transform: translateX(4px);
+  color: var(--primary);
+}
+
+/* Pagination */
+.inquiry-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 16px;
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.page-info {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 0 12px;
+}
+
+/* Empty State */
+.inquiry-empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-visual {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+}
+
+.empty-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px dashed var(--border-color);
+}
+
+.empty-ring.ring-1 { width: 100%; height: 100%; opacity: 0.3; }
+.empty-ring.ring-2 { width: 70%; height: 70%; top: 15%; left: 15%; opacity: 0.5; }
+.empty-ring.ring-3 { width: 40%; height: 40%; top: 30%; left: 30%; opacity: 0.7; }
+
+.empty-center-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  color: var(--text-secondary);
+}
+
+.inquiry-empty h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.inquiry-empty p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .inquiry-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .search-form {
+    flex-direction: column;
+  }
+  
+  .search-input-wrapper {
+    min-width: 100%;
+  }
+  
+  .inquiry-card-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .inquiry-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .inquiry-arrow {
+    display: none;
+  }
+}
+</style>
+
+{% endblock %}

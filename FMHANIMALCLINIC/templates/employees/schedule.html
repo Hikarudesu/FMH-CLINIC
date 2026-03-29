@@ -68,96 +68,106 @@
 
 <!-- ADD SCHEDULE MODAL -->
 <div class="schedule-modal-overlay" id="scheduleModal">
-  <div class="schedule-modal">
-    <div class="schedule-modal-header">
-      <h3><i class='bx bx-calendar-plus'></i> Add Schedule Entry</h3>
-      <button class="schedule-modal-close" id="closeModal"><i class='bx bx-x'></i></button>
+  <div class="qc-modal">
+    <div class="qc-header">
+      <div class="qc-header-title">
+        <div class="qc-icon"><i class='bx bx-calendar-plus'></i></div>
+        <div>
+          <h3>Add Schedule</h3>
+          <p>{% if is_admin %}Assign staff availability{% else %}Update your schedule{% endif %}</p>
+        </div>
+      </div>
+      <button class="qc-close" id="closeModal"><i class='bx bx-x'></i></button>
     </div>
     <form method="POST" action="{% url 'employees:schedule_add' %}" class="pet-form" novalidate>
       {% csrf_token %}
-      <div class="schedule-modal-body">
-        <div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+      <div class="qc-body">
+        <!-- Recurring Toggle -->
+        <div class="qc-group qc-full" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(0, 150, 136, 0.08) 0%, rgba(0, 150, 136, 0.04) 100%); padding: 14px 16px; border-radius: 12px; margin-bottom: 24px; border: 1.5px solid var(--border);">
           <div>
-            <strong style="display: block; font-size: 0.95rem;">Repeat Weekly?</strong>
-            <span style="font-size: 0.8rem; color: var(--text-2);">Create a recurring template instead of a single day</span>
+            <strong style="display: block; font-size: 0.92rem;">Repeat Weekly?</strong>
+            <span style="font-size: 0.8rem; color: var(--text-2);">Create a recurring template</span>
           </div>
-          <div class="toggle-switch-wrapper" style="margin: 0;">
-            <label class="toggle-switch">
-              <input type="checkbox" name="is_recurring" id="id_is_recurring">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="is_recurring" id="id_is_recurring">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="form-grid">
-          {% if is_admin %}
-          <div class="form-group">
+
+        <!-- Staff Section -->
+        {% if is_admin %}
+        <div class="qc-section-title">Staff Assignment</div>
+        <div class="qc-grid">
+          <div class="qc-group">
             <label for="{{ form.branch.id_for_label }}">Branch</label>
             {{ form.branch }}
           </div>
-          <div class="form-group">
+          <div class="qc-group">
             <label for="{{ form.staff.id_for_label }}">Staff Member</label>
             {{ form.staff }}
           </div>
-          {% else %}
-          {# For non-admins, show their info read-only #}
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <div style="background: var(--primary-light); padding: 12px; border-radius: 8px; color: var(--primary-dark);">
-              <i class='bx bx-info-circle'></i>
-              <strong>Scheduling for:</strong> {{ user_staff.full_name }} at {{ request.user.branch.name|default:"Default Branch" }}
-            </div>
-          </div>
-          {% endif %}
-          <div class="form-group" id="singleDateGroup">
+        </div>
+        {% else %}
+        <div style="background: var(--primary-light); padding: 12px; border-radius: 8px; color: var(--primary-dark); margin-bottom: 20px;">
+          <i class='bx bx-info-circle'></i>
+          <strong>Scheduling for:</strong> {{ user_staff.full_name }} at {{ request.user.branch.name|default:"Default Branch" }}
+        </div>
+        {% endif %}
+
+        <!-- Schedule Section -->
+        <div class="qc-section-title">Schedule Details</div>
+        <div class="qc-grid">
+          <div class="qc-group" id="singleDateGroup">
             <label for="{{ form.date.id_for_label }}">Date</label>
             {{ form.date }}
           </div>
 
           <!-- Recurring Fields (Hidden Initially) -->
-          <div class="form-group recurring-group" style="display: none; grid-column: 1 / -1;">
+          <div class="qc-group recurring-group" style="display: none; grid-column: 1 / -1;">
             <label>Days of Week</label>
             <div class="day-checkboxes">
               {{ recurring_form.days_of_week }}
             </div>
           </div>
-          <div class="form-group recurring-group" style="display: none;">
+          <div class="qc-group recurring-group" style="display: none;">
             <label>Effective From</label>
             {{ recurring_form.effective_from }}
           </div>
-          <div class="form-group recurring-group" style="display: none;">
+          <div class="qc-group recurring-group" style="display: none;">
             <label>Effective Until</label>
             {{ recurring_form.effective_until }}
           </div>
-          <!-- End Recurring Fields -->
-          <div class="form-group">
+
+          <div class="qc-group">
             <label for="{{ form.shift_type.id_for_label }}">Shift Type</label>
             {{ form.shift_type }}
           </div>
-          <div class="form-group">
+          <div class="qc-group">
             <label for="{{ form.start_time.id_for_label }}">Start Time</label>
             {{ form.start_time }}
           </div>
-          <div class="form-group">
+          <div class="qc-group">
             <label for="{{ form.end_time.id_for_label }}">End Time</label>
             {{ form.end_time }}
           </div>
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <div class="toggle-switch-wrapper">
-              <label class="toggle-switch">
-                <input type="checkbox" name="is_available" id="id_is_available" checked>
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="toggle-label">Available for Appointments</span>
-            </div>
+
+          <div class="qc-full-checkbox">
+            <input type="checkbox" name="is_available" id="id_is_available" checked>
+            <span>Available for Appointments</span>
           </div>
         </div>
-        <div class="form-group" style="margin-top: 8px;">
+
+        <!-- Notes Section -->
+        <div class="qc-section-title">Additional Info</div>
+        <div class="qc-group qc-full">
           <label for="{{ form.notes.id_for_label }}">Notes</label>
           {{ form.notes }}
         </div>
       </div>
-      <div class="schedule-modal-footer">
-        <button type="submit" class="btn-action primary"><i class='bx bx-check'></i> Add Schedule</button>
-        <button type="button" class="btn-action outline" id="cancelModal">Cancel</button>
+
+      <div class="qc-footer">
+        <button type="button" class="qc-btn-cancel" id="cancelModal">Cancel</button>
+        <button type="submit" class="qc-btn-save"><i class='bx bx-check'></i> Add Schedule</button>
       </div>
     </form>
   </div>

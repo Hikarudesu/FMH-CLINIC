@@ -533,6 +533,19 @@
           </a>
           {% endif %}
 
+          {# Contact Inquiries - visible to admin roles #}
+          {% if user|is_branch_admin %}
+          <a
+            href="{% url 'inquiries:list' %}"
+            class="sidebar-link {% if 'inquiries' in request.path %}active{% endif %}"
+          >
+            <i class="bx bx-envelope"></i><span>Contact Inquiries</span>
+            {% if new_inquiry_count > 0 %}
+            <span class="badge" style="background: #ef4444;">{{ new_inquiry_count }}</span>
+            {% endif %}
+          </a>
+          {% endif %}
+
           {# Activity Logs - filtered by permission #}
           {% if user|has_module:'activity_logs' %}
           <a

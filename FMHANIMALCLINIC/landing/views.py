@@ -17,5 +17,5 @@ def services_view(request):
 
 
 def contact_view(request):
-    """Contact page"""
+    """Contact page - branches and branches_json are provided by context processor"""
     return render(request, 'landing/contact.html')

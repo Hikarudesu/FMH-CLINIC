@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'utils',
     'settings',
     'diagnostics',
+    'inquiries',
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,7 @@ TEMPLATES = [
                 'patients.context_processors.patient_stats.patient_stats',
                 'settings.context_processors.clinic_settings',
                 'settings.context_processors.landing_content',
+                'inquiries.context_processors.new_inquiry_count',
             ],
         },
     },

@@ -12,7 +12,7 @@
   overflow: visible;
   box-shadow: var(--shadow-card);
   animation: filterBarIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
-  z-index: 100;
+  z-index: 10;
 }
 
 @keyframes filterBarIn {
@@ -68,7 +68,7 @@
   flex: 1;
   min-width: 250px;
   height: 48px;
-  z-index: 110;
+  z-index: 11;
   background: rgba(0,0,0,0.02);
   border-radius: 12px;
   border: 1px solid transparent;
@@ -128,7 +128,7 @@
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
   max-height: 280px;
   overflow-y: auto;
-  z-index: 9999 !important;
+  z-index: 1000 !important;
   display: none;
   animation: dropdownIn 0.2s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
@@ -243,7 +243,7 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  z-index: 105;
+  z-index: 11;
 }
 
 /* Individual filter dropdown wrapper */
@@ -256,7 +256,7 @@
 .c-filter-dropdown:hover,
 .c-filter-dropdown:focus-within,
 .c-filter-dropdown:has(.sd-wrap.open) {
-  z-index: 9999;
+  z-index: 1000;
 }
 
 /* Visual trigger button */
@@ -358,13 +358,13 @@
    Z-INDEX FIXES FOR DROPDOWNS
    ═══════════════════════════ */
 .c-filter-bar .sd-wrap {
-  z-index: 200;
+  z-index: 12;
 }
 .c-filter-bar .sd-wrap.open {
-  z-index: 9998;
+  z-index: 1000;
 }
 .c-filter-bar .sd-dropdown {
-  z-index: 9998 !important;
+  z-index: 1000 !important;
 }
 
 /* Ensure the last dropdown aligns right instead of left to prevent clipping off-screen */

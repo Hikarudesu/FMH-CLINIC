@@ -330,6 +330,7 @@ def user_role_list(request):
         'users': users,
         'roles': roles,
         'active_tab': 'staff',
+        'search_value': search_query,
     }
     return render(request, 'accounts/roles/user_role_list.html', context)
 

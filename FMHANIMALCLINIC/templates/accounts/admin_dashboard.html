@@ -29,11 +29,19 @@
     <div class="stat-value">{{ branches|length }}</div>
     <div class="stat-sub">{{ branches|length }} branch{{ branches|length|pluralize:"es" }}</div>
   </div>
+  {% if new_inquiry_count > 0 %}
+  <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+    <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class='bx bx-envelope'></i> New Inquiries</div>
+    <div class="stat-value" style="color: #fff;">{{ new_inquiry_count }}</div>
+    <div class="stat-sub" style="color: rgba(255,255,255,0.8);"><a href="{% url 'inquiries:list' %}?status=NEW" style="color: #fff; text-decoration: underline;">View & Respond</a></div>
+  </div>
+  {% else %}
   <div class="stat-card purple">
     <div class="stat-label"><i class='bx bx-group'></i> Active Staff</div>
     <div class="stat-value">{{ active_staff }}</div>
     <div class="stat-sub">of {{ total_staff }} total staff</div>
   </div>
+  {% endif %}
 </div>
 
 <!-- Content Grid -->
@@ -108,6 +116,37 @@
         </li>
         {% endfor %}
       </ul>
+    </div>
+  </div>
+
+  <!-- New Inquiries Widget -->
+  <div class="dashboard-card">
+    <div class="card-header">
+      <h3><i class='bx bx-envelope'></i> New Inquiries</h3>
+      <a href="{% url 'inquiries:list' %}" class="card-action">View All</a>
+    </div>
+    <div class="card-body">
+      {% if recent_inquiries %}
+      <ul class="activity-list">
+        {% for inquiry in recent_inquiries %}
+        <li class="activity-item">
+          <div class="activity-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+            <i class='bx bx-envelope'></i>
+          </div>
+          <div class="activity-text">
+            <p><strong>{{ inquiry.full_name }}</strong> — {{ inquiry.message|truncatewords:8 }}</p>
+            <span>{{ inquiry.created_at|timesince }} ago{% if inquiry.branch %} · {{ inquiry.branch.name }}{% endif %}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state" style="padding: 18px 0;">
+        <i class='bx bx-envelope-open'></i>
+        <h4>No new inquiries</h4>
+        <p>New contact form submissions will appear here.</p>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

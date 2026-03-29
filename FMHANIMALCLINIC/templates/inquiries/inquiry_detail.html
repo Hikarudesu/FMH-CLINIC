@@ -1,0 +1,525 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Inquiry from {{ inquiry.full_name }}{% endblock %}
+
+{% block content %}
+<div class="inquiry-detail-page">
+
+<!-- Back Button -->
+<a href="{% url 'inquiries:list' %}" class="back-pill">
+  <i class='bx bx-chevron-left'></i>
+  <span>Back to Inquiries</span>
+</a>
+
+<!-- Inquiry Detail Card -->
+<div class="inquiry-detail-card">
+  <!-- Header -->
+  <div class="detail-header">
+    <div class="detail-avatar {% if inquiry.status == 'NEW' %}avatar-new{% endif %}">
+      {{ inquiry.full_name|make_list|first|upper }}
+    </div>
+    <div class="detail-header-info">
+      <h1>{{ inquiry.full_name }}</h1>
+      <div class="detail-meta">
+        <span><i class='bx bx-envelope'></i> {{ inquiry.email }}</span>
+        <span><i class='bx bx-phone'></i> {{ inquiry.phone }}</span>
+        {% if inquiry.branch %}
+        <span><i class='bx bx-building'></i> {{ inquiry.branch.name }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="detail-status-badges">
+      <span class="status-badge status-{{ inquiry.status|lower }}">
+        {{ inquiry.get_status_display }}
+      </span>
+      <span class="priority-badge priority-{{ inquiry.priority|lower }}">
+        {{ inquiry.get_priority_display }} Priority
+      </span>
+    </div>
+  </div>
+
+  <!-- Timeline Info -->
+  <div class="detail-timeline">
+    <div class="timeline-item">
+      <i class='bx bx-calendar'></i>
+      <div>
+        <strong>Received</strong>
+        <span>{{ inquiry.created_at|date:"M d, Y" }} at {{ inquiry.created_at|time:"g:i A" }}</span>
+      </div>
+    </div>
+    {% if inquiry.response_date %}
+    <div class="timeline-item responded">
+      <i class='bx bx-check-circle'></i>
+      <div>
+        <strong>Responded</strong>
+        <span>{{ inquiry.response_date|date:"M d, Y" }} at {{ inquiry.response_date|time:"g:i A" }} by {{ inquiry.responded_by.get_full_name|default:inquiry.responded_by.username }}</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Message Section -->
+  <div class="detail-section">
+    <h3><i class='bx bx-message-detail'></i> Customer Message</h3>
+    <div class="message-content">
+      {{ inquiry.message|linebreaks }}
+    </div>
+  </div>
+
+  <!-- Response Form -->
+  <form method="POST" class="response-form">
+    {% csrf_token %}
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <h3><i class='bx bx-bolt'></i> Quick Actions</h3>
+      <div class="action-buttons">
+        <button type="button" class="action-btn {% if inquiry.status == 'READ' %}active{% endif %}" onclick="updateStatus('READ')">
+          <i class='bx bx-envelope-open'></i> Mark as Read
+        </button>
+        <button type="button" class="action-btn {% if inquiry.status == 'RESPONDED' %}active{% endif %}" onclick="updateStatus('RESPONDED')">
+          <i class='bx bx-check-circle'></i> Mark Responded
+        </button>
+        <button type="button" class="action-btn {% if inquiry.status == 'ARCHIVED' %}active{% endif %}" onclick="updateStatus('ARCHIVED')">
+          <i class='bx bx-archive'></i> Archive
+        </button>
+      </div>
+    </div>
+
+    <!-- Status & Priority -->
+    <div class="detail-section">
+      <h3><i class='bx bx-cog'></i> Status & Priority</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="id_status">Status</label>
+          {{ form.status }}
+        </div>
+        <div class="form-group">
+          <label for="id_priority">Priority</label>
+          {{ form.priority }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Response -->
+    <div class="detail-section">
+      <h3><i class='bx bx-reply'></i> Your Response</h3>
+      <p class="section-hint">Write your response to the customer. This will be recorded for reference.</p>
+      {{ form.response }}
+      {% if inquiry.response %}
+      <div class="existing-response">
+        <strong>Previous Response:</strong>
+        <div class="response-text">{{ inquiry.response|linebreaks }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Internal Notes -->
+    <div class="detail-section">
+      <h3><i class='bx bx-notepad'></i> Internal Notes</h3>
+      <p class="section-hint">Internal notes are only visible to staff and not shared with the customer.</p>
+      {{ form.internal_notes }}
+    </div>
+
+    <!-- Submit -->
+    <div class="form-actions">
+      <a href="{% url 'inquiries:list' %}" class="btn-secondary">
+        <i class='bx bx-x'></i> Cancel
+      </a>
+      <button type="submit" class="btn-primary">
+        <i class='bx bx-save'></i> Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+
+</div>
+
+<script>
+function updateStatus(status) {
+  fetch("{% url 'inquiries:update_status' inquiry.pk %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ status: status })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    }
+  });
+}
+</script>
+
+<style>
+/* ══════ INQUIRY DETAIL STYLES ══════ */
+.inquiry-detail-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Back Button */
+.back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  transition: all 0.2s ease;
+}
+
+.back-pill:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Detail Card */
+.inquiry-detail-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+/* Header */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), transparent);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.detail-avatar.avatar-new {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.detail-header-info {
+  flex: 1;
+}
+
+.detail-header-info h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.detail-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.detail-status-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-badge, .priority-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status-badge.status-new { background: #fef2f2; color: #dc2626; }
+.status-badge.status-read { background: #eff6ff; color: #2563eb; }
+.status-badge.status-responded { background: #f0fdf4; color: #16a34a; }
+.status-badge.status-archived { background: #f3f4f6; color: #6b7280; }
+
+.priority-badge.priority-low { background: #f3f4f6; color: #6b7280; }
+.priority-badge.priority-normal { background: #eff6ff; color: #2563eb; }
+.priority-badge.priority-high { background: #fff7ed; color: #ea580c; }
+.priority-badge.priority-urgent { background: #fef2f2; color: #dc2626; }
+
+/* Timeline */
+.detail-timeline {
+  display: flex;
+  gap: 24px;
+  padding: 16px 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.timeline-item i {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+.timeline-item.responded i {
+  color: #22c55e;
+}
+
+.timeline-item strong {
+  display: block;
+  color: var(--text-primary);
+}
+
+.timeline-item span {
+  color: var(--text-secondary);
+}
+
+/* Sections */
+.detail-section {
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.detail-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.section-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: -8px 0 16px 0;
+}
+
+/* Message Content */
+.message-content {
+  background: var(--bg);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+/* Quick Actions */
+.quick-actions {
+  padding: 24px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.action-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Form Elements */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.form-group select,
+.form-group textarea {
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Existing Response */
+.existing-response {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  border-left: 4px solid #22c55e;
+}
+
+.existing-response strong {
+  display: block;
+  color: #16a34a;
+  margin-bottom: 8px;
+}
+
+.response-text {
+  color: #166534;
+  font-size: 0.9rem;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.btn-secondary, .btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+}
+
+.btn-primary {
+  background: var(--primary);
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .detail-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .detail-meta {
+    justify-content: center;
+  }
+  
+  .detail-status-badges {
+    flex-direction: row;
+  }
+  
+  .detail-timeline {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn-secondary, .btn-primary {
+    justify-content: center;
+  }
+}
+</style>
+
+{% endblock %}

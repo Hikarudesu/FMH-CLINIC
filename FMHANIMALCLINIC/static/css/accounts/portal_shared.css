@@ -711,6 +711,8 @@
   min-height: calc(100vh - var(--topbar-h));
   min-width: 0;
   overflow-x: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* ===================== PAGE HEADER ===================== */
@@ -886,6 +888,7 @@
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-card);
+  z-index: 1;
 }
 
 .dashboard-card::before {
@@ -897,6 +900,12 @@
   transition: opacity 0.3s ease;
   pointer-events: none;
   background: linear-gradient(135deg, var(--primary-light) 0%, transparent 50%);
+}
+
+/* Dashboard Card Hover - Simple & Minimalist */
+.dashboard-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.1);
 }
 
 
