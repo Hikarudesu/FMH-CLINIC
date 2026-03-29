@@ -82,9 +82,11 @@
       </div>
 
       <!-- Clear Button -->
+      {% if q or selected_branch or selected_position %}
       <a href="{% url 'employees:staff_list' %}" class="c-filter-bar__clear">
         <i class='bx bx-x'></i> <span>Clear</span>
       </a>
+      {% endif %}
     </div>
   </form>
 </div>
@@ -335,6 +337,7 @@
 
   searchInput.addEventListener('input', function () {
     const q = this.value.trim().toLowerCase();
+    filterRows(q);
     if (!q) { hideDropdown(); return; }
     const results = staff.filter(s =>
       s.name.toLowerCase().includes(q) ||

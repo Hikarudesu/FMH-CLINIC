@@ -20,27 +20,8 @@
   </div>
 </div>
 
-<!-- Search & Filter Bar -->
-<div class="staff-filter-card">
-  <form method="GET" id="userFilterForm">
-    <div class="portal-search" style="flex:1; margin-bottom:0;">
-      <i class='bx bx-search'></i>
-      <input type="text" name="q" placeholder="Search by name, email, or username..." value="{{ search_value }}" id="userSearch">
-    </div>
-
-    <select class="filter-select" name="role" onchange="document.getElementById('userFilterForm').submit()">
-      <option value="">All Roles</option>
-      {% for role in roles %}
-      <option value="{{ role.id }}">{{ role.name }}</option>
-      {% endfor %}
-    </select>
-
-    <div class="filter-actions">
-      {% url 'accounts:user_role_list' as clear_url %}
-      <a href="{{ clear_url }}" class="filter-btn clear"><i class='bx bx-x'></i> Clear</a>
-    </div>
-  </form>
-</div>
+<!-- Filter Bar -->
+{% include "components/filter_bar.html" with form_action="/accounts/users/roles/" form_id="userFilterForm" search_name="q" search_value=search_value search_placeholder="Search by name, email, or username..." search_id="userSearch" search_dropdown_id="userSearchDropdown" filters=role_filters active_filters=active_filters clear_url="/accounts/users/roles/" show_clear=show_clear %}
 
 {% if users %}
 <!-- Users Table -->
@@ -461,6 +442,11 @@
       }
     });
   });
+
+  // Reinitialize searchable dropdowns for filter bar
+  if (window.SearchableDropdown) {
+    SearchableDropdown.init();
+  }
 </script>
 
 {% endblock %}

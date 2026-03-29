@@ -20,6 +20,9 @@ def branch_list(request):
     return render(request, 'branches/branch_list.html', {
         'branches': branches,
         'q': search_query,
+        'filters': [],
+        'active_filters': [],
+        'show_clear': bool(search_query),
     })
 
 

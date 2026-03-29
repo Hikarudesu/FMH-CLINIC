@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.urls import reverse
 import json
 
 from .models import Inquiry
@@ -178,33 +179,43 @@ def inquiry_list(request):
 def inquiry_detail(request, pk):
     """Admin view: View and respond to a specific inquiry."""
     inquiry = get_object_or_404(Inquiry.objects.select_related('branch', 'responded_by'), pk=pk)
-    
+
     # Mark as READ if it's NEW
     if inquiry.status == 'NEW':
         inquiry.status = 'READ'
         inquiry.save(update_fields=['status', 'updated_at'])
-    
+
     if request.method == 'POST':
         form = InquiryResponseForm(request.POST, instance=inquiry)
         if form.is_valid():
             inquiry = form.save(commit=False)
-            
+
             # Set responded_by if responding
             if inquiry.response and not inquiry.responded_by:
                 inquiry.responded_by = request.user
                 inquiry.response_date = timezone.now()
-            
+
             inquiry.save()
             messages.success(request, 'Inquiry updated successfully.')
             return redirect('inquiries:detail', pk=pk)
     else:
         form = InquiryResponseForm(instance=inquiry)
-    
+
+    # Build meta items for hero component
+    meta_items = [
+        {'icon': 'bx-envelope', 'label': 'Email', 'value': inquiry.email},
+        {'icon': 'bx-phone', 'label': 'Phone', 'value': inquiry.phone},
+    ]
+    if inquiry.branch:
+        meta_items.append({'icon': 'bx-building', 'label': 'Branch', 'value': inquiry.branch.name})
+
     context = {
         'inquiry': inquiry,
         'form': form,
+        'meta_items': meta_items,
+        'inquiry_list_url': reverse('inquiries:list'),
     }
-    
+
     return render(request, 'inquiries/inquiry_detail.html', context)
 
 

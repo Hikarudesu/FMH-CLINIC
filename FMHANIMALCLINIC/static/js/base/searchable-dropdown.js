@@ -40,6 +40,7 @@
     const onchangeAction = wrap.dataset.sdOnchange || ''; // 'submit-form' or custom function name
     const formId = wrap.dataset.sdForm || '';
     const searchThreshold = parseInt(wrap.dataset.sdSearchThreshold || '6', 10);
+    const iconClass = wrap.dataset.icon || ''; // Icon class if available
 
     // Gather options from .sd-data spans
     const dataContainer = wrap.querySelector('.sd-data');
@@ -70,7 +71,15 @@
     const trigger = document.createElement('button');
     trigger.type = 'button';
     trigger.className = 'sd-trigger' + (value ? ' has-value' : '');
-    trigger.innerHTML = '<span class="sd-label">' + escapeHtml(selectedLabel) + '</span>';
+    
+    // Add icon if available
+    let triggerHTML = '';
+    if (iconClass) {
+      triggerHTML += '<i class="' + iconClass + '" style="font-size: 1rem; flex-shrink: 0; opacity: 0.7; margin-right: 4px;"></i>';
+    }
+    triggerHTML += '<span class="sd-label">' + escapeHtml(selectedLabel) + '</span>';
+    trigger.innerHTML = triggerHTML;
+    
     trigger.setAttribute('aria-haspopup', 'listbox');
     trigger.setAttribute('aria-expanded', 'false');
     wrap.appendChild(trigger);
@@ -143,11 +152,26 @@
 
       const newValue = optEl.dataset.value;
       const newLabel = optEl.textContent;
+      const iconClass = wrap.dataset.icon || '';
 
       // Update state
       hiddenInput.value = newValue;
       wrap.dataset.sdValue = newValue;
-      trigger.querySelector('.sd-label').textContent = newLabel;
+      
+      // Update label with icon if available
+      const labelEl = trigger.querySelector('.sd-label');
+      if (labelEl) {
+        labelEl.textContent = newLabel;
+      } else {
+        // Rebuild trigger content with icon
+        let triggerHTML = '';
+        if (iconClass) {
+          triggerHTML += '<i class="' + iconClass + '" style="font-size: 1rem; flex-shrink: 0; opacity: 0.7; margin-right: 4px;"></i>';
+        }
+        triggerHTML += '<span class="sd-label">' + escapeHtml(newLabel) + '</span>';
+        trigger.innerHTML = triggerHTML;
+      }
+      
       trigger.classList.toggle('has-value', !!newValue);
 
       // Update active state
@@ -241,6 +265,20 @@
     wrap.dataset.sdName = sel.name || sel.id || '';
     wrap.dataset.sdValue = sel.value || '';
     wrap.dataset.sdPlaceholder = '';
+
+    // Copy data attributes from parent (for icon, etc.)
+    const parent = sel.closest('.c-filter-dropdown');
+    if (parent) {
+      const trigger = parent.querySelector('.c-filter-dropdown__trigger');
+      if (trigger) {
+        const icon = trigger.querySelector('.c-filter-dropdown__icon');
+        if (icon) {
+          // Store icon class for later use
+          const iconClass = Array.from(icon.classList).join(' ');
+          wrap.dataset.icon = iconClass;
+        }
+      }
+    }
 
     // Copy onchange behavior
     if (sel.hasAttribute('onchange')) {

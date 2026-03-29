@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from .decorators import module_permission_required, admin_only
 from .models import User
 from .rbac_models import Module, ModulePermission, Role, SpecialPermission
+from branches.models import Branch
 
 
 @login_required
@@ -298,6 +299,7 @@ def user_role_list(request):
     """
     search_query = request.GET.get('q', '').strip()
     role_filter = request.GET.get('role', '')
+    branch_filter = request.GET.get('branch', '')
 
     # Base queryset - ONLY show staff users (not Pet Owners)
     # Pet Owners are "Shadow Users" that never appear in Role Management
@@ -321,16 +323,73 @@ def user_role_list(request):
         except ValueError:
             pass
 
+    # Apply branch filter
+    if branch_filter:
+        try:
+            users = users.filter(branch_id=int(branch_filter))
+        except ValueError:
+            pass
+
     users = users.order_by('username')
 
     # Get only staff roles for the filter dropdown (exclude pet owner role)
     roles = Role.objects.filter(is_staff_role=True).order_by('-hierarchy_level', 'name')
+    
+    # Get all branches for the filter dropdown
+    branches = Branch.objects.filter(is_active=True).order_by('name')
+
+    # Build filter list for filter_bar component
+    role_filters = [
+        {
+            'name': 'role',
+            'icon': 'bx-shield-quarter',
+            'default_label': 'All Roles',
+            'has_value': bool(role_filter),
+            'selected_label': '',
+            'options': []
+        },
+        {
+            'name': 'branch',
+            'icon': 'bx-building-house',
+            'default_label': 'All Branches',
+            'has_value': bool(branch_filter),
+            'selected_label': '',
+            'options': []
+        }
+    ]
+
+    # Populate role filter options
+    for role in roles:
+        is_selected = str(role.id) == role_filter
+        role_filters[0]['options'].append({
+            'value': role.id,
+            'label': role.name,
+            'selected': is_selected
+        })
+        if is_selected:
+            role_filters[0]['selected_label'] = role.name
+
+    # Populate branch filter options
+    for branch in branches:
+        is_selected = str(branch.id) == branch_filter
+        role_filters[1]['options'].append({
+            'value': branch.id,
+            'label': branch.name,
+            'selected': is_selected
+        })
+        if is_selected:
+            role_filters[1]['selected_label'] = branch.name
+
+    # Show clear button if any filter is active
+    show_clear = bool(search_query or role_filter or branch_filter)
 
     context = {
         'users': users,
         'roles': roles,
         'active_tab': 'staff',
         'search_value': search_query,
+        'role_filters': role_filters,
+        'show_clear': show_clear,
     }
     return render(request, 'accounts/roles/user_role_list.html', context)
 

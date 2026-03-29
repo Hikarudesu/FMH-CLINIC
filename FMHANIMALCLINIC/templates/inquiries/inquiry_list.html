@@ -84,27 +84,73 @@
   </button>
 </div>
 
-<!-- Search & Filter Bar -->
-<div class="inquiry-filter-bar">
-  <form method="GET" class="search-form">
-    <div class="search-input-wrapper">
-      <i class='bx bx-search'></i>
-      <input type="text" name="q" placeholder="Search by name, email, phone..." value="{{ current_filters.q }}">
+<!-- ══════ SEARCH & FILTER BAR ══════ -->
+<div class="c-filter-bar" id="inquiryFilterBar">
+  <div class="c-filter-bar__glow"></div>
+  <form method="get" action="{% url 'inquiries:list' %}" class="c-filter-bar__form" autocomplete="off" id="inquiryFilterForm">
+    <!-- Preserve status filter -->
+    {% if current_filters.status %}
+    <input type="hidden" name="status" value="{{ current_filters.status }}">
+    {% endif %}
+
+    <!-- Search Row -->
+    <div class="c-filter-bar__search">
+      <i class='bx bx-search c-filter-bar__search-icon'></i>
+      <input type="text" name="q" value="{{ current_filters.q }}"
+             placeholder="Search by name, email, phone..." id="inquirySearch"
+             class="c-filter-bar__search-input" autocomplete="off">
+      <div class="search-dropdown" id="inquirySearchDropdown"></div>
+      <div class="c-filter-bar__shortcut"><span>⌘</span><span>K</span></div>
     </div>
-    <select name="branch" onchange="this.form.submit()">
-      <option value="">All Branches</option>
-      {% for branch in branches %}
-      <option value="{{ branch.id }}" {% if current_filters.branch == branch.id|stringformat:'i' %}selected{% endif %}>{{ branch.name }}</option>
-      {% endfor %}
-    </select>
-    <select name="priority" onchange="this.form.submit()">
-      <option value="">All Priorities</option>
-      {% for code, label in priority_choices %}
-      <option value="{{ code }}" {% if current_filters.priority == code %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    {% if current_filters.status %}<input type="hidden" name="status" value="{{ current_filters.status }}">{% endif %}
-    <button type="submit" class="filter-btn"><i class='bx bx-filter'></i> Filter</button>
+
+    <!-- Filter Dropdowns Row -->
+    <div class="c-filter-bar__filters">
+      <!-- Priority Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if current_filters.priority %} active{% endif %}">
+          <i class='bx bx-flag c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if current_filters.priority %}<span class="prefix">Priority:</span> {% for code, label in priority_choices %}{% if code == current_filters.priority %}{{ label }}{% endif %}{% endfor %}{% else %}All Priorities{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select name="priority" onchange="this.form.submit()" class="c-filter-dropdown__select sd-convert">
+          <option value="">All Priorities</option>
+          {% for code, label in priority_choices %}
+            <option value="{{ code }}" {% if current_filters.priority == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Branch Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if current_filters.branch %} active{% endif %}">
+          <i class='bx bx-building-house c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if current_filters.branch %}<span class="prefix">Branch:</span> {% for branch in branches %}{% if branch.id|stringformat:"i" == current_filters.branch %}{{ branch.name }}{% endif %}{% endfor %}{% else %}All Branches{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select name="branch" onchange="this.form.submit()" class="c-filter-dropdown__select sd-convert">
+          <option value="">All Branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if current_filters.branch == branch.id|stringformat:'i' %}selected{% endif %}>{{ branch.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if current_filters.q or current_filters.priority or current_filters.branch %}
+      <a href="{% url 'inquiries:list' %}" class="c-filter-bar__clear" title="Clear Filters"><i class='bx bx-x'></i></a>
+      {% endif %}
+
+      {% if inquiries %}
+      <div style="margin-left: auto;">
+        <button type="button" class="btn-clear-all" onclick="clearAllInquiries()">
+          <i class='bx bx-trash'></i> Clear All
+        </button>
+      </div>
+      {% endif %}
+    </div>
   </form>
 </div>
 
@@ -112,14 +158,16 @@
 <!-- Inquiry List -->
 <div class="inquiry-list">
   {% for inquiry in inquiries %}
-  <a href="{% url 'inquiries:detail' inquiry.pk %}" class="inquiry-card {% if inquiry.status == 'NEW' %}unread{% endif %}">
+  <a href="{% url 'inquiries:detail' inquiry.pk %}" 
+     class="inquiry-card searchable-card {% if inquiry.status == 'NEW' %}unread{% endif %}"
+     data-name="{{ inquiry.full_name }}"
+     data-email="{{ inquiry.email }}"
+     data-phone="{{ inquiry.phone }}"
+     data-branch="{% if inquiry.branch %}{{ inquiry.branch.name }}{% endif %}"
+     data-href="{% url 'inquiries:detail' inquiry.pk %}">
     
     <!-- Status accent bar -->
-    <div class="inquiry-accent-bar 
-      {% if inquiry.status == 'NEW' %}accent-new
-      {% elif inquiry.status == 'READ' %}accent-read
-      {% elif inquiry.status == 'RESPONDED' %}accent-responded
-      {% else %}accent-archived{% endif %}"></div>
+    <div class="inquiry-accent-bar"></div>
     
     <div class="inquiry-card-body">
       <!-- Avatar -->
@@ -163,9 +211,14 @@
         </div>
       </div>
       
-      <!-- Arrow -->
-      <div class="inquiry-arrow">
-        <i class='bx bx-chevron-right'></i>
+      <!-- Delete Button (inside card) -->
+      <button class="inquiry-delete-btn-inline" onclick="deleteInquiry(event, {{ inquiry.pk }})" title="Delete inquiry">
+        <i class='bx bx-trash'></i>
+      </button>
+
+      <!-- View Icon -->
+      <div class="inquiry-view-icon">
+        <i class='bx bx-right-arrow-alt'></i>
       </div>
     </div>
   </a>
@@ -222,6 +275,29 @@
 .inquiry-page {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.btn-clear-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 40px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1.5px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+
+.btn-clear-all:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
 }
 
 /* Stats Cards */
@@ -299,80 +375,6 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
   50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
 }
-
-/* Filter Bar */
-.inquiry-filter-bar {
-  background: var(--surface);
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 20px;
-}
-
-.search-form {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.search-input-wrapper {
-  flex: 1;
-  min-width: 250px;
-  position: relative;
-}
-
-.search-input-wrapper i {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-}
-
-.search-input-wrapper input {
-  width: 100%;
-  padding: 10px 14px 10px 40px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  background: var(--bg);
-  transition: all 0.2s ease;
-}
-
-.search-input-wrapper input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
-}
-
-.search-form select {
-  padding: 10px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  background: var(--bg);
-  cursor: pointer;
-}
-
-.filter-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-btn:hover {
-  background: var(--primary-dark);
-}
-
-/* Inquiry List */
 .inquiry-list {
   display: flex;
   flex-direction: column;
@@ -384,10 +386,11 @@
   background: var(--surface);
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .inquiry-card:hover {
@@ -400,16 +403,44 @@
   background: linear-gradient(to right, rgba(239, 68, 68, 0.03), var(--surface));
 }
 
+/* Delete Button Inside Card */
+.inquiry-delete-btn-inline {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.inquiry-card:hover .inquiry-delete-btn-inline {
+  opacity: 1;
+}
+
+.inquiry-delete-btn-inline:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  transform: scale(1.05);
+}
+
+.inquiry-delete-btn-inline:active {
+  transform: scale(0.95);
+}
+
 /* Accent Bar */
 .inquiry-accent-bar {
   width: 4px;
   flex-shrink: 0;
+  background: var(--border-color);
 }
-
-.accent-new { background: linear-gradient(to bottom, #ef4444, #dc2626); }
-.accent-read { background: linear-gradient(to bottom, #3b82f6, #2563eb); }
-.accent-responded { background: linear-gradient(to bottom, #22c55e, #16a34a); }
-.accent-archived { background: linear-gradient(to bottom, #9ca3af, #6b7280); }
 
 /* Card Body */
 .inquiry-card-body {
@@ -557,16 +588,24 @@
 .priority-chip.priority-high { background: #fff7ed; color: #ea580c; }
 .priority-chip.priority-urgent { background: #fef2f2; color: #dc2626; }
 
-/* Arrow */
-.inquiry-arrow {
-  color: var(--text-secondary);
-  font-size: 1.5rem;
-  transition: transform 0.2s ease;
+/* View Icon */
+.inquiry-view-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  border-radius: 8px;
+  color: white;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-.inquiry-card:hover .inquiry-arrow {
+.inquiry-card:hover .inquiry-view-icon {
   transform: translateX(4px);
-  color: var(--primary);
+  background: var(--primary-dark);
 }
 
 /* Pagination */
@@ -653,30 +692,296 @@
   .inquiry-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .search-form {
-    flex-direction: column;
-  }
-  
-  .search-input-wrapper {
-    min-width: 100%;
-  }
-  
+
   .inquiry-card-body {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
   }
-  
+
   .inquiry-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
-  }
-  
-  .inquiry-arrow {
-    display: none;
+    width: 100%;
   }
 }
 </style>
+
+<script>
+// CSRF Token helper
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Delete single inquiry
+function deleteInquiry(event, inquiryId) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  if (!confirm('Are you sure you want to delete this inquiry? This action cannot be undone.')) {
+    return;
+  }
+  
+  const csrftoken = getCookie('csrftoken');
+  
+  fetch('{% url "inquiries:bulk_action" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({
+      ids: [inquiryId],
+      action: 'delete'
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Remove the card with animation
+      const card = event.target.closest('.inquiry-card');
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(-20px)';
+      setTimeout(() => {
+        card.remove();
+        
+        // Check if list is empty
+        const list = document.querySelector('.inquiry-list');
+        if (list && list.children.length === 0) {
+          window.location.reload();
+        }
+      }, 300);
+    } else {
+      alert('Error deleting inquiry: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error deleting inquiry. Please try again.');
+  });
+}
+
+// Clear all inquiries
+function clearAllInquiries() {
+  const inquiryCards = document.querySelectorAll('.inquiry-card');
+  if (inquiryCards.length === 0) return;
+  
+  if (!confirm(`Are you sure you want to delete all ${inquiryCards.length} inquiries on this page? This action cannot be undone.`)) {
+    return;
+  }
+  
+  const inquiryIds = Array.from(inquiryCards).map(card => {
+    const deleteBtn = card.querySelector('.inquiry-delete-btn-inline');
+    const onclickAttr = deleteBtn.getAttribute('onclick');
+    const match = onclickAttr.match(/deleteInquiry\(event,\s*(\d+)\)/);
+    return match ? parseInt(match[1]) : null;
+  }).filter(id => id !== null);
+  
+  if (inquiryIds.length === 0) return;
+  
+  const csrftoken = getCookie('csrftoken');
+  
+  fetch('{% url "inquiries:bulk_action" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrftoken
+    },
+    body: JSON.stringify({
+      ids: inquiryIds,
+      action: 'delete'
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert('Error deleting inquiries: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error deleting inquiries. Please try again.');
+  });
+}
+
+// ══════ INQUIRIES SEARCH AUTOCOMPLETE + LIVE FILTER ══════
+(function initInquirySearch() {
+  const searchInput = document.getElementById('inquirySearch');
+  const dropdown    = document.getElementById('inquirySearchDropdown');
+  if (!searchInput || !dropdown) return;
+
+  function buildData() {
+    return Array.from(document.querySelectorAll('.searchable-card')).map(card => ({
+      name   : card.dataset.name   || '',
+      email  : card.dataset.email  || '',
+      phone  : card.dataset.phone  || '',
+      branch : card.dataset.branch || '',
+      href   : card.dataset.href   || '#',
+      card   : card
+    }));
+  }
+
+  let inquiriesData = buildData();
+
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function highlight(text, q) {
+    if (!q) return text;
+    return text.replace(new RegExp('(' + esc(q) + ')', 'gi'),
+      '<span class="search-dropdown-highlight">$1</span>');
+  }
+
+  function renderDropdown(results, q) {
+    if (!results.length) {
+      dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No inquiries found</div>';
+    } else {
+      dropdown.innerHTML = results.slice(0, 8).map((r, idx) => `
+        <a href="${r.href}" class="search-dropdown-item" style="text-decoration: none; color: inherit; display: flex; align-items: center; cursor: pointer;">
+          <i class='bx bx-envelope'></i>
+          <div class="item-info">
+            <div class="item-name">${highlight(r.name, q)}</div>
+            <div class="item-sub">${highlight(r.email, q)} &bull; ${r.branch || 'No Branch'}</div>
+          </div>
+          <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+        </a>`).join('');
+      dropdown.querySelectorAll('.search-dropdown-item').forEach((item, idx) => {
+        item.addEventListener('click', e => {
+          hideDropdown();
+        });
+      });
+    }
+    dropdown.style.display = 'block';
+    dropdown.classList.add('active');
+  }
+
+  function hideDropdown() {
+    dropdown.classList.remove('active');
+    dropdown.style.display = '';
+  }
+
+  function filterCards(q) {
+    let hasVisible = false;
+    inquiriesData.forEach(r => {
+      const nl = r.name.toLowerCase(); const el = r.email.toLowerCase(); 
+      const pl = r.phone.toLowerCase(); const bl = r.branch.toLowerCase();
+      const matches = !q || nl.includes(q) || el.includes(q) || pl.includes(q) || bl.includes(q);
+      r.card.style.display = matches ? '' : 'none';
+      if(matches) hasVisible = true;
+    });
+
+    const listContainer = document.querySelector('.inquiry-list');
+    let liveEmpty = document.getElementById('liveEmptyState');
+
+    if (!hasVisible && inquiriesData.length > 0) {
+      if (!liveEmpty && listContainer) {
+        liveEmpty = document.createElement('div');
+        liveEmpty.id = 'liveEmptyState';
+        liveEmpty.className = 'inquiry-empty';
+        liveEmpty.innerHTML = `
+          <div class="empty-visual">
+            <div class="empty-ring ring-1"></div>
+            <div class="empty-ring ring-2"></div>
+            <div class="empty-ring ring-3"></div>
+            <div class="empty-center-icon">
+              <i class='bx bx-search'></i>
+            </div>
+          </div>
+          <h2>No inquiries matching your search</h2>
+          <p>Please try a different term.</p>`;
+        listContainer.parentNode.insertBefore(liveEmpty, listContainer.nextSibling);
+      }
+      if (liveEmpty) liveEmpty.style.display = 'block';
+      if (listContainer) listContainer.style.display = 'none';
+    } else {
+      if (liveEmpty) liveEmpty.style.display = 'none';
+      if (listContainer) listContainer.style.display = 'flex';
+    }
+  }
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    filterCards(q);
+    if (!q) { hideDropdown(); return; }
+    const results = inquiriesData.filter(r =>
+      r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || 
+      r.phone.toLowerCase().includes(q) || r.branch.toLowerCase().includes(q));
+    renderDropdown(results, q);
+  });
+
+  searchInput.addEventListener('focus', function () {
+    if (this.value.trim()) this.dispatchEvent(new Event('input'));
+  });
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(hideDropdown, 150);
+  });
+
+  searchInput.addEventListener('keydown', function (e) {
+    const items = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+    let idx = items.findIndex(i => i.classList.contains('active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if(idx >= 0 && items[idx]) items[idx].classList.remove('active');
+      idx = (idx + 1) % items.length;
+      if(items[idx]) items[idx].classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if(idx >= 0 && items[idx]) items[idx].classList.remove('active');
+      idx = (idx - 1 + items.length) % items.length;
+      if(items[idx]) items[idx].classList.add('active');
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (idx >= 0 && items[idx]) {
+        items[idx].click();
+      } else {
+        this.form.submit();
+      }
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    }
+  });
+
+  // Hotkey CMD/CTRL+K to focus search
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+})();
+
+// ══════ AUTO-REFRESH FOR NEW INQUIRIES ══════
+(function initAutoRefresh() {
+  let lastTotalCount = {{ stats.total }};
+  
+  function checkForNewInquiries() {
+    fetch('/inquiries/api/stats/')
+      .then(response => response.json())
+      .then(data => {
+        if (data.total > lastTotalCount) {
+          // New inquiries have been submitted from landing page
+          lastTotalCount = data.total;
+          location.reload();
+        }
+      })
+      .catch(error => console.log('Auto-refresh check failed:', error));
+  }
+  
+  // Check for new inquiries every 10 seconds
+  setInterval(checkForNewInquiries, 10000);
+})();
+</script>
 
 {% endblock %}
