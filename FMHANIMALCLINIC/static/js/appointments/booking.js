@@ -308,6 +308,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   if (dateInput) {
+    // Listen to both 'input' and 'change' to handle both date picker and manual input
+    dateInput.addEventListener("input", function () {
+      fetchVets();
+      fetchTimeSlots();
+    });
     dateInput.addEventListener("change", function () {
       fetchVets();
       fetchTimeSlots();

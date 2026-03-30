@@ -9,50 +9,96 @@
 {% url 'pos:refund_list' as refund_url %}
 {% include "components/page_hero.html" with title="Sales History" icon="bx-cart" subtitle="View and manage completed transactions" action_url=new_sale_url action_icon="bx-cart" action_label="New Sale" action_url_2=refund_url action_icon_2="bx-undo" action_label_2="Refunds" %}
 
-<!-- Filters -->
-<div class="admin-table-card" style="margin-bottom: 20px; padding: 20px;">
-  <form method="GET" class="sales-filter-form">
-    <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end;">
-      <!-- Search Section -->
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div style="flex: 1; position: relative;">
-          <i class='bx bx-search' style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 1.1rem;"></i>
-          <input type="text" name="q" value="{{ request.GET.q }}"
-                 placeholder="Search transaction ID or customer..."
-                 class="filter-input"
-                 style="width: 100%; padding: 12px 14px 12px 42px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface);">
+<!-- Filter Bar with Search and Dropdowns -->
+<div class="c-filter-bar" style="margin-bottom: 20px;">
+  <div class="c-filter-bar__glow"></div>
+  <form method="GET" action="{% url 'pos:sales_list' %}" class="c-filter-bar__form" autocomplete="off">
+    <!-- Search Input -->
+    <div class="c-filter-bar__search">
+      <i class='bx bx-search c-filter-bar__search-icon'></i>
+      <input
+        type="text"
+        name="q"
+        value="{{ request.GET.q }}"
+        placeholder="Search transaction ID or customer..."
+        id="salesSearch"
+        class="c-filter-bar__search-input"
+        autocomplete="off"
+      >
+      <div class="search-dropdown" id="salesSearchDropdown"></div>
+      <div class="c-filter-bar__shortcut">
+        <span>⌘</span><span>K</span>
+      </div>
+    </div>
+
+    <!-- Filter Dropdowns Row -->
+    <div class="c-filter-bar__filters">
+      <!-- Status Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if request.GET.status %} active{% endif %}">
+          <i class='bx bx-receipt c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if request.GET.status %}
+              {% for value, label in status_choices %}
+                {% if value == request.GET.status %}{{ label }}{% endif %}
+              {% endfor %}
+            {% else %}All Status{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
         </div>
-        <select name="status" class="filter-select" style="padding: 12px 36px 12px 14px; min-width: 140px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface);">
+        <select class="c-filter-dropdown__select sd-convert" name="status" onchange="this.form.submit()">
           <option value="">All Status</option>
           {% for value, label in status_choices %}
-          <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
 
-      <!-- Date Filters -->
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap;">From:</label>
-          <input type="date" name="date_from" value="{{ request.GET.date_from }}"
-                 class="filter-input"
-                 style="padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface);">
+      <!-- Customer Type Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if request.GET.customer_type %} active{% endif %}">
+          <i class='bx bx-user c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if request.GET.customer_type %}
+              {% for value, label in customer_type_choices %}
+                {% if value == request.GET.customer_type %}{{ label }}{% endif %}
+              {% endfor %}
+            {% else %}All Customer Types{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap;">To:</label>
-          <input type="date" name="date_to" value="{{ request.GET.date_to }}"
-                 class="filter-input"
-                 style="padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--surface);">
-        </div>
-        <button type="submit" class="btn-action primary" style="padding: 10px 20px; white-space: nowrap;">
-          <i class='bx bx-search'></i> Search
-        </button>
-        {% if request.GET.q or request.GET.status or request.GET.date_from or request.GET.date_to %}
-        <a href="{% url 'pos:sales_list' %}" class="btn-action outline" style="padding: 10px 16px;">
-          <i class='bx bx-x'></i> Clear
-        </a>
-        {% endif %}
+        <select class="c-filter-dropdown__select sd-convert" name="customer_type" onchange="this.form.submit()">
+          <option value="">All Customer Types</option>
+          {% for value, label in customer_type_choices %}
+            <option value="{{ value }}" {% if request.GET.customer_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
       </div>
+
+      <!-- Branch Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if request.GET.branch %} active{% endif %}">
+          <i class='bx bx-building-house c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if request.GET.branch %}
+              {% for branch in branches %}
+                {% if branch.id|stringformat:"i" == request.GET.branch %}{{ branch.name }}{% endif %}
+              {% endfor %}
+            {% else %}All Branches{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select class="c-filter-dropdown__select sd-convert" name="branch" onchange="this.form.submit()">
+          <option value="">All Branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"i" %}selected{% endif %}>{{ branch.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if request.GET.q and request.GET.q|length or request.GET.status and request.GET.status|length or request.GET.customer_type and request.GET.customer_type|length or request.GET.branch and request.GET.branch|length %}
+      <a href="{% url 'pos:sales_list' %}" class="c-filter-bar__clear" title="Clear Filters"><i class='bx bx-x'></i></a>
+      {% endif %}
     </div>
   </form>
 </div>
@@ -104,7 +150,13 @@
       </thead>
       <tbody>
         {% for sale in sales %}
-        <tr>
+        <tr class="searchable-row"
+            data-txn-id="{{ sale.transaction_id }}"
+            data-customer="{{ sale.customer_display_name }}"
+            data-status="{{ sale.get_status_display }}"
+            data-customer-type="{{ sale.get_customer_type_display }}"
+            data-branch="{{ sale.branch.name }}"
+            data-amount="{{ sale.total }}">
           <td style="text-align: center; font-weight: 600; font-family: monospace; padding: 10px 8px; white-space: nowrap;">{{ sale.transaction_id }}</td>
           <td style="text-align: center; font-size: 12px; color: var(--text-secondary); padding: 10px 8px; white-space: nowrap;">
             {{ sale.created_at|date:"M d" }}<br>
@@ -529,5 +581,125 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// ══════ SALES SEARCH AUTOCOMPLETE + LIVE FILTER ══════
+(function initSalesSearch() {
+  const searchInput = document.getElementById('salesSearch');
+  const dropdown = document.getElementById('salesSearchDropdown');
+  if (!searchInput || !dropdown) return;
+
+  function buildData() {
+    return Array.from(document.querySelectorAll('tr.searchable-row')).map(row => ({
+      txn_id: row.dataset.txnId || '',
+      customer: row.dataset.customer || '',
+      status: row.dataset.status || '',
+      customer_type: row.dataset.customerType || '',
+      branch: row.dataset.branch || '',
+      amount: row.dataset.amount || '',
+      row: row
+    }));
+  }
+
+  let items = buildData();
+
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function highlight(text, q) {
+    if (!q) return text;
+    return text.replace(new RegExp('(' + esc(q) + ')', 'gi'),
+      '<span class="search-dropdown-highlight">$1</span>');
+  }
+
+  function renderDropdown(results, q) {
+    if (!results.length) {
+      dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No sales found</div>';
+    } else {
+      dropdown.innerHTML = results.slice(0, 8).map(item => `
+        <div class="search-dropdown-item" data-txn-id="${item.txn_id}">
+          <i class='bx bx-receipt'></i>
+          <div class="item-info">
+            <div class="item-name">${highlight(item.txn_id, q)}</div>
+            <div class="item-sub">${highlight(item.customer, q)} &bull; ${item.customer_type} &bull; ${item.branch}</div>
+          </div>
+          <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+        </div>`).join('');
+      dropdown.querySelectorAll('.search-dropdown-item').forEach((elem, idx) => {
+        elem.addEventListener('mousedown', e => {
+          e.preventDefault();
+          searchInput.value = results[idx].txn_id;
+          filterRows(results[idx].txn_id.toLowerCase());
+          hideDropdown();
+        });
+      });
+    }
+    dropdown.style.display = 'block';
+    dropdown.classList.add('active');
+  }
+
+  function hideDropdown() {
+    dropdown.classList.remove('active');
+    dropdown.style.display = '';
+  }
+
+  function filterRows(q) {
+    items.forEach(item => {
+      const txl = item.txn_id.toLowerCase();
+      const cl = item.customer.toLowerCase();
+      const matchesSearch = !q || txl.includes(q) || cl.includes(q);
+      item.row.style.display = matchesSearch ? '' : 'none';
+    });
+  }
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    filterRows(q);
+    if (!q) { hideDropdown(); return; }
+    const results = items.filter(item =>
+      item.txn_id.toLowerCase().includes(q) ||
+      item.customer.toLowerCase().includes(q));
+    renderDropdown(results, q);
+  });
+
+  searchInput.addEventListener('focus', function () {
+    if (this.value.trim()) this.dispatchEvent(new Event('input'));
+  });
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(hideDropdown, 150);
+  });
+
+  searchInput.addEventListener('keydown', function (e) {
+    const items_elem = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+    let idx = items_elem.findIndex(i => i.classList.contains('active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items_elem[idx]?.classList.remove('active');
+      idx = (idx + 1) % items_elem.length;
+      items_elem[idx]?.classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items_elem[idx]?.classList.remove('active');
+      idx = (idx - 1 + items_elem.length) % items_elem.length;
+      items_elem[idx]?.classList.add('active');
+    } else if (e.key === 'Enter' && idx >= 0) {
+      e.preventDefault(); items_elem[idx]?.click();
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    }
+  });
+
+  // Hotkey CMD/CTRL+K to focus search
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+}());
+
+// Reinitialize searchable dropdowns for filter bar
+if (window.SearchableDropdown) {
+  SearchableDropdown.init();
+}
 </script>
 {% endblock %}

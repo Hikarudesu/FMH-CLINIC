@@ -173,6 +173,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   padding: 20px;
   transition: all 0.2s var(--ease);
   position: relative;

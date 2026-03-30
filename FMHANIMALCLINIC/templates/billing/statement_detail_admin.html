@@ -4,35 +4,25 @@
 {% block title %}Statement Details - {{ statement.statement_number }}{% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="page-header">
-  <div>
-    <h1>Statement Details</h1>
-    <p class="page-subtitle">{{ statement.statement_number }} - {{ statement.patient_name }}</p>
-  </div>
-  <div class="page-header-actions">
-    <a href="{% url 'billing:statement_list' %}" class="btn-action outline">
-      <i class='bx bx-arrow-back'></i> Back to List
-    </a>
-    <a href="{% url 'billing:edit_statement' statement.id %}" class="btn-action secondary">
-      <i class='bx bx-edit'></i> Edit Statement
-    </a>
-    {% if statement.status == 'DRAFT' %}
-    <form method="post" action="{% url 'billing:release_statement' statement.id %}" style="display: inline;"
-          onsubmit="return confirm('Release this statement to customer? This action cannot be undone.')">
-      {% csrf_token %}
-      <button type="submit" class="btn-action success">
-        <i class='bx bx-paper-plane'></i> Release to Customer
-      </button>
-    </form>
-    {% endif %}
-    <button onclick="printStatement()" class="btn-action primary">
-      <i class='bx bx-printer'></i> Print Statement
-    </button>
-  </div>
-</div>
+{% url 'billing:statement_list' as list_url %}
+{% url 'billing:edit_statement' statement.id as edit_url %}
+{% include "components/page_hero.html" with title="Statement Details" icon="bx-file-invoice" subtitle=statement.statement_number action_url=list_url action_label="Back to List" action_icon="bx-arrow-back" action_url_2=edit_url action_label_2="Edit Statement" action_icon_2="bx-edit" %}
 
-<!-- Status Banner -->
+<!-- Additional Actions -->
+<div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+  {% if statement.status == 'DRAFT' %}
+  <form method="post" action="{% url 'billing:release_statement' statement.id %}" style="display: inline;"
+        onsubmit="return confirm('Release this statement to customer? This action cannot be undone.')">
+    {% csrf_token %}
+    <button type="submit" class="btn-action success">
+      <i class='bx bx-paper-plane'></i> Release to Customer
+    </button>
+  </form>
+  {% endif %}
+  <button onclick="printStatement()" class="btn-action primary">
+    <i class='bx bx-printer'></i> Print Statement
+  </button>
+</div>
 <div class="status-banner {% if statement.status == 'DRAFT' %}draft{% elif statement.status == 'RELEASED' %}released{% else %}sent{% endif %}">
   <div class="status-icon">
     {% if statement.status == 'DRAFT' %}

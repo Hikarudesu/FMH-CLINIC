@@ -6,7 +6,7 @@ app_name = 'billing'
 
 urlpatterns = [
     # Services Management (Products/Medications)
-    path('services/', views.ServiceListView.as_view(),
+    path('services/', views.service_list,
          name='billable_items'),
     path('services/create/', views.ServiceCreateView.as_view(),
          name='billable_item_create'),

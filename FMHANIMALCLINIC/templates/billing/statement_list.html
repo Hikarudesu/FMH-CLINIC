@@ -6,50 +6,58 @@
 {% block content %}
 <!-- ══════ STATEMENT OF ACCOUNT HERO ══════ -->
 {% url 'billing:statement_generator' as create_stmt_url %}
-{% include "components/page_hero.html" with title="Statement of Account" icon="bx-file-invoice" subtitle="Create and manage customer billing statements" action_url=create_stmt_url action_icon="bx-plus" action_label="Create Statement" %}
+{% include "components/page_hero.html" with title="Statement of Account" icon="bx-receipt" subtitle="Create and manage customer billing statements" action_url=create_stmt_url action_icon="bx-plus" action_label="Create Statement" %}
 
-<!-- Tab Bar for Status Filter -->
-<div class="c-tab-bar" style="margin-bottom: 20px;">
-  <div class="c-tab-bar__glow"></div>
-  <div class="c-tab-bar__indicator"></div>
-  <button class="c-tab-btn {% if not status_filter or status_filter == 'all' %}active{% endif %}"
-          data-tab="all" type="button" onclick="filterByStatus('all')">
-    <i class='bx bx-list-ul c-tab-btn__icon'></i> <span class="c-tab-btn__label">All</span>
-  </button>
-  <button class="c-tab-btn {% if status_filter == 'DRAFT' %}active{% endif %}"
-          data-tab="draft" type="button" onclick="filterByStatus('DRAFT')">
-    <i class='bx bx-edit c-tab-btn__icon'></i> <span class="c-tab-btn__label">Draft</span>
-    {% if draft_count > 0 %}<span class="c-tab-btn__badge">{{ draft_count }}</span>{% endif %}
-  </button>
-  <button class="c-tab-btn {% if status_filter == 'RELEASED' or status_filter == 'SENT' %}active{% endif %}"
-          data-tab="released" type="button" onclick="filterByStatus('RELEASED')">
-    <i class='bx bx-check-circle c-tab-btn__icon'></i> <span class="c-tab-btn__label">Released</span>
-  </button>
-</div>
-
-<!-- Search Bar -->
-<div class="dashboard-grid" style="grid-template-columns: 1fr; margin-bottom: 1rem;">
-  <div class="admin-table-card" style="padding: 1rem;">
-    <form method="get" class="d-flex" style="gap: 0.5rem; align-items: center;">
-      <input type="hidden" name="status" value="{{ status_filter }}">
-      <i class='bx bx-search' style="font-size: 1.25rem; color: var(--text-3);"></i>
+<!-- Filter Bar with Search and Dropdowns -->
+<div class="c-filter-bar" style="margin-bottom: 20px;">
+  <div class="c-filter-bar__glow"></div>
+  <form method="GET" action="{% url 'billing:statement_list' %}" class="c-filter-bar__form" autocomplete="off">
+    <!-- Search Input -->
+    <div class="c-filter-bar__search">
+      <i class='bx bx-search c-filter-bar__search-icon'></i>
       <input
         type="text"
         name="search"
         value="{{ search_query }}"
-        placeholder="Search by statement #, patient name, or owner name..."
-        style="flex: 1; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem;"
+        placeholder="Search statement #, patient, or owner..."
+        id="statementSearch"
+        class="c-filter-bar__search-input"
+        autocomplete="off"
       >
-      <button type="submit" class="btn-action outline" style="padding: 0.5rem 1rem;">
-        <i class='bx bx-search'></i> Search
-      </button>
-      {% if search_query %}
-        <a href="?status={{ status_filter }}" class="btn-action outline" style="padding: 0.5rem 1rem;">
-          <i class='bx bx-x'></i> Clear
-        </a>
+      <div class="search-dropdown" id="statementSearchDropdown"></div>
+      <div class="c-filter-bar__shortcut">
+        <span>⌘</span><span>K</span>
+      </div>
+    </div>
+
+    <!-- Filter Dropdowns Row -->
+    <div class="c-filter-bar__filters">
+      <!-- Branch Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if branch_filter %} active{% endif %}">
+          <i class='bx bx-building-house c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if branch_filter %}
+              {% for branch in branches %}
+                {% if branch.id|stringformat:"i" == branch_filter %}{{ branch.name }}{% endif %}
+              {% endfor %}
+            {% else %}All Branches{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select class="c-filter-dropdown__select sd-convert" name="branch" onchange="clearSearchAndSubmit(this.form)">
+          <option value="">All Branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if branch_filter == branch.id|stringformat:"i" %}selected{% endif %}>{{ branch.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if search_query and search_query|length or branch_filter and branch_filter|length %}
+      <a href="{% url 'billing:statement_list' %}" class="c-filter-bar__clear" title="Clear Filters"><i class='bx bx-x'></i></a>
       {% endif %}
-    </form>
-  </div>
+    </div>
+  </form>
 </div>
 
 <!-- Statements Table -->
@@ -71,7 +79,11 @@
         </thead>
         <tbody>
           {% for statement in page_obj %}
-          <tr>
+          <tr class="searchable-row"
+              data-stmt-number="{{ statement.statement_number }}"
+              data-patient="{{ statement.patient_name }}"
+              data-owner="{{ statement.owner_name }}"
+              data-branch="{% if statement.branch %}{{ statement.branch.name }}{% endif %}">
             <td style="text-align: center;">
               <strong style="color: var(--primary); font-weight: 600; font-size: 0.85rem;">
                 {{ statement.statement_number }}
@@ -180,7 +192,7 @@
             <!-- First Page Button -->
             {% if page_obj.has_previous %}
               <li>
-                <a href="?page=1&status={{ status_filter }}&search={{ search_query }}"
+                <a href="?page=1&search={{ search_query }}"
                    class="pagination-btn nav-btn" title="First Page">
                   <i class='bx bx-chevrons-left'></i>
                 </a>
@@ -190,7 +202,7 @@
             <!-- Previous Button -->
             {% if page_obj.has_previous %}
               <li>
-                <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}"
+                <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}"
                    class="pagination-btn nav-btn" title="Previous">
                   <i class='bx bx-chevron-left'></i>
                 </a>
@@ -213,14 +225,14 @@
                 </li>
               {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                 <li>
-                  <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}"
+                  <a href="?page={{ num }}&search={{ search_query }}"
                      class="pagination-btn">
                     {{ num }}
                   </a>
                 </li>
               {% elif num == 1 or num == page_obj.paginator.num_pages %}
                 <li>
-                  <a href="?page={{ num }}&status={{ status_filter }}&search={{ search_query }}"
+                  <a href="?page={{ num }}&search={{ search_query }}"
                      class="pagination-btn">
                     {{ num }}
                   </a>
@@ -235,7 +247,7 @@
             <!-- Next Button -->
             {% if page_obj.has_next %}
               <li>
-                <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search_query }}"
+                <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}"
                    class="pagination-btn nav-btn" title="Next">
                   <i class='bx bx-chevron-right'></i>
                 </a>
@@ -251,7 +263,7 @@
             <!-- Last Page Button -->
             {% if page_obj.has_next %}
               <li>
-                <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&search={{ search_query }}"
+                <a href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}"
                    class="pagination-btn nav-btn" title="Last Page">
                   <i class='bx bx-chevrons-right'></i>
                 </a>
@@ -587,11 +599,13 @@
 </style>
 
 <script>
-function filterByStatus(status) {
-  const url = new URL(window.location.href);
-  url.searchParams.set('status', status);
-  url.searchParams.delete('page');
-  window.location.href = url.toString();
+function clearSearchAndSubmit(form) {
+  // Clear the search input and its parameter when using filter dropdowns
+  const searchInput = form.querySelector('input[name="search"]');
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  form.submit();
 }
 
 function jumpToPage() {
@@ -620,6 +634,128 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// ══════ STATEMENTS SEARCH AUTOCOMPLETE + LIVE FILTER ══════
+(function initStatementSearch() {
+  const searchInput = document.getElementById('statementSearch');
+  const dropdown = document.getElementById('statementSearchDropdown');
+  if (!searchInput || !dropdown) return;
+
+  function buildData() {
+    return Array.from(document.querySelectorAll('tr.searchable-row')).map(row => ({
+      stmt_number: row.dataset.stmtNumber || '',
+      patient: row.dataset.patient || '',
+      owner: row.dataset.owner || '',
+      branch: row.dataset.branch || '',
+      row: row
+    }));
+  }
+
+  let items = buildData();
+
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function highlight(text, q) {
+    if (!q) return text;
+    return text.replace(new RegExp('(' + esc(q) + ')', 'gi'),
+      '<span class="search-dropdown-highlight">$1</span>');
+  }
+
+  function renderDropdown(results, q) {
+    if (!results.length) {
+      dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No statements found</div>';
+    } else {
+      dropdown.innerHTML = results.slice(0, 8).map(item => `
+        <div class="search-dropdown-item" data-stmt-number="${item.stmt_number}">
+          <i class='bx bx-file-invoice'></i>
+          <div class="item-info">
+            <div class="item-name">${highlight(item.stmt_number, q)}</div>
+            <div class="item-sub">${highlight(item.patient, q)} • ${highlight(item.owner, q)} • ${item.branch || 'N/A'}</div>
+          </div>
+          <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+        </div>`).join('');
+      dropdown.querySelectorAll('.search-dropdown-item').forEach((elem, idx) => {
+        elem.addEventListener('mousedown', e => {
+          e.preventDefault();
+          searchInput.value = results[idx].stmt_number;
+          filterRows(results[idx].stmt_number.toLowerCase());
+          hideDropdown();
+        });
+      });
+    }
+    dropdown.style.display = 'block';
+    dropdown.classList.add('active');
+  }
+
+  function hideDropdown() {
+    dropdown.classList.remove('active');
+    dropdown.style.display = '';
+  }
+
+  function filterRows(q) {
+    items.forEach(item => {
+      const snl = item.stmt_number.toLowerCase();
+      const pl = item.patient.toLowerCase();
+      const ol = item.owner.toLowerCase();
+      const bl = item.branch.toLowerCase();
+      const matchesSearch = !q || snl.includes(q) || pl.includes(q) || ol.includes(q) || bl.includes(q);
+      item.row.style.display = matchesSearch ? '' : 'none';
+    });
+  }
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    filterRows(q);
+    if (!q) { hideDropdown(); return; }
+    const results = items.filter(item =>
+      item.stmt_number.toLowerCase().includes(q) ||
+      item.patient.toLowerCase().includes(q) ||
+      item.owner.toLowerCase().includes(q) ||
+      item.branch.toLowerCase().includes(q));
+    renderDropdown(results, q);
+  });
+
+  searchInput.addEventListener('focus', function () {
+    if (this.value.trim()) this.dispatchEvent(new Event('input'));
+  });
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(hideDropdown, 150);
+  });
+
+  searchInput.addEventListener('keydown', function (e) {
+    const items_elem = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+    let idx = items_elem.findIndex(i => i.classList.contains('active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items_elem[idx]?.classList.remove('active');
+      idx = (idx + 1) % items_elem.length;
+      items_elem[idx]?.classList.add('active');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items_elem[idx]?.classList.remove('active');
+      idx = (idx - 1 + items_elem.length) % items_elem.length;
+      items_elem[idx]?.classList.add('active');
+    } else if (e.key === 'Enter' && idx >= 0) {
+      e.preventDefault(); items_elem[idx]?.click();
+    } else if (e.key === 'Escape') {
+      hideDropdown();
+    }
+  });
+
+  // Hotkey CMD/CTRL+K to focus search
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+}());
+
+// Reinitialize searchable dropdowns for filter bar
+if (window.SearchableDropdown) {
+  SearchableDropdown.init();
+}
 </script>
 
 {% endblock %}

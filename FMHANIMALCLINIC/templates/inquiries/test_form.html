@@ -1,0 +1,102 @@
+{% extends 'base/portal_admin.html' %}
+{% load static %}
+
+{% block title %}Test Inquiry Submission{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px;">
+    <h2>Test Inquiry Form</h2>
+    <p>This is a simple test form to verify inquiry submissions are working.</p>
+    
+    <form id="testForm" style="display: flex; flex-direction: column; gap: 15px;">
+        {% csrf_token %}
+        
+        <div>
+            <label>Full Name:</label>
+            <input type="text" id="fullName" value="Test User" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div>
+            <label>Email:</label>
+            <input type="email" id="email" value="test@example.com" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div>
+            <label>Phone:</label>
+            <input type="tel" id="phone" value="09123456789" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div>
+            <label>Branch:</label>
+            <select id="branch" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">-- Select Branch --</option>
+                {% for branch in branches %}
+                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div>
+            <label>Message:</label>
+            <textarea id="message" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 100px;">This is a test inquiry to verify the system is working correctly.</textarea>
+        </div>
+        
+        <button type="submit" style="padding: 12px 24px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Submit Test Inquiry
+        </button>
+    </form>
+    
+    <div id="result" style="margin-top: 20px; padding: 15px; border-radius: 4px; display: none;"></div>
+</div>
+
+<script>
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const resultDiv = document.getElementById('result');
+    
+    const formData = {
+        fullName: document.getElementById('fullName').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        branch: document.getElementById('branch').value,
+        message: document.getElementById('message').value,
+    };
+    
+    console.log('Submitting:', formData);
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = '#fff3cd';
+    resultDiv.innerHTML = '⏳ Submitting...';
+    
+    fetch('/inquiries/submit/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(formData),
+    })
+    .then(response => {
+        console.log('Status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response:', data);
+        if (data.success) {
+            resultDiv.style.background = '#d4edda';
+            resultDiv.innerHTML = '✅ SUCCESS! Inquiry ID: ' + data.inquiry_id + 
+                '<br><br><a href="/inquiries/" style="color: #0066cc;">View in Admin Portal →</a>';
+        } else {
+            resultDiv.style.background = '#f8d7da';
+            resultDiv.innerHTML = '❌ ERROR: ' + (data.error || JSON.stringify(data.errors));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultDiv.style.background = '#f8d7da';
+        resultDiv.innerHTML = '❌ NETWORK ERROR: ' + error.message;
+    });
+});
+</script>
+{% endblock %}

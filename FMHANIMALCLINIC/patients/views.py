@@ -50,8 +50,11 @@ def admin_list_view(request):
 
     # Apply Filters
     if status_filter:
-        # Filter by clinical_status FK instead of legacy status field
-        pets_qs = pets_qs.filter(clinical_status_id=status_filter)
+        try:
+            status_id = int(status_filter)
+            pets_qs = pets_qs.filter(clinical_status_id=status_id)
+        except ValueError:
+            pass
     if branch_filter:
         # Branch filter only applies to portal-linked owners
         pets_qs = pets_qs.filter(owner__branch_id=branch_filter)
@@ -69,9 +72,9 @@ def admin_list_view(request):
     selected_status_name = ''
     if status_filter:
         try:
-            selected_status_obj = ClinicalStatus.objects.get(pk=status_filter)
+            selected_status_obj = ClinicalStatus.objects.get(pk=int(status_filter))
             selected_status_name = selected_status_obj.name
-        except ClinicalStatus.DoesNotExist:
+        except (ClinicalStatus.DoesNotExist, ValueError):
             pass
 
     return render(request, 'patients/admin_list.html', {
@@ -160,19 +163,47 @@ def my_pets_view(request):
     """Comprehensive My Pets dashboard with pets, appointments, and medical records."""
     # pylint: disable=no-member
     from datetime import date
+    from django.db.models import Q
     from appointments.models import Appointment
     from records.models import RecordEntry
+    from settings.models import ClinicalStatus
 
     today = date.today()
     
-    pets = Pet.objects.filter(owner=request.user).prefetch_related(
+    # Check if user has any pets at all (independent of filters)
+    has_any_pets = Pet.objects.filter(owner=request.user).exists()
+    
+    # Get filters
+    query = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    species_filter = request.GET.get('species', '')
+
+    pets_qs = Pet.objects.filter(owner=request.user).prefetch_related(
         'appointments', 'medical_records'
     )
+
+    # Apply Search
+    if query:
+        pets_qs = pets_qs.filter(
+            Q(name__icontains=query) |
+            Q(species__icontains=query) |
+            Q(breed__icontains=query)
+        )
+
+    # Apply Filters
+    if status_filter:
+        try:
+            status_id = int(status_filter)
+            pets_qs = pets_qs.filter(clinical_status_id=status_id)
+        except ValueError:
+            pass
+    if species_filter:
+        pets_qs = pets_qs.filter(species__iexact=species_filter)
 
     # Build comprehensive pet data
     active_pets_data = []
     inactive_pets_data = []
-    for pet in pets:
+    for pet in pets_qs:
         # Get latest clinical entry
         latest_entry = RecordEntry.objects.filter(
             record__pet=pet
@@ -213,9 +244,9 @@ def my_pets_view(request):
         else:
             inactive_pets_data.append(pet_dict)
 
-    # Get upcoming appointments across all pets
+    # Get upcoming appointments across all pets (check by pet__owner, not just user field)
     upcoming_appointments = Appointment.objects.filter(
-        user=request.user,
+        pet__owner=request.user,
         appointment_date__gte=today,
     ).exclude(status='CANCELLED').select_related(
         'pet', 'branch', 'preferred_vet'
@@ -236,10 +267,22 @@ def my_pets_view(request):
     # Get follow-ups
     from notifications.models import FollowUp
     pending_followups = FollowUp.objects.filter(
-        appointment__user=request.user,
+        appointment__pet__owner=request.user,
         is_completed=False,
         follow_up_date__gte=today,
     ).select_related('appointment__pet').order_by('follow_up_date')[:5]
+
+    # Filters context
+    clinical_statuses = ClinicalStatus.objects.filter(is_active=True).order_by('order', 'name')
+    unique_species = Pet.objects.filter(owner=request.user).exclude(species__isnull=True).exclude(species='').values_list('species', flat=True).distinct().order_by('species')
+
+    selected_status_name = ''
+    if status_filter:
+        try:
+            selected_status_obj = ClinicalStatus.objects.get(pk=int(status_filter))
+            selected_status_name = selected_status_obj.name
+        except (ClinicalStatus.DoesNotExist, ValueError):
+            pass
 
     return render(
         request,
@@ -251,6 +294,13 @@ def my_pets_view(request):
             'recent_records': recent_records,
             'record_warnings': record_warnings,
             'pending_followups': pending_followups,
+            'search_query': query,
+            'statuses': clinical_statuses,
+            'species_list': unique_species,
+            'selected_status': status_filter,
+            'selected_status_name': selected_status_name,
+            'selected_species': species_filter,
+            'has_any_pets': has_any_pets,
         }
     )
 

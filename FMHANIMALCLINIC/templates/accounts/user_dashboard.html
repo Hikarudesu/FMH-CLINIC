@@ -31,11 +31,7 @@
 </div>
 {% endif %}
 
-<!-- Search Bar -->
-<div class="portal-search">
-  <i class='bx bx-search'></i>
-  <input type="text" placeholder="Search pets, records, appointments..." id="dashboardSearch">
-</div>
+<!-- Search Bar Removed -->
 
 <!-- Stat Cards -->
 <div class="stats-grid">
@@ -266,7 +262,7 @@
           </div>
           <div class="schedule-entry-details">
             <div class="schedule-entry-time"><i class='bx bx-calendar'></i> {{ appt.appointment_date|date:"M d" }}</div>
-            <div class="schedule-entry-time"><i class='bx bx-time-five'></i> {{ appt.appointment_time|time:"g:i A" }}</div>
+            <div class="schedule-entry-time"><i class='bx bx-time-five'></i> {{ appt.appointment_time_display }}</div>
             <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
           </div>
         </div>

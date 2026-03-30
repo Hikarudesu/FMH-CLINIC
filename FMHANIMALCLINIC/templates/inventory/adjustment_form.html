@@ -5,19 +5,194 @@
 
 {% block content %}
 <style>
-  /* Responsive Adjustment Form */
-  @media (max-width: 768px) {
-    .pd-grid {
-      grid-template-columns: 1fr !important;
-      gap: 16px !important;
-    }
-    .dashboard-card {
-      padding: 20px !important;
+  /* Modern Adjustment Form Container */
+  .adjustment-card-container {
+    display: flex;
+    justify-content: center;
+    padding: 24px 20px;
+  }
+
+  .adjustment-card {
+    max-width: 900px;
+    width: 100%;
+    padding: 40px !important;
+  }
+
+  /* Form Sections */
+  .adjustment-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .adjustment-section:last-of-type {
+    border-bottom: none;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .section-header i {
+    font-size: 1.4rem;
+    color: var(--primary);
+  }
+
+  .section-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+
+  /* Section Grid */
+  .section-grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .section-grid.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .section-grid.cols-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  /* Form Group */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  .form-group label .req {
+    color: var(--accent);
+    margin-left: 2px;
+  }
+
+  .form-group .hint {
+    font-size: 0.75rem;
+    color: var(--text-3);
+  }
+
+  .form-group .field-err {
+    color: var(--danger, #ef4444);
+    font-size: 0.78rem;
+  }
+
+  /* Form Controls */
+  .form-control,
+  .form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-1);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus,
+  .form-group select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.12);
+    outline: none;
+  }
+
+  .form-group textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  /* Actions Container */
+  .adjustment-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Save Button - Modern & Creative */
+  .save-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, #00695c 100%);
+    color: white;
+    font-weight: 600;
+    padding: 12px 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 150, 136, 0.2);
+  }
+
+  .save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 150, 136, 0.3);
+  }
+
+  .save-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 900px) {
+    .section-grid.cols-3 {
+      grid-template-columns: 1fr 1fr;
     }
   }
+
+  @media (max-width: 768px) {
+    .adjustment-card {
+      padding: 28px !important;
+    }
+
+    .section-grid.cols-2,
+    .section-grid.cols-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .adjustment-actions {
+      flex-direction: column-reverse;
+    }
+
+    .adjustment-actions button,
+    .adjustment-actions a {
+      width: 100%;
+    }
+  }
+
   @media (max-width: 480px) {
-    .dashboard-card {
-      padding: 16px !important;
+    .adjustment-card {
+      padding: 20px !important;
+    }
+
+    .section-header {
+      gap: 10px;
+    }
+
+    .section-header i {
+      font-size: 1.2rem;
+    }
+
+    .section-header h3 {
+      font-size: 1rem;
     }
   }
 </style>
@@ -36,107 +211,141 @@
   </div>
 </div>
 
-<div class="dashboard-card" style="max-width: 900px; padding: 32px;">
-  <form method="POST" action="{% url 'inventory:adjustment_new' %}">
-    {% csrf_token %}
-    
-    {% if form.non_field_errors %}
-      <div class="portal-message danger" style="margin-bottom: 20px;">
-        {{ form.non_field_errors.as_text }}
-      </div>
-    {% endif %}
+<div class="adjustment-card-container">
+  <div class="dashboard-card adjustment-card">
+    <form method="POST" action="{% url 'inventory:adjustment_new' %}">
+      {% csrf_token %}
 
-    <div class="pd-grid" style="grid-template-columns: 1fr 1fr; gap: 24px;">
-      
-      <!-- Branch -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.branch.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Branch*</label>
-        {{ form.branch }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Select branch first to load items</span>
-        {% if form.branch.errors %}<small style="color: var(--danger);">{{ form.branch.errors.as_text }}</small>{% endif %}
-      </div>
+      {% if form.non_field_errors %}
+        <div class="portal-message danger" style="margin-bottom: 20px;">
+          {{ form.non_field_errors.as_text }}
+        </div>
+      {% endif %}
 
-      <!-- Item -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.product.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Product*</label>
-        {{ form.product }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Only items with stock tracking enabled</span>
-        {% if form.product.errors %}<small style="color: var(--danger);">{{ form.product.errors.as_text }}</small>{% endif %}
-      </div>
+      <!-- Product Information Section -->
+      <div class="adjustment-section">
+        <div class="section-header">
+          <i class='bx bx-package'></i>
+          <h3>Product Information</h3>
+        </div>
+        <div class="section-grid cols-2">
+          <div class="form-group">
+            <label for="{{ form.branch.id_for_label }}">Branch <span class="req">*</span></label>
+            {{ form.branch }}
+            <span class="hint">Select branch first to load items</span>
+            {% if form.branch.errors %}<small class="field-err">{{ form.branch.errors.as_text }}</small>{% endif %}
+          </div>
 
-      <!-- Type -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.adjustment_type.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Adjustment Reason*</label>
-        {{ form.adjustment_type }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Select the reason for adding or removing stock</span>
-        {% if form.adjustment_type.errors %}<small style="color: var(--danger);">{{ form.adjustment_type.errors.as_text }}</small>{% endif %}
+          <div class="form-group">
+            <label for="{{ form.product.id_for_label }}">Product <span class="req">*</span></label>
+            {{ form.product }}
+            <span class="hint">Only items with stock tracking enabled</span>
+            {% if form.product.errors %}<small class="field-err">{{ form.product.errors.as_text }}</small>{% endif %}
+          </div>
+        </div>
       </div>
 
-      <!-- Reference -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.reference.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Reference Number / ID*</label>
-        {{ form.reference }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Receipt number, invoice ID, or type "N/A" if none</span>
-        {% if form.reference.errors %}<small style="color: var(--danger);">{{ form.reference.errors.as_text }}</small>{% endif %}
+      <!-- Adjustment Details Section -->
+      <div class="adjustment-section">
+        <div class="section-header">
+          <i class='bx bx-transfer'></i>
+          <h3>Adjustment Details</h3>
+        </div>
+        <div class="section-grid cols-3">
+          <div class="form-group">
+            <label for="{{ form.adjustment_type.id_for_label }}">Adjustment Reason <span class="req">*</span></label>
+            {{ form.adjustment_type }}
+            <span class="hint">Reason for adding/removing stock</span>
+            {% if form.adjustment_type.errors %}<small class="field-err">{{ form.adjustment_type.errors.as_text }}</small>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.reference.id_for_label }}">Reference Number <span class="req">*</span></label>
+            {{ form.reference }}
+            <span class="hint">Receipt, invoice ID, or "N/A"</span>
+            {% if form.reference.errors %}<small class="field-err">{{ form.reference.errors.as_text }}</small>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.date.id_for_label }}">Date <span class="req">*</span></label>
+            {{ form.date }}
+            {% if form.date.errors %}<small class="field-err">{{ form.date.errors.as_text }}</small>{% endif %}
+          </div>
+        </div>
       </div>
 
-      <!-- Date -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.date.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Date*</label>
-        {{ form.date }}
-        {% if form.date.errors %}<small style="color: var(--danger);">{{ form.date.errors.as_text }}</small>{% endif %}
+      <!-- Stock Changes Section -->
+      <div class="adjustment-section">
+        <div class="section-header">
+          <i class='bx bx-box'></i>
+          <h3>Stock Changes</h3>
+        </div>
+        <div class="section-grid cols-2">
+          <div class="form-group">
+            <label for="{{ form.quantity.id_for_label }}">Quantity <span class="req">*</span></label>
+            {{ form.quantity }}
+            <span class="hint">System auto-adjusts based on reason</span>
+            {% if form.quantity.errors %}<small class="field-err">{{ form.quantity.errors.as_text }}</small>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ form.cost_per_unit.id_for_label }}">Cost per Unit</label>
+            {{ form.cost_per_unit }}
+            <span class="hint">For purchases (leave 0.00 if N/A)</span>
+            {% if form.cost_per_unit.errors %}<small class="field-err">{{ form.cost_per_unit.errors.as_text }}</small>{% endif %}
+          </div>
+        </div>
       </div>
 
-      <!-- Reason -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.reason.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Additional Notes (Optional)</label>
-        {{ form.reason }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Any extra details about this adjustment</span>
-        {% if form.reason.errors %}<small style="color: var(--danger);">{{ form.reason.errors.as_text }}</small>{% endif %}
+      <!-- Notes Section -->
+      <div class="adjustment-section">
+        <div class="section-header">
+          <i class='bx bx-note'></i>
+          <h3>Additional Notes</h3>
+        </div>
+        <div class="form-group">
+          <label for="{{ form.reason.id_for_label }}">Notes (Optional)</label>
+          {{ form.reason }}
+          <span class="hint">Any extra details about this adjustment</span>
+          {% if form.reason.errors %}<small class="field-err">{{ form.reason.errors.as_text }}</small>{% endif %}
+        </div>
       </div>
 
-      <!-- Cost Per Unit -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.cost_per_unit.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Cost per Unit</label>
-        {{ form.cost_per_unit }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Relevant for purchases (leave as 0.00 if N/A)</span>
-        {% if form.cost_per_unit.errors %}<small style="color: var(--danger);">{{ form.cost_per_unit.errors.as_text }}</small>{% endif %}
+      <!-- Actions -->
+      <div class="adjustment-actions">
+        <a href="{% url 'inventory:management' %}" class="btn-action outline">
+          <i class='bx bx-x'></i> Cancel
+        </a>
+        <button type="submit" class="btn-action primary save-btn">
+          <i class='bx bx-check'></i> Save Adjustment
+        </button>
       </div>
-
-      <!-- Quantity -->
-      <div class="form-group" style="margin:0;">
-        <label for="{{ form.quantity.id_for_label }}" style="font-size: 0.9rem; font-weight: 600; color: var(--text-2); margin-bottom: 8px; display: block;">Quantity*</label>
-        {{ form.quantity }}
-        <span style="font-size: 0.75rem; color: var(--text-3); margin-top: 6px; display: block;">Enter amount (System will automatically add or remove based on reason)</span>
-        {% if form.quantity.errors %}<small style="color: var(--danger);">{{ form.quantity.errors.as_text }}</small>{% endif %}
-      </div>
-
-    </div>
-
-    <!-- Actions -->
-    <div style="margin-top: 30px; display: flex; justify-content: flex-end; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border);">
-        <a href="{% url 'inventory:management' %}" class="btn-action outline text-danger">Cancel</a>
-        <button type="submit" class="btn-action" style="background: #fb3b66; color: white;">Save Adjustment</button>
-    </div>
-  </form>
+    </form>
+  </div>
 </div>
 
 <style>
-/* Local overrides for cleaner Waggyvet form styling */
+/* Form Control Styling */
 .form-control {
     width: 100%;
     padding: 12px 16px;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-hover);
+    border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text-1);
     font-size: 0.95rem;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    font-family: inherit;
 }
+
 .form-control:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.12);
     outline: none;
+}
+
+.form-control::placeholder {
+    color: var(--text-3);
 }
 </style>
 

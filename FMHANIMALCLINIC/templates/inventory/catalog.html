@@ -32,39 +32,50 @@ Catalog{% endblock %} {% block content %}
 
 <div id="catProductsSection">
   <!-- ── Filter & Search Bar ── -->
-  <div class="cat-toolbar">
-    <div class="cat-search-wrap">
-      <i class="bx bx-search"></i>
-      <input type="text" placeholder="Search products..." id="catalogSearch" />
-    </div>
-    <form
-      method="GET"
-      action="{% url 'inventory:catalog' %}"
-      class="cat-branch-filter"
-    >
-      <i class="bx bx-building-house"></i>
-      <select name="branch" onchange="this.form.submit()" class="sd-convert">
-        <option value="">All Branches</option>
-        {% for branch in branches %} {% if selected_branch.id == branch.id %}
-        <option value="{{ branch.id }}" selected>{{ branch.name }}</option>
-        {% else %}
-        <option value="{{ branch.id }}">{{ branch.name }}</option>
-        {% endif %} {% endfor %}
-      </select>
-    </form>
-  </div>
+  <div class="c-filter-bar" style="margin-bottom: 22px;">
+    <div class="c-filter-bar__glow"></div>
+    <form method="GET" action="{% url 'inventory:catalog' %}" class="c-filter-bar__form" autocomplete="off">
+      <!-- Search Input -->
+      <div class="c-filter-bar__search">
+        <i class='bx bx-search c-filter-bar__search-icon'></i>
+        <input
+          type="text"
+          placeholder="Search products..."
+          id="catalogSearch"
+          class="c-filter-bar__search-input"
+          autocomplete="off"
+        >
+        <div class="search-dropdown" id="catalogSearchDropdown"></div>
+        <div class="c-filter-bar__shortcut">
+          <span>⌘</span><span>K</span>
+        </div>
+      </div>
 
-  {% if selected_branch %}
-  <div class="cat-active-filter">
-    <span
-      ><i class="bx bx-filter-alt"></i> Showing products at
-      <strong>{{ selected_branch.name }}</strong></span
-    >
-    <a href="{% url 'inventory:catalog' %}" class="cat-clear-filter"
-      ><i class="bx bx-x"></i> Clear</a
-    >
-  </div>
-  {% endif %} {% if products %}
+      <!-- Filter Dropdowns Row -->
+      <div class="c-filter-bar__filters">
+        <!-- Branch Filter -->
+        <div class="c-filter-dropdown">
+          <div class="c-filter-dropdown__trigger{% if selected_branch %} active{% endif %}">
+            <i class='bx bx-building-house c-filter-dropdown__icon'></i>
+            <span class="c-filter-dropdown__label">
+              {% if selected_branch %}{{ selected_branch.name }}{% else %}All Branches{% endif %}
+            </span>
+            <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+          </div>
+          <select class="c-filter-dropdown__select sd-convert" name="branch" onchange="this.form.submit()">
+            <option value="">All Branches</option>
+            {% for branch in branches %}
+              <option value="{{ branch.id }}" {% if selected_branch.id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if selected_branch %}
+        <a href="{% url 'inventory:catalog' %}" class="c-filter-bar__clear" title="Clear Filters"><i class='bx bx-x'></i></a>
+        {% endif %}
+      </div>
+    </form>
+  </div> {% if products %}
   <!-- Product Stats -->
   <div class="cat-stats-row">
     <div class="cat-stat">
@@ -117,15 +128,9 @@ Catalog{% endblock %} {% block content %}
           <span class="cat-price-value">{{ product.price|peso }}</span>
         </div>
         <div class="cat-card-meta">
-          <span class="cat-meta-branch"
-            ><i class="bx bx-building-house"></i> {{ product.branch.name
-            }}</span
-          >
+          <span class="cat-meta-branch"><i class="bx bx-building-house"></i> {{ product.branch.name }}</span>
           {% if product.is_available %}
-          <span class="cat-meta-stock"
-            ><i class="bx bx-box"></i> {{ product.stock_quantity }} in
-            stock</span
-          >
+          <span class="cat-meta-stock"><i class="bx bx-box"></i> {{ product.stock_quantity }} in stock</span>
           {% endif %}
         </div>
         {% if product.is_available %}
@@ -228,20 +233,134 @@ Catalog{% endblock %} {% block content %}
   </div>
 
   <script>
+    // ══════ SEARCH AUTOCOMPLETE + LIVE FILTER ══════
     document.addEventListener("DOMContentLoaded", function () {
       const searchInput = document.getElementById("catalogSearch");
-      if (searchInput) {
-        searchInput.addEventListener("input", function () {
-          const q = this.value.toLowerCase();
-          document.querySelectorAll(".cat-card").forEach(function (card) {
-            const name = card.dataset.name || "";
-            const desc = card.dataset.desc || "";
-            card.style.display =
-              name.includes(q) || desc.includes(q) ? "" : "none";
-          });
+      const dropdown = document.getElementById("catalogSearchDropdown");
+      if (!searchInput || !dropdown) return;
+
+      function buildData() {
+        return Array.from(document.querySelectorAll('.cat-card')).map(card => {
+          const searchName = card.dataset.name || "";
+          const searchDesc = card.dataset.desc || "";
+          const displayName = card.querySelector('.cat-card-name')?.textContent.trim() || searchName;
+          const branch = card.querySelector('.cat-meta-branch')?.textContent.trim() || "";
+          let stock = "";
+          const stockEl = card.querySelector('.cat-meta-stock');
+          if (stockEl) stock = stockEl.textContent.trim();
+          const isAvailable = card.querySelector('.cat-card-status.available') !== null;
+          
+          return {
+            searchName: searchName,
+            searchDesc: searchDesc,
+            displayName: displayName,
+            branch: branch,
+            stock: stock,
+            isAvailable: isAvailable,
+            card: card
+          };
         });
       }
 
+      let products = buildData();
+
+      function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+      function highlight(text, q) {
+        if (!q) return text;
+        text = String(text);
+        return text.replace(new RegExp('(' + esc(q) + ')', 'gi'), '<span class="search-dropdown-highlight">$1</span>');
+      }
+
+      function renderDropdown(results, q) {
+        if (!results.length) {
+          dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No products found</div>';
+        } else {
+          dropdown.innerHTML = results.slice(0, 6).map((p, idx) => `
+            <div class="search-dropdown-item" data-index="${idx}">
+              <i class='bx ${p.isAvailable ? 'bx-package' : 'bx-x-circle'}' style="color: ${p.isAvailable ? 'var(--primary)' : 'var(--text-3)'}"></i>
+              <div class="item-info">
+                <div class="item-name">${highlight(p.displayName, q)}</div>
+                <div class="item-sub">${p.branch} ${p.stock ? '&bull; ' + p.stock : '&bull; Out of Stock'}</div>
+              </div>
+              <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+            </div>`).join('');
+            
+          dropdown.querySelectorAll('.search-dropdown-item').forEach((item, idx) => {
+            item.addEventListener('mousedown', e => {
+              e.preventDefault();
+              searchInput.value = results[idx].displayName;
+              filterCards(results[idx].searchName);
+              hideDropdown();
+            });
+          });
+        }
+        dropdown.style.display = 'block';
+        dropdown.classList.add('active');
+      }
+
+      function hideDropdown() {
+        dropdown.classList.remove('active');
+        dropdown.style.display = '';
+      }
+
+      function filterCards(q) {
+        products.forEach(p => {
+          const matchesSearch = !q || p.searchName.includes(q) || p.searchDesc.includes(q);
+          p.card.style.display = matchesSearch ? '' : 'none';
+        });
+      }
+
+      searchInput.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        filterCards(q);
+        
+        if (!q) { 
+          hideDropdown(); 
+          return; 
+        }
+        
+        const results = products.filter(p => 
+          p.searchName.includes(q) || 
+          p.searchDesc.includes(q)
+        );
+        renderDropdown(results, q);
+      });
+
+      searchInput.addEventListener('focus', function () {
+        if (this.value.trim()) this.dispatchEvent(new Event('input'));
+      });
+
+      searchInput.addEventListener('blur', function () {
+        setTimeout(hideDropdown, 150);
+      });
+
+      searchInput.addEventListener('keydown', function (e) {
+        const items = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+        let idx = items.findIndex(i => i.classList.contains('active'));
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if(idx >= 0) items[idx].classList.remove('active');
+          idx = (idx + 1) % items.length;
+          if(items.length > 0) items[idx].classList.add('active');
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if(idx >= 0) items[idx].classList.remove('active');
+          idx = (idx - 1 + items.length) % items.length;
+          if(items.length > 0) items[idx].classList.add('active');
+        } else if (e.key === 'Enter' && idx >= 0) {
+          e.preventDefault(); 
+          items[idx].click(); // or mousedown event trigger since we used mousedown
+          
+          // Triggers the mousedown logic manually
+          searchInput.value = products[items[idx].dataset.index].displayName;
+          filterCards(products[items[idx].dataset.index].searchName);
+          hideDropdown();
+        } else if (e.key === 'Escape') {
+          hideDropdown();
+        }
+      });
+      
       /* Stagger animation */
       document.querySelectorAll(".cat-card").forEach(function (card, i) {
         card.style.animationDelay = i * 0.06 + "s";

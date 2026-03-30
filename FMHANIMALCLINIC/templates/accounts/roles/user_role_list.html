@@ -20,26 +20,8 @@
   </div>
 </div>
 
-<!-- Search & Filter Bar -->
-<div class="filter-bar">
-  <form method="GET" style="display:contents;" id="userFilterForm">
-    <div class="portal-search" style="margin-bottom:0; flex:1; min-width:200px;">
-      <i class='bx bx-search'></i>
-      <input type="text" name="q" placeholder="Search staff..." value="{{ request.GET.q }}" id="userSearch">
-    </div>
-    <select class="filter-select sd-convert" name="role" onchange="document.getElementById('userFilterForm').submit()">
-      <option value="">All Staff Roles</option>
-      {% for role in roles %}
-      <option value="{{ role.id }}" {% if request.GET.role|add:"0" == role.id %}selected{% endif %}>{{ role.name }}</option>
-      {% endfor %}
-    </select>
-    <div class="filter-actions">
-      <a href="{% url 'accounts:user_role_list' %}" class="filter-btn clear">
-        <i class='bx bx-x'></i> Clear
-      </a>
-    </div>
-  </form>
-</div>
+<!-- Filter Bar -->
+{% include "components/filter_bar.html" with form_action="/accounts/users/roles/" form_id="userFilterForm" filters=role_filters active_filters=active_filters clear_url="/accounts/users/roles/" show_clear=show_clear %}
 
 {% if users %}
 <!-- Users Table -->
@@ -56,7 +38,11 @@
     </thead>
     <tbody>
       {% for u in users %}
-      <tr data-user-id="{{ u.pk }}">
+      <tr class="searchable-row"
+          data-user-id="{{ u.pk }}"
+          data-name="{{ u.get_full_name|default:u.username }}"
+          data-email="{{ u.email }}"
+          data-username="{{ u.username }}">
         <td>
           <div style="display: flex; align-items: center; gap: 12px;">
             <div class="user-avatar {% if u.is_superuser %}superuser{% endif %}">
@@ -135,7 +121,7 @@
 {% endif %}
 
 <style>
-  .user-avatar {
+.user-avatar {
     width: 38px;
     height: 38px;
     border-radius: 50%;
@@ -308,6 +294,117 @@
       }
     });
   });
+
+  // Reinitialize searchable dropdowns for filter bar
+  if (window.SearchableDropdown) {
+    SearchableDropdown.init();
+  }
+
+  // ══════ SEARCH AUTOCOMPLETE + LIVE FILTER ══════
+  (function initUserSearch() {
+    const searchInput = document.getElementById('userSearch');
+    const dropdown    = document.getElementById('userSearchDropdown');
+    if (!searchInput || !dropdown) return;
+
+    function buildData() {
+      return Array.from(document.querySelectorAll('tr.searchable-row')).map(row => ({
+        name     : row.dataset.name    || '',
+        email    : row.dataset.email   || '',
+        username : row.dataset.username || '',
+        row      : row
+      }));
+    }
+
+    let users = buildData();
+
+    function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    function highlight(text, q) {
+      if (!q) return text;
+      return text.replace(new RegExp('(' + esc(q) + ')', 'gi'),
+        '<span class="search-dropdown-highlight">$1</span>');
+    }
+
+    function renderDropdown(results, q) {
+      if (!results.length) {
+        dropdown.innerHTML = '<div class="search-dropdown-empty"><i class="bx bx-search-alt"></i> No staff members found</div>';
+      } else {
+        dropdown.innerHTML = results.slice(0, 8).map(u => `
+          <div class="search-dropdown-item" data-username="${u.username}">
+            <i class='bx bxs-user'></i>
+            <div class="item-info">
+              <div class="item-name">${highlight(u.name, q)}</div>
+              <div class="item-sub">${highlight(u.email, q)} &bull; ${highlight(u.username, q)}</div>
+            </div>
+            <i class='bx bx-chevron-right' style="color:var(--text-secondary);"></i>
+          </div>`).join('');
+        dropdown.querySelectorAll('.search-dropdown-item').forEach((item, idx) => {
+          item.addEventListener('mousedown', e => {
+            e.preventDefault();
+            searchInput.value = results[idx].name;
+            filterRows(results[idx].name.toLowerCase());
+            hideDropdown();
+          });
+        });
+      }
+      dropdown.style.display = 'block';
+      dropdown.classList.add('active');
+    }
+
+    function hideDropdown() {
+      dropdown.classList.remove('active');
+      dropdown.style.display = '';
+    }
+
+    function filterRows(q) {
+      users.forEach(u => {
+        const nl = u.name.toLowerCase();
+        const el = u.email.toLowerCase();
+        const ul = u.username.toLowerCase();
+        const matchesSearch = !q || nl.includes(q) || el.includes(q) || ul.includes(q);
+        u.row.style.display = matchesSearch ? '' : 'none';
+      });
+    }
+
+    searchInput.addEventListener('input', function () {
+      const q = this.value.toLowerCase().trim();
+      filterRows(q);
+      if (!q) { hideDropdown(); return; }
+      const results = users.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q));
+      renderDropdown(results, q);
+    });
+
+    searchInput.addEventListener('focus', function () {
+      if (this.value.trim()) this.dispatchEvent(new Event('input'));
+    });
+
+    searchInput.addEventListener('blur', function () {
+      setTimeout(hideDropdown, 150);
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+      const items = Array.from(dropdown.querySelectorAll('.search-dropdown-item'));
+      let idx = items.findIndex(i => i.classList.contains('active'));
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        items[idx]?.classList.remove('active');
+        idx = (idx + 1) % items.length;
+        items[idx]?.classList.add('active');
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[idx]?.classList.remove('active');
+        idx = (idx - 1 + items.length) % items.length;
+        items[idx]?.classList.add('active');
+      } else if (e.key === 'Enter' && idx >= 0) {
+        e.preventDefault(); items[idx]?.click();
+      } else if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+  }());
 </script>
 
 {% endblock %}

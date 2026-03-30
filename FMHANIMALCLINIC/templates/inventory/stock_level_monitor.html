@@ -21,42 +21,75 @@
 </div>
 
 <!-- Filter Bar -->
-<div class="filter-bar">
-  <form method="GET" action="{% url 'inventory:super_admin_stock_monitoring' %}" style="display:flex; align-items:center; gap:8px;">
-    <i class='bx bx-filter-alt'></i>
-    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-2);">Filters</span>
-    <select name="branch_id" class="filter-select sd-convert" onchange="this.form.submit()" style="min-width: 200px; margin-left: 8px;">
-      <option value="">All Branches</option>
-      {% for branch in branches %}
-        <option value="{{ branch.id }}" {% if selected_branch.id == branch.id %}selected{% endif %}>
-          {{ branch.name }}
-        </option>
-      {% endfor %}
-    </select>
+<div class="c-filter-bar" style="margin-bottom: 22px;">
+  <div class="c-filter-bar__glow"></div>
+  <form method="GET" action="/inventory/super-admin/overview/" class="c-filter-bar__form" autocomplete="off">
+    <div class="c-filter-bar__filters">
+      <!-- Status Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if selected_status %} active{% endif %}">
+          <i class='bx bx-pulse c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if selected_status %}{{ selected_status }}{% else %}All Status{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select class="c-filter-dropdown__select sd-convert" name="status" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="In Stock" {% if selected_status == 'In Stock' %}selected{% endif %}>In Stock</option>
+          <option value="Low Stock" {% if selected_status == 'Low Stock' %}selected{% endif %}>Low Stock</option>
+          <option value="Out of Stock" {% if selected_status == 'Out of Stock' %}selected{% endif %}>Out of Stock</option>
+        </select>
+      </div>
+
+      <!-- Branch Filter -->
+      <div class="c-filter-dropdown">
+        <div class="c-filter-dropdown__trigger{% if selected_branch %} active{% endif %}">
+          <i class='bx bx-building-house c-filter-dropdown__icon'></i>
+          <span class="c-filter-dropdown__label">
+            {% if selected_branch %}{{ selected_branch.name }}{% else %}All Branches{% endif %}
+          </span>
+          <i class='bx bx-chevron-down c-filter-dropdown__arrow'></i>
+        </div>
+        <select class="c-filter-dropdown__select sd-convert" name="branch_id" onchange="this.form.submit()">
+          <option value="">All Branches</option>
+          {% for branch in branches %}
+            <option value="{{ branch.id }}" {% if selected_branch.id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Clear Button -->
+      {% if show_clear %}
+      <a href="/inventory/super-admin/overview/" class="c-filter-bar__clear" title="Clear Filters">
+        <i class='bx bx-x'></i>
+      </a>
+      {% endif %}
+    </div>
   </form>
 </div>
 
 <!-- Alert Summary Stats -->
 <div class="stats-grid" style="margin-bottom: 30px;">
-  <div class="stat-card orange">
+  <div class="stat-card teal">
     <div class="stat-icon-bg"><i class='bx bx-error-alt'></i></div>
     <div class="stat-label">Low Stock Items</div>
     <div class="stat-value">{{ low_stock_count }}</div>
     <div class="stat-sub">Below minimum threshold</div>
   </div>
-  <div class="stat-card red">
+  <div class="stat-card teal">
     <div class="stat-icon-bg"><i class='bx bx-info-circle'></i></div>
     <div class="stat-label">Out of Stock</div>
     <div class="stat-value">{{ out_of_stock_count }}</div>
     <div class="stat-sub">Immediate attention needed</div>
   </div>
-  <div class="stat-card green">
+  <div class="stat-card teal">
     <div class="stat-icon-bg"><i class='bx bx-package'></i></div>
     <div class="stat-label">Total Products</div>
     <div class="stat-value">{{ total_products }}</div>
     <div class="stat-sub">Active tracked items</div>
   </div>
-  <div class="stat-card blue">
+  <div class="stat-card teal">
     <div class="stat-icon-bg"><i class='bx bx-wallet'></i></div>
     <div class="stat-label">Inventory Value</div>
     <div class="stat-value">₱{{ total_inventory_value|peso }}</div>
@@ -84,20 +117,20 @@
       </thead>
       <tbody>
         {% for branch_id, stats in branch_breakdown.items %}
-          <tr style="background-color: {% if stats.total > 0 %}#fff3cd{% else %}transparent{% endif %};">
+          <tr>
             <td style="font-weight: 600;">{{ stats.name }}</td>
             <td>
-              <span style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+              <span style="color: #1565c0; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
                 {{ stats.product_count }}
               </span>
             </td>
             <td>
-              <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+              <span style="color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
                 {{ stats.low }}
               </span>
             </td>
             <td>
-              <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
+              <span style="color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">
                 {{ stats.out }}
               </span>
             </td>
@@ -140,7 +173,7 @@
       </thead>
       <tbody>
         {% for item in low_stock %}
-        <tr style="background-color: #fffbea; border-left: 4px solid #ff9800;">
+        <tr style="border-left: 4px solid #ff9800;">
           <td style="font-weight: 600; color: var(--text-1);">{{ item.name }}</td>
           <td>
             <span style="background: var(--primary-light); color: var(--primary-dark); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
@@ -208,8 +241,8 @@
       </thead>
       <tbody>
         {% for item in out_of_stock %}
-        <tr style="background-color: #ffebee; border-left: 4px solid #d32f2f;">
-          <td style="font-weight: 600; color: #d32f2f;">{{ item.name }}</td>
+        <tr style="border-left: 4px solid #d32f2f;">
+          <td style="font-weight: 600;">{{ item.name }}</td>
           <td>
             <span style="background: var(--primary-light); color: var(--primary-dark); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">
               {{ item.branch.name }}

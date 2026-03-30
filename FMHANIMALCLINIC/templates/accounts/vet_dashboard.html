@@ -56,7 +56,7 @@
         <tbody>
           {% for appt in todays_appointments %}
           <tr>
-            <td>{{ appt.appointment_time|time:"g:i A" }}</td>
+            <td>{{ appt.appointment_time_display }}</td>
             <td><strong>{{ appt.pet_name }}</strong></td>
             <td>{{ appt.owner_name }}</td>
             <td>{{ appt.branch.name }}</td>
@@ -241,7 +241,7 @@
           {% for appt in upcoming_appointments %}
           <tr>
             <td><strong>{{ appt.appointment_date|date:"M j, Y" }}</strong></td>
-            <td>{{ appt.appointment_time|time:"g:i A" }}</td>
+            <td>{{ appt.appointment_time_display }}</td>
             <td>{{ appt.pet_name }}</td>
             <td>{{ appt.owner_name }}</td>
             <td>{{ appt.branch.name }}</td>

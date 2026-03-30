@@ -30,6 +30,7 @@ urlpatterns = [
     path('reports/', include('reports.urls')),
     path('settings/', include('settings.urls')),
     path('diagnostics/', include('diagnostics.urls')),
+    path('inquiries/', include('inquiries.urls')),
 ] + legacy_urlpatterns  # Add legacy URL names for backward compatibility
 
 # Serve static and media files in development

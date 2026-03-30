@@ -144,6 +144,31 @@ class Appointment(models.Model):
         # Fallback to legacy reason field
         return self.get_reason_display() if self.reason else 'General Consultation'
 
+    def time_display(self):
+        """
+        Display appointment time intelligently.
+        Shows 'Morning' or 'Afternoon' for flexible time slots (09:00 or 14:00),
+        regardless of whether a vet was assigned. Otherwise shows the actual time.
+        """
+        if not self.appointment_time:
+            return ''
+
+        # For flexible time slots, ALWAYS show "Morning" or "Afternoon"
+        # even if a vet was auto-assigned
+        # Morning = 09:00, Afternoon = 14:00
+        if self.appointment_time.hour == 9 and self.appointment_time.minute == 0:
+            return 'Morning'
+        elif self.appointment_time.hour == 14 and self.appointment_time.minute == 0:
+            return 'Afternoon'
+        else:
+            # For specific vet times, show the actual time
+            return self.appointment_time.strftime('%I:%M %p')
+
+    @property
+    def appointment_time_display(self):
+        """Property version of time_display for use in templates."""
+        return self.time_display()
+
     @property
     def is_past(self):
         """Returns True if the appointment date+time has already passed."""

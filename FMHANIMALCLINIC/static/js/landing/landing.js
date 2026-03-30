@@ -381,28 +381,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (hasError) return;
 
-      // Show success message
-      const formSuccess = document.getElementById("formSuccess");
-      formSuccess.style.display = "flex";
+      // Get CSRF token
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-      // Reset form
-      contactForm.reset();
-
-      // Hide success message after 4 seconds
-      setTimeout(() => {
-        formSuccess.style.display = "none";
-      }, 4000);
-
-      // Log data (replace with actual backend submission)
-      console.log({
-        fullName: fullName.value,
-        email: email.value,
-        phone: phone.value,
+      // Prepare form data
+      const formData = {
+        fullName: fullName.value.trim(),
+        email: email.value.trim(),
+        phone: phone.value.trim(),
         branch: branch.value,
-        petName: petName.value,
-        message: message.value,
-        timestamp: new Date().toISOString(),
-      });
+        message: message.value.trim(),
+      };
+
+      // Debug logging
+      console.log('Submitting inquiry:', formData);
+      console.log('CSRF Token:', csrfToken);
+
+      // Disable submit button
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Sending...';
+
+      // Submit to backend
+      fetch('/inquiries/submit/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(formData),
+      })
+        .then(response => {
+          console.log('Response status:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('Response data:', data);
+          if (data.success) {
+            // Show success message
+            const formSuccess = document.getElementById("formSuccess");
+            formSuccess.style.display = "flex";
+
+            // Reset form
+            contactForm.reset();
+
+            // Hide success message after 4 seconds
+            setTimeout(() => {
+              formSuccess.style.display = "none";
+            }, 4000);
+          } else {
+            // Show error
+            alert('Failed to send message: ' + (data.error || JSON.stringify(data.errors)));
+            console.error('Form submission error:', data.errors || data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Network error:', error);
+          alert('Network error. Please check your connection and try again. Error: ' + error.message);
+        })
+        .finally(() => {
+          // Re-enable submit button
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        });
     });
   }
 

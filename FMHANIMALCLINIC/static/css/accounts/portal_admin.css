@@ -14,6 +14,8 @@
   margin-bottom: 16px;
   flex-wrap: wrap;
   box-shadow: var(--shadow-card);
+  position: relative;
+  z-index: 10;
 }
 
 .filter-select {
@@ -671,7 +673,7 @@
   position: relative;
   background: var(--surface);
   border-radius: 18px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border);
@@ -712,12 +714,7 @@
 
 /* Accent Bar */
 .admin-notif-page .notif-accent-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 4px;
-  transition: all 0.3s ease;
+  display: none;
 }
 .admin-notif-page .notif-card-v2.unread .notif-accent-bar {
   width: 5px;
@@ -728,11 +725,14 @@
 .admin-notif-page .notif-accent-bar.accent-general { background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%); }
 
 /* Card Body */
+
 .admin-notif-page .notif-card-body {
   display: flex;
   align-items: flex-start;
   padding: 18px 20px 18px 24px;
   gap: 16px;
+  box-shadow: var(--shadow-card);
+  border-radius: 18px;
 }
 
 /* ══════ ICON V2 — WITH GLOW EFFECT ══════ */
@@ -1158,7 +1158,7 @@
   .admin-notif-page .notif-hero-text h1 { font-size: 1.3rem; justify-content: center; }
   .admin-notif-page .notif-hero-inner { flex-direction: column; text-align: center; }
   .admin-notif-page .notif-header-actions { width: 100%; justify-content: center; }
-  .admin-notif-page .notif-card-body { padding: 14px 14px 14px 20px; gap: 12px; flex-wrap: wrap; }
+  .admin-notif-page .notif-card-body { padding: 14px 14px 14px 20px; gap: 12px; flex-wrap: wrap; box-shadow: var(--shadow-card); border-radius: 18px; }
   .admin-notif-page .notif-icon-v2 { width: 44px; height: 44px; font-size: 1.3rem; border-radius: 12px; }
   .admin-notif-page .notif-header-v2 { flex-direction: column; align-items: flex-start; gap: 6px; }
   .admin-notif-page .notif-title-v2 { font-size: 0.92rem; }
@@ -1299,16 +1299,17 @@
 .schedule-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 500;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  overflow-y: auto;
-  padding: 40px 16px;
+  padding: 120px 16px 24px;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.25s var(--ease);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
 }
 .schedule-modal-overlay.active {
   opacity: 1;
@@ -1316,67 +1317,104 @@
 }
 
 .schedule-modal {
-  width: 520px;
-  max-width: 94vw;
+  width: 100%;
+  max-width: 560px; /* slightly scaled down for better aspect */
   max-height: 90vh;
   background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  transform: translateY(20px);
-  transition: transform 0.3s var(--ease);
-  overflow: visible;
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 40px -10px rgba(0,0,0,0.2), 
+    0 0 0 1px rgba(0, 150, 136, 0.05);
+  transform: scale(0.96) translateY(20px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
+  position: relative;
+  margin: auto; /* Re-added margin auto to help flexbox scrolling when small */
 }
 .schedule-modal-overlay.active .schedule-modal {
-  transform: translateY(0);
+  transform: scale(1) translateY(0);
 }
 
 .schedule-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 22px;
+  padding: 20px 28px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
+  position: relative;
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
 }
+
 .schedule-modal-header h3 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
+  gap: 14px;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-1);
   margin: 0;
 }
+
 .schedule-modal-header h3 i {
   color: var(--primary);
-  font-size: 1.15rem;
+  font-size: 1.3rem;
+  background: rgba(0, 150, 136, 0.1);
+  padding: 10px;
+  border-radius: 12px;
+  animation: iconBounce 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes iconBounce {
+  0% { transform: scale(0.5) translateY(-10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .schedule-modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   border: none;
-  background: var(--bg);
+  background: transparent;
   color: var(--text-2);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 .schedule-modal-close:hover {
-  background: rgba(230, 57, 70, 0.08);
-  color: var(--accent);
+  background: rgba(230, 57, 70, 0.1);
+  color: #e63946;
+  transform: rotate(90deg);
 }
 
 .schedule-modal-body {
-  padding: 18px 22px;
+  padding: 24px 28px;
   overflow-y: auto;
-  flex: 1;
-  max-height: calc(90vh - 120px);
+  max-height: calc(100vh - 180px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 150, 136, 0.3) transparent;
+}
+
+.schedule-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.schedule-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.schedule-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 150, 136, 0.3);
+  border-radius: 3px;
+}
+
+.schedule-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 150, 136, 0.5);
 }
 
 /* Base form control styling */
@@ -1422,47 +1460,206 @@ textarea.form-control {
 .schedule-modal input,
 .schedule-modal textarea {
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   color: var(--text-1);
   background: var(--bg);
-  transition: all 0.2s var(--ease);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
+  letter-spacing: 0.3px;
 }
 .schedule-modal select:focus,
 .schedule-modal input:focus,
 .schedule-modal textarea:focus {
   border-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.12);
+  box-shadow: 0 0 0 4px rgba(0, 150, 136, 0.15), 0 0 1px rgba(0, 150, 136, 0.3);
+  transform: translateY(-2px);
+}
+.schedule-modal select:hover,
+.schedule-modal input:hover,
+.schedule-modal textarea:hover {
+  border-color: rgba(0, 150, 136, 0.3);
+  background: rgba(0, 150, 136, 0.01);
 }
 .schedule-modal select:disabled,
 .schedule-modal input:disabled {
   background: var(--bg);
   color: var(--text-3);
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 .schedule-modal select {
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23009688' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
+  background-position: right 16px center;
+  padding-right: 38px;
   cursor: pointer;
 }
-.schedule-modal-footer {
-  display: flex;
-  gap: 10px;
-  padding: 14px 22px;
-  border-top: 1px solid var(--border);
+.schedule-modal textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
 }
 
-/* ===================== RESPONSIVE — STAFF & SCHEDULE ===================== */
+/* Form Group and Label Styling in Modal */
+.schedule-modal .form-group {
+  margin-bottom: 20px;
+  animation: slideUp 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.schedule-modal .form-group:nth-child(1) { animation-delay: 0.05s; }
+.schedule-modal .form-group:nth-child(2) { animation-delay: 0.1s; }
+.schedule-modal .form-group:nth-child(3) { animation-delay: 0.15s; }
+.schedule-modal .form-group:nth-child(4) { animation-delay: 0.2s; }
+.schedule-modal .form-group:nth-child(5) { animation-delay: 0.25s; }
+.schedule-modal .form-group:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schedule-modal .form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.schedule-modal .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.schedule-modal-body > .form-group[style*="grid-column: 1 / -1"] {
+  grid-column: 1 / -1 !important;
+}
+
+/* Toggle Switch Styling in Modal */
+.schedule-modal .toggle-switch-wrapper {
+  margin: 0;
+}
+
+.schedule-modal .toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background: rgba(0, 150, 136, 0.2);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.schedule-modal .toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.schedule-modal .toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-modal .toggle-slider::before {
+  display: none !important;
+}
+
+.schedule-modal .toggle-switch input:checked + .toggle-slider {
+  transform: translateX(20px);
+  background: var(--primary);
+}
+
+.schedule-modal .toggle-switch:hover {
+  box-shadow: 0 0 12px rgba(0, 150, 136, 0.2);
+}
+
+.schedule-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px 28px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+  background: var(--bg-sidebar);
+  border-radius: 0 0 16px 16px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.schedule-modal-footer .btn-action {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+/* Schedule Modal — Using QC (Quick Create) styling */
+#scheduleModal .qc-group input,
+#scheduleModal .qc-group select,
+#scheduleModal .qc-group textarea {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text-1);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  box-sizing: border-box;
+}
+
+#scheduleModal .qc-group input:focus,
+#scheduleModal .qc-group select:focus,
+#scheduleModal .qc-group textarea:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,150,136,0.1);
+}
+
+#scheduleModal .qc-group select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235e6278' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+#scheduleModal .qc-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
 @media (max-width: 1024px) {
   .schedule-entry-details {
     flex-direction: column;
@@ -1512,9 +1709,10 @@ textarea.form-control {
     margin: 16px;
     max-height: calc(100vh - 32px);
   }
-  
+
   .schedule-modal-overlay {
-    padding: 20px 12px;
+    padding: 100px 12px 20px;
+    align-items: center;
   }
   
   .schedule-modal-header {
@@ -1555,27 +1753,27 @@ textarea.form-control {
 
 @media (max-width: 480px) {
   .schedule-modal-overlay {
-    padding: 10px;
-    align-items: flex-start;
+    padding: 100px 16px 24px;
+    align-items: center;
   }
-  
+
   .schedule-modal {
     margin: 0;
     max-width: 100%;
-    border-radius: var(--radius);
-    max-height: calc(100vh - 20px);
+    border-radius: 16px;
+    max-height: calc(100vh - 32px);
   }
-  
+
   .schedule-modal-header {
-    padding: 12px 14px;
+    padding: 16px 20px;
   }
-  
+
   .schedule-modal-body {
-    padding: 14px;
+    padding: 16px 20px;
   }
-  
+
   .schedule-modal-footer {
-    padding: 12px 14px;
+    padding: 14px 20px 16px;
   }
   
   .schedule-modal select,
@@ -5123,7 +5321,7 @@ textarea.form-control {
 }
 
 .qc-group { display: flex; flex-direction: column; gap: 6px; }
-.qc-full { grid-column: 1 / -1; }
+.qc-full { grid-column: 1 / -1; justify-self: start; }
 
 .qc-group label {
   font-size: 0.8rem;
@@ -5164,16 +5362,59 @@ textarea.form-control {
 .qc-checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--text-1);
   font-weight: 500;
+  padding: 0;
+  margin: 0;
 }
+
 .qc-checkbox input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   cursor: pointer;
+  accent-color: var(--primary);
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+/* Full-width checkbox row (checkbox left, text right) */
+.qc-full-checkbox {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(0, 150, 136, 0.06) 0%, rgba(0, 150, 136, 0.02) 100%);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  gap: 12px;
+}
+
+.qc-full-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  order: -1;
+}
+
+.qc-full-checkbox span {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-1);
+  text-align: right;
+  flex: 1;
 }
 
 /* Footer */

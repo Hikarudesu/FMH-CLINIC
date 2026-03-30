@@ -252,6 +252,7 @@ def admin_dashboard_view(request):
     from pos.models import Sale, Payment
     from inventory.models import Product
     from billing.models import Service
+    from inquiries.models import Inquiry
 
     # Check if user is a veterinarian and redirect to vet dashboard
     if request.user.assigned_role and request.user.assigned_role.code == 'veterinarian':
@@ -466,6 +467,18 @@ def admin_dashboard_view(request):
         status='REFUNDED'
     ).aggregate(total=Sum('total'))['total'] or 0
 
+    # ── New Inquiries ──
+    # Wrap in try/except in case migrations haven't been run yet
+    try:
+        new_inquiry_count = Inquiry.objects.filter(status='NEW').count()
+        recent_inquiries = Inquiry.objects.filter(
+            status='NEW'
+        ).select_related('branch').order_by('-created_at')[:5]
+    except Exception:
+        # Table doesn't exist yet (migrations not run)
+        new_inquiry_count = 0
+        recent_inquiries = []
+
     # Convert data to JSON for charts (use DjangoJSONEncoder for Decimal support)
     revenue_by_day_json = json.dumps(revenue_by_day, cls=DjangoJSONEncoder)
     appointment_status_breakdown_json = json.dumps(appointment_status_breakdown, cls=DjangoJSONEncoder)
@@ -511,6 +524,8 @@ def admin_dashboard_view(request):
         'low_stock_count': low_stock_count,
         'refunds_today': refunds_today,
         'total_revenue_this_week': total_revenue_this_week,
+        'new_inquiry_count': new_inquiry_count,
+        'recent_inquiries': recent_inquiries,
     })
 
 

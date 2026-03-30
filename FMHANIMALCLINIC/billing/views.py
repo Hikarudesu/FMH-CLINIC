@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.db import models
+from django.db.models import Q
 from decimal import Decimal
 import json
 
@@ -20,13 +21,45 @@ from .models import Service, CustomerStatement
 from .forms import ServiceForm
 
 
-class ServiceListView(ModulePermissionMixin, LoginRequiredMixin, ListView):
-    """View for listing all clinic services."""
-    model = Service
-    template_name = 'billing/services.html'
-    context_object_name = 'items'
-    module_code = 'clinic_services'
-    permission_type = 'VIEW'
+@login_required
+@module_permission_required('clinic_services', 'VIEW')
+def service_list(request):
+    """View for listing all clinic services with filtering and search."""
+    services = Service.objects.all()
+
+    # Filter by status (active/inactive)
+    status = request.GET.get('status')
+    if status == 'active':
+        services = services.filter(active=True)
+    elif status == 'inactive':
+        services = services.filter(active=False)
+
+    # Filter by category
+    category = request.GET.get('category')
+    if category:
+        services = services.filter(category=category)
+
+    # Search by name
+    search = request.GET.get('q')
+    if search:
+        services = services.filter(
+            Q(name__icontains=search) |
+            Q(category__icontains=search) |
+            Q(description__icontains=search)
+        )
+
+    # Get all categories for dropdown
+    all_categories = Service.objects.values_list('category', flat=True).distinct().filter(category__isnull=False, category__gt='')
+    categories = sorted([c for c in all_categories if c])
+
+    services = services.order_by('-created_at')
+
+    context = {
+        'items': services,
+        'categories': categories,
+        'status_choices': [('active', 'Active'), ('inactive', 'Inactive')],
+    }
+    return render(request, 'billing/services.html', context)
 
 
 class ServiceCreateView(ModulePermissionMixin, LoginRequiredMixin, CreateView):
@@ -140,17 +173,10 @@ def statement_list(request):
     """List all statements with filtering and search."""
     statements = CustomerStatement.objects.all().order_by('-created_at')
 
-    # Get status counts for tab badges
-    draft_count = CustomerStatement.objects.filter(status='DRAFT').count()
-
-    # Filter by status
-    status_filter = request.GET.get('status', 'all')
-    if status_filter != 'all':
-        # RELEASED filter should include both RELEASED and SENT statuses
-        if status_filter == 'RELEASED':
-            statements = statements.filter(status__in=['RELEASED', 'SENT'])
-        else:
-            statements = statements.filter(status=status_filter)
+    # Filter by branch
+    branch_filter = request.GET.get('branch', '')
+    if branch_filter:
+        statements = statements.filter(branch_id=branch_filter)
 
     # Search
     search_query = request.GET.get('search', '').strip()
@@ -166,11 +192,15 @@ def statement_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Get all branches for filter dropdowns
+    from branches.models import Branch
+    branches = Branch.objects.all().order_by('name')
+
     context = {
         'page_obj': page_obj,
-        'status_filter': status_filter,
         'search_query': search_query,
-        'draft_count': draft_count,
+        'branches': branches,
+        'branch_filter': branch_filter,
     }
 
     return render(request, 'billing/statement_list.html', context)

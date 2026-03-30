@@ -4,17 +4,8 @@
 {% block title %}Edit Statement - {{ statement.statement_number }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1>Edit Statement</h1>
-    <p class="page-subtitle">{{ statement.statement_number }} — {{ statement.patient_name }}</p>
-  </div>
-  <div class="page-header-actions">
-    <a href="{% url 'billing:statement_detail' statement.id %}" class="btn-action outline">
-      <i class='bx bx-arrow-back'></i> Cancel
-    </a>
-  </div>
-</div>
+{% url 'billing:statement_detail' statement.id as detail_url %}
+{% include "components/page_hero.html" with title="Edit Statement" icon="bx-pencil" subtitle=statement.statement_number action_url=detail_url action_label="Cancel" action_icon="bx-arrow-back" %}
 
 {% if messages %}
   {% for message in messages %}

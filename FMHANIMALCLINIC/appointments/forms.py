@@ -150,7 +150,7 @@ class PublicAppointmentForm(FormControlMixin, forms.ModelForm):
             'owner_name', 'owner_email', 'owner_phone', 'owner_address',
             'pet_name', 'pet_species', 'pet_breed', 'pet_dob', 'pet_sex', 'pet_color',
             'pet_symptoms',
-            'reason', 'branch', 'preferred_vet',
+            'branch', 'preferred_vet',
             'appointment_date', 'appointment_time',
         ]
         widgets = {
@@ -177,7 +177,6 @@ class PublicAppointmentForm(FormControlMixin, forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Please describe any symptoms or reasons for visit',
             }),
-            # reason widget is defined in the field declaration above
             'branch': forms.Select(),
             'preferred_vet': forms.Select(),
             'appointment_date': forms.DateInput(attrs={'type': 'date'}),
@@ -263,16 +262,22 @@ class PublicAppointmentForm(FormControlMixin, forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.source = Appointment.Source.WALKIN
-        
+
         # Map the 'reason' field (ModelChoiceField) to 'reason_for_visit' ForeignKey
         if 'reason' in self.cleaned_data:
             reason_obj = self.cleaned_data['reason']
             instance.reason_for_visit = reason_obj
-            # Also update legacy reason field for backward compatibility
+            # Update legacy reason field: only if code is a valid choice, otherwise use default
             if reason_obj:
-                instance.reason = reason_obj.code
+                # Check if the code is a valid choice in the Reason enum
+                valid_codes = [code for code, _ in Appointment.Reason.choices]
+                if reason_obj.code in valid_codes:
+                    instance.reason = reason_obj.code
+                else:
+                    # Use default for custom reasons from ReasonForVisit CRUD
+                    instance.reason = Appointment.Reason.GENERAL
             else:
-                instance.reason = ''
+                instance.reason = Appointment.Reason.GENERAL
         
         # Check if the user selected 'yes' on the special returning client radio buttons in HTML
         is_returning = self.data.get('is_returning') == 'yes'
@@ -332,7 +337,7 @@ class PortalAppointmentForm(FormControlMixin, forms.ModelForm):
             'owner_name', 'owner_email', 'owner_phone', 'owner_address',
             'pet_name', 'pet_species', 'pet_breed', 'pet_dob', 'pet_sex', 'pet_color',
             'pet_symptoms',
-            'reason', 'branch', 'preferred_vet',
+            'branch', 'preferred_vet',
             'appointment_date', 'appointment_time',
             'notes',
         ]
@@ -379,6 +384,11 @@ class PortalAppointmentForm(FormControlMixin, forms.ModelForm):
         self.fields['owner_phone'].required = False
         self.fields['owner_address'].required = False
         self.fields['notes'].required = False
+
+        # Set up reason with dynamic choices (mapped to reason_for_visit backend)
+        from settings.models import ReasonForVisit
+        self.fields['reason'].queryset = ReasonForVisit.objects.filter(is_active=True).order_by('order', 'name')
+        self.fields['reason'].label = 'Reason for Visit'
 
         if self.user:
             self.fields['owner_name'].initial = self.user.get_full_name(
@@ -449,16 +459,22 @@ class PortalAppointmentForm(FormControlMixin, forms.ModelForm):
         instance = super().save(commit=False)
         instance.source = Appointment.Source.PORTAL
         instance.is_returning_customer = True  # Always True for logged-in users
-        
+
         # Map the 'reason' field (ModelChoiceField) to 'reason_for_visit' ForeignKey
         if 'reason' in self.cleaned_data:
             reason_obj = self.cleaned_data['reason']
             instance.reason_for_visit = reason_obj
-            # Also update legacy reason field for backward compatibility
+            # Update legacy reason field: only if code is a valid choice, otherwise use default
             if reason_obj:
-                instance.reason = reason_obj.code
+                # Check if the code is a valid choice in the Reason enum
+                valid_codes = [code for code, _ in Appointment.Reason.choices]
+                if reason_obj.code in valid_codes:
+                    instance.reason = reason_obj.code
+                else:
+                    # Use default for custom reasons from ReasonForVisit CRUD
+                    instance.reason = Appointment.Reason.GENERAL
             else:
-                instance.reason = ''
+                instance.reason = Appointment.Reason.GENERAL
         
         if self.user:
             instance.user = self.user
@@ -529,7 +545,7 @@ class AdminQuickCreateForm(FormControlMixin, forms.ModelForm):
         fields = [
             'owner_name', 'owner_email', 'owner_phone', 'owner_address',
             'pet_name', 'pet_species', 'pet_breed', 'pet_dob', 'pet_sex', 'pet_color',
-            'reason', 'branch', 'preferred_vet',
+            'branch', 'preferred_vet',
             'appointment_date', 'appointment_time',
             'status', 'source', 'notes',
         ]
@@ -603,16 +619,22 @@ class AdminQuickCreateForm(FormControlMixin, forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
+
         # Map the 'reason' field (ModelChoiceField) to 'reason_for_visit' ForeignKey
         if 'reason' in self.cleaned_data:
             reason_obj = self.cleaned_data['reason']
             instance.reason_for_visit = reason_obj
-            # Also update legacy reason field for backward compatibility
+            # Update legacy reason field: only if code is a valid choice, otherwise use default
             if reason_obj:
-                instance.reason = reason_obj.code
+                # Check if the code is a valid choice in the Reason enum
+                valid_codes = [code for code, _ in Appointment.Reason.choices]
+                if reason_obj.code in valid_codes:
+                    instance.reason = reason_obj.code
+                else:
+                    # Use default for custom reasons from ReasonForVisit CRUD
+                    instance.reason = Appointment.Reason.GENERAL
             else:
-                instance.reason = ''
+                instance.reason = Appointment.Reason.GENERAL
         
         # Link user if portal source and user_id provided
         user_id = self.cleaned_data.get('selected_user_id')
@@ -658,7 +680,7 @@ class AppointmentEditForm(FormControlMixin, forms.ModelForm):
             'owner_name', 'owner_email', 'owner_phone', 'owner_address',
             'pet_name', 'pet_species', 'pet_breed', 'pet_dob', 'pet_sex', 'pet_color',
             'pet_symptoms',
-            'reason', 'branch', 'preferred_vet',
+            'branch', 'preferred_vet',
             'appointment_date', 'appointment_time',
             'status', 'source', 'notes',
         ]
@@ -746,16 +768,22 @@ class AppointmentEditForm(FormControlMixin, forms.ModelForm):
     def save(self, commit=True):
         """Override save to map 'reason' field to 'reason_for_visit' ForeignKey."""
         instance = super().save(commit=False)
-        
+
         # Map the 'reason' field (ModelChoiceField) to 'reason_for_visit' ForeignKey
         if 'reason' in self.cleaned_data:
             reason_obj = self.cleaned_data['reason']
             instance.reason_for_visit = reason_obj
-            # Also update legacy reason field for backward compatibility
+            # Update legacy reason field: only if code is a valid choice, otherwise use default
             if reason_obj:
-                instance.reason = reason_obj.code
+                # Check if the code is a valid choice in the Reason enum
+                valid_codes = [code for code, _ in Appointment.Reason.choices]
+                if reason_obj.code in valid_codes:
+                    instance.reason = reason_obj.code
+                else:
+                    # Use default for custom reasons from ReasonForVisit CRUD
+                    instance.reason = Appointment.Reason.GENERAL
             else:
-                instance.reason = ''
+                instance.reason = Appointment.Reason.GENERAL
         
         if commit:
             instance.save()

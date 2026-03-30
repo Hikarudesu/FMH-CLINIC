@@ -33,20 +33,12 @@
   .settings-card:hover {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.05);
     border-color: var(--primary);
-    transform: translateY(-2px);
   }
   .settings-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    background: linear-gradient(135deg, var(--primary-light) 0%, transparent 50%);
+    display: none;
   }
   .settings-card:hover::before {
-    opacity: 0.5;
+    display: none;
   }
 
   /* Admin Grid acts as the card-body */
@@ -233,30 +225,6 @@
       padding: 20px 16px 0 16px;
     }
 
-    /* Tab bar adjustments */
-    .c-tab-bar {
-      margin-left: -16px;
-      margin-right: -16px;
-      padding: 6px 16px;
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-    }
-
-    .c-tab-btn {
-      padding: 10px 12px;
-      font-size: 0.75rem;
-      gap: 4px;
-    }
-
-    .c-tab-btn__label {
-      display: none;
-    }
-
-    .c-tab-btn__icon {
-      font-size: 1rem;
-    }
-
     /* Card adjustments */
     .settings-card {
       max-width: 100%;
@@ -326,19 +294,6 @@
       padding: 16px 12px 0 12px;
     }
 
-    .c-tab-bar {
-      margin-left: -12px;
-      margin-right: -12px;
-      padding: 6px 12px;
-      gap: 2px;
-      margin-bottom: 24px;
-    }
-
-    .c-tab-btn {
-      padding: 8px 10px;
-      font-size: 0.7rem;
-    }
-
     .admin-grid {
       padding: 20px;
       gap: 14px;
@@ -384,7 +339,7 @@
 
 <!-- ══════ TAB BAR ══════ -->
 <div class="settings-container" style="padding-bottom: 0; margin-bottom: 0;">
-  <div class="c-tab-bar" style="margin-bottom: 32px;">
+  <div class="c-tab-bar">
     <div class="c-tab-bar__glow"></div>
     <div class="c-tab-bar__indicator"></div>
     {% for tab in tabs %}

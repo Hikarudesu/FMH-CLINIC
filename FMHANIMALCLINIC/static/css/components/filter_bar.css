@@ -12,7 +12,7 @@
   overflow: visible;
   box-shadow: var(--shadow-card);
   animation: filterBarIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
-  z-index: 100;
+  z-index: 10;
 }
 
 @keyframes filterBarIn {
@@ -68,7 +68,7 @@
   flex: 1;
   min-width: 250px;
   height: 48px;
-  z-index: 110;
+  z-index: 11;
   background: rgba(0,0,0,0.02);
   border-radius: 12px;
   border: 1px solid transparent;
@@ -128,7 +128,7 @@
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
   max-height: 280px;
   overflow-y: auto;
-  z-index: 9999 !important;
+  z-index: 1000 !important;
   display: none;
   animation: dropdownIn 0.2s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
@@ -243,7 +243,7 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  z-index: 105;
+  z-index: 11;
 }
 
 /* Individual filter dropdown wrapper */
@@ -256,7 +256,7 @@
 .c-filter-dropdown:hover,
 .c-filter-dropdown:focus-within,
 .c-filter-dropdown:has(.sd-wrap.open) {
-  z-index: 9999;
+  z-index: 1000;
 }
 
 /* Visual trigger button */
@@ -323,7 +323,17 @@
   opacity: 0;
   cursor: pointer;
   font-size: 16px;
-  z-index: 110;
+  z-index: 5; /* Lower z-index so it doesn't block */
+}
+
+/* When select is being converted to searchable dropdown, hide it completely */
+.c-filter-dropdown__select.sd-converted {
+  display: none;
+}
+
+/* Hide the decorative trigger when select is converted to searchable dropdown */
+.c-filter-dropdown:has(.sd-wrap) .c-filter-dropdown__trigger {
+  display: none;
 }
 
 /* ── Clear Button ── */
@@ -331,46 +341,111 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0;
   width: 40px;
   height: 40px;
-  border: none;
+  padding: 0;
+  border: 1.5px solid rgba(230, 57, 70, 0.3);
   border-radius: 10px;
-  background: rgba(230, 57, 70, 0.1);
+  background: rgba(230, 57, 70, 0.08);
   color: #e63946;
-  font-size: 1.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.c-filter-bar__clear span {
-  display: none; /* Hide text on clear to save space */
+.c-filter-bar__clear i {
+  font-size: 1.2rem;
 }
 
 .c-filter-bar__clear:hover {
   background: #e63946;
+  border-color: #e63946;
   color: #fff;
-  transform: rotate(90deg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
 }
 
 /* ═══════════════════════════
-   Z-INDEX FIXES FOR DROPDOWNS
+   SEARCHABLE DROPDOWN INTEGRATION
    ═══════════════════════════ */
+
+/* Basic wrapper styling */
 .c-filter-bar .sd-wrap {
-  z-index: 200;
-}
-.c-filter-bar .sd-wrap.open {
-  z-index: 9998;
-}
-.c-filter-bar .sd-dropdown {
-  z-index: 9998 !important;
+  position: relative;
+  height: 40px;
+  min-width: 130px;
 }
 
-/* Ensure the last dropdown aligns right instead of left to prevent clipping off-screen */
+/* Elevate when open */
+.c-filter-dropdown:has(.sd-wrap.open) {
+  z-index: 1000;
+}
+
+/* Style the converted dropdown trigger to match filter buttons */
+.c-filter-dropdown .sd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 32px 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.c-filter-dropdown .sd-trigger:hover {
+  background: rgba(0, 150, 136, 0.04);
+  color: var(--text-1);
+  border-color: rgba(0, 150, 136, 0.15);
+}
+
+/* Active state when a value is selected */
+.c-filter-dropdown .sd-trigger.has-value {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 150, 136, 0.25);
+}
+
+/* Adjust arrow color to match */
+.c-filter-dropdown .sd-trigger::after {
+  border-top-color: currentColor;
+}
+
+/* Icon styling in converted dropdown */
+.c-filter-dropdown .sd-trigger i {
+  font-size: 1rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.c-filter-dropdown .sd-trigger.has-value i {
+  opacity: 1;
+}
+
+/* Ensure dropdown panel appears correctly */
+.c-filter-dropdown .sd-dropdown {
+  z-index: 1001;
+}
+
+/* Align last dropdown to the right to prevent off-screen rendering */
 .c-filter-bar__filters .c-filter-dropdown:last-of-type .sd-dropdown {
-  left: auto !important;
-  right: 0 !important;
+  left: auto;
+  right: 0;
 }
 
 /* ══════════════════════════
