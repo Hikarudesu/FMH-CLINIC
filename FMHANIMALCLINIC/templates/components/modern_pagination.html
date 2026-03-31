@@ -12,9 +12,6 @@
 
 {% if page_obj.has_other_pages %}
 <div class="modern-pagination">
-  <div class="pagination-info">
-    <span class="pagination-text">Showing <strong>{{ page_obj.start_index }}</strong> to <strong>{{ page_obj.end_index }}</strong> of <strong>{{ page_obj.paginator.count }}</strong> entries</span>
-  </div>
   <div class="pagination-controls">
     
     {% if page_obj.has_previous %}
@@ -33,7 +30,7 @@
       {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
           <span class="pagination-page active">{{ num }}</span>
-        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
           <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' and value %}&{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}" class="pagination-page">
             {{ num }}
           </a>
