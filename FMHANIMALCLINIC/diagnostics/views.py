@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods
 
+from django.core.paginator import Paginator
 from accounts.decorators import module_permission_required
 from appointments.models import Appointment
 from patients.models import Pet
@@ -26,19 +27,26 @@ def dashboard(request):
     ).order_by('-created_at')[:20]
 
     # Get active pets for quick access
-    pets = Pet.objects.filter(is_active=True).select_related('owner').order_by('-created_at')[:50]
+    pets_query = Pet.objects.filter(is_active=True).select_related('owner')
 
     # Search functionality
     search = request.GET.get('search', '').strip()
     if search:
-        pets = Pet.objects.filter(
-            is_active=True,
+        pets_query = pets_query.filter(
             name__icontains=search
-        ).select_related('owner').order_by('name')[:50]
+        ).order_by('name')
+    else:
+        pets_query = pets_query.order_by('-created_at')
+
+    # Pagination
+    paginator = Paginator(pets_query, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
         'recent_diagnoses': recent_diagnoses,
-        'pets': pets,
+        'pets': page_obj.object_list,
+        'page_obj': page_obj,
         'search': search,
     }
     return render(request, 'diagnostics/dashboard.html', context)

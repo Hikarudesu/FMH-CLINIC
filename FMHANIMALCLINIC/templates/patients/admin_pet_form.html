@@ -580,10 +580,10 @@
       <div class="apf-section">
         <div class="apf-section-title"><i class='bx bx-pulse'></i> Status settings</div>
         <div class="apf-grid">
-          <div class="apf-field {% if form.status.errors %}has-error{% endif %}">
-            <label for="{{ form.status.id_for_label }}">Clinical Status</label>
-            {{ form.status }}
-            {% if form.status.errors %}<span class="apf-field-error"><i class='bx bx-error-circle'></i> {{ form.status.errors.0 }}</span>{% endif %}
+          <div class="apf-field {% if form.clinical_status.errors %}has-error{% endif %}">
+            <label for="{{ form.clinical_status.id_for_label }}">Clinical Status</label>
+            {{ form.clinical_status }}
+            {% if form.clinical_status.errors %}<span class="apf-field-error"><i class='bx bx-error-circle'></i> {{ form.clinical_status.errors.0 }}</span>{% endif %}
           </div>
           
           <div class="apf-field {% if form.is_active.errors %}has-error{% endif %}">
