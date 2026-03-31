@@ -155,20 +155,32 @@
 
           <!-- Pagination -->
           {% if group_logs|length > 5 %}
-          <div class="log-pagination">
-            <button type="button" class="page-btn prev" onclick="changePage(this, -1)" disabled>
-              <i class='bx bx-chevron-left'></i>
-              <span>Previous</span>
-            </button>
-            <div class="page-info">
+          <div class="modern-pagination activity-log-pagination" data-total-items="{{ group_logs|length }}" data-items-per-page="5">
+            <div class="pagination-controls">
+              
+              <button type="button" class="pagination-btn pagination-btn-first" onclick="goToPage(this, 1)" disabled title="First Page">
+                <i class='bx bx-chevrons-left'></i>
+              </button>
+              <button type="button" class="pagination-btn pagination-btn-prev" onclick="changePage(this, -1)" disabled title="Previous">
+                <i class='bx bx-chevron-left'></i>
+              </button>
+              
+              <div class="pagination-pages page-number-container">
+                <!-- Javascript will insert dots and page numbers here -->
+              </div>
+
+              <button type="button" class="pagination-btn pagination-btn-next" onclick="changePage(this, 1)" title="Next">
+                <i class='bx bx-chevron-right'></i>
+              </button>
+              <button type="button" class="pagination-btn pagination-btn-last" onclick="goToLastPage(this)" title="Last Page">
+                <i class='bx bx-chevrons-right'></i>
+              </button>
+            </div>
+            
+            <div class="page-info" style="display:none;">
               <span class="current-page">1</span>
-              <span class="divider">/</span>
               <span class="total-pages">{{ group_logs|length|add:4|divisibleby:5|default:1 }}</span>
             </div>
-            <button type="button" class="page-btn next" onclick="changePage(this, 1)">
-              <span>Next</span>
-              <i class='bx bx-chevron-right'></i>
-            </button>
           </div>
           {% endif %}
         </div>
@@ -623,71 +635,6 @@
   color: white;
 }
 
-/* ══════ PAGINATION ══════ */
-.log-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 16px 0 8px;
-  margin-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-2);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.25);
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.page-btn i {
-  font-size: 1.1rem;
-}
-
-.page-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--bg);
-  border-radius: var(--radius);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-1);
-}
-
-.page-info .divider {
-  color: var(--text-3);
-}
-
-.page-info .current-page {
-  color: var(--primary);
-  min-width: 20px;
-  text-align: center;
-}
-
 /* ══════ EMPTY STATE ══════ */
 .empty-state-card {
   background: var(--surface);
@@ -921,7 +868,7 @@
   .log-footer { flex-wrap: wrap; }
   .delete-btn { opacity: 1; }
 
-  .log-pagination { flex-wrap: wrap; }
+  .activity-log-pagination { flex-wrap: wrap; }
   .page-btn span { display: none; }
 }
 </style>
@@ -933,47 +880,93 @@ function toggleSection(btn) {
   section.classList.toggle('collapsed');
 }
 
-// Pagination logic
-function changePage(btn, direction) {
-  const container = btn.closest('.log-items-container');
+function setPage(container, newPage) {
   const items = container.querySelectorAll('.log-card');
-  const pageInfo = container.querySelector('.page-info');
-  const currentPageEl = pageInfo.querySelector('.current-page');
-  const totalPagesEl = pageInfo.querySelector('.total-pages');
-  const prevBtn = container.querySelector('.page-btn.prev');
-  const nextBtn = container.querySelector('.page-btn.next');
-
-  let currentPage = parseInt(currentPageEl.textContent);
-  const totalItems = items.length;
   const itemsPerPage = 5;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const totalPages = Math.ceil(items.length / itemsPerPage);
 
-  // Calculate new page
-  const newPage = currentPage + direction;
   if (newPage < 1 || newPage > totalPages) return;
 
-  currentPage = newPage;
-  currentPageEl.textContent = currentPage;
-  totalPagesEl.textContent = totalPages;
+  const pageInfo = container.querySelector('.page-info');
+  const currentPageEl = pageInfo.querySelector('.current-page');
+  currentPageEl.textContent = newPage;
 
   // Show/hide items
   items.forEach((item, index) => {
     const itemPage = Math.ceil((index + 1) / itemsPerPage);
-    item.style.display = itemPage === currentPage ? '' : 'none';
+    item.style.display = itemPage === newPage ? '' : 'none';
   });
 
-  // Update button states
-  prevBtn.disabled = currentPage === 1;
-  nextBtn.disabled = currentPage === totalPages;
+  const pagination = container.querySelector('.activity-log-pagination');
+  const firstBtn = pagination.querySelector('.pagination-btn-first');
+  const prevBtn = pagination.querySelector('.pagination-btn-prev');
+  const nextBtn = pagination.querySelector('.pagination-btn-next');
+  const lastBtn = pagination.querySelector('.pagination-btn-last');
+
+  if(newPage === 1) {
+    firstBtn.classList.add('pagination-btn-disabled');
+    prevBtn.classList.add('pagination-btn-disabled');
+  } else {
+    firstBtn.classList.remove('pagination-btn-disabled');
+    prevBtn.classList.remove('pagination-btn-disabled');
+  }
+
+  if(newPage === totalPages) {
+    nextBtn.classList.add('pagination-btn-disabled');
+    lastBtn.classList.add('pagination-btn-disabled');
+  } else {
+    nextBtn.classList.remove('pagination-btn-disabled');
+    lastBtn.classList.remove('pagination-btn-disabled');
+  }
+
+  renderPageNumbers(pagination, newPage, totalPages);
+}
+
+function changePage(btn, direction) {
+  const container = btn.closest('.log-items-container');
+  const currentPageEl = container.querySelector('.current-page');
+  let currentPage = parseInt(currentPageEl.textContent);
+  setPage(container, currentPage + direction);
+}
+
+function goToPageNative(btn, targetPage) {
+  const container = btn.closest('.log-items-container');
+  setPage(container, targetPage);
+}
+
+function goToPage(btn, page) {
+  const container = btn.closest('.log-items-container');
+  setPage(container, page);
+}
+
+function goToLastPage(btn) {
+  const container = btn.closest('.log-items-container');
+  const totalPages = parseInt(container.querySelector('.total-pages').textContent);
+  setPage(container, totalPages);
+}
+
+function renderPageNumbers(pagination, currentPage, totalPages) {
+  const pageContainer = pagination.querySelector('.page-number-container');
+  if(!pageContainer) return;
+  pageContainer.innerHTML = '';
+  
+  for(let i = 1; i <= totalPages; i++) {
+    if (i === currentPage) {
+      pageContainer.innerHTML += `<span class="pagination-page active">${i}</span>`;
+    } else if (i >= currentPage - 2 && i <= currentPage + 2) {
+      pageContainer.innerHTML += `<button type="button" class="pagination-page" onclick="goToPage(this, ${i})">${i}</button>`;
+    }
+  }
 }
 
 // Initialize total pages on load
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.log-pagination').forEach(pagination => {
+  document.querySelectorAll('.activity-log-pagination').forEach(pagination => {
     const container = pagination.closest('.log-items-container');
     const items = container.querySelectorAll('.log-card');
     const totalPages = Math.ceil(items.length / 5);
     pagination.querySelector('.total-pages').textContent = totalPages;
+    renderPageNumbers(pagination, 1, totalPages);
   });
 });
 

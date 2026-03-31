@@ -158,8 +158,20 @@ def sync_pet_clinical_status(sender, instance, **kwargs):
     if old_status == new_status:
         return  # No change — skip
 
+    # Update legacy status field
     pet.status = new_status
-    pet.save(update_fields=['status'])
+
+    # Also update the clinical_status ForeignKey to match
+    from settings.models import ClinicalStatus
+    try:
+        # Find ClinicalStatus by code that matches this action
+        clinical_status_obj = ClinicalStatus.objects.get(code=new_status)
+        pet.clinical_status = clinical_status_obj
+    except ClinicalStatus.DoesNotExist:
+        # If matching ClinicalStatus doesn't exist, keep the current one
+        pass
+
+    pet.save(update_fields=['status', 'clinical_status'])
 
     # Create a notification for the pet's owner (only if owner exists)
     if pet.owner:

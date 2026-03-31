@@ -825,7 +825,7 @@
   <div id="petsPagination" style="display:none; justify-content:center; align-items:center; gap:20px; margin: 4px 0 40px;">
 
     <!-- Prev Arrow -->
-    <button id="petsPrevBtn" onclick="changePage(-1)" title="Previous" style="
+    <button type="button" id="petsPrevBtn" onclick="changePage(-1)" title="Previous" style="
       display:inline-flex; align-items:center; justify-content:center;
       width:44px; height:44px; border-radius:50%;
       background: var(--primary);
@@ -844,7 +844,7 @@
     <div id="petsDotWrap" style="display:flex; align-items:center; gap:8px;"></div>
 
     <!-- Next Arrow -->
-    <button id="petsNextBtn" onclick="changePage(1)" title="Next" style="
+    <button type="button" id="petsNextBtn" onclick="changePage(1)" title="Next" style="
       display:inline-flex; align-items:center; justify-content:center;
       width:44px; height:44px; border-radius:50%;
       background: var(--primary);
@@ -1014,25 +1014,117 @@
     return text.replace(regex, '<span class="search-dropdown-highlight">$1</span>');
   }
 
-  // Filter cards on the page
-  function filterCards(query) {
-    let visibleCount = 0;
-    petData.forEach(p => {
-      const matchesSearch = !query || p.searchText.includes(query);
-      p.cardElement.style.display = matchesSearch ? '' : 'none';
-      if (matchesSearch) visibleCount++;
+  // Pagination state
+  let currentPage = 1;
+  const itemsPerPage = 6; // Or 8, depending on grid preference
+  let filteredCards = [...petData];
+
+  function updatePagination() {
+    const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
+    const petsPagination = document.getElementById('petsPagination');
+    const petsPrevBtn = document.getElementById('petsPrevBtn');
+    const petsNextBtn = document.getElementById('petsNextBtn');
+    const petsDotWrap = document.getElementById('petsDotWrap');
+
+    if (!petsPagination) return;
+
+    if (totalPages <= 1) {
+      petsPagination.style.display = 'none';
+      return;
+    }
+
+    petsPagination.style.display = 'flex';
+    
+    if (petsPrevBtn) {
+        petsPrevBtn.disabled = currentPage === 1;
+        petsPrevBtn.style.opacity = currentPage === 1 ? '0.5' : '1';
+        petsPrevBtn.style.cursor = currentPage === 1 ? 'not-allowed' : 'pointer';
+    }
+    if (petsNextBtn) {
+        petsNextBtn.disabled = currentPage === totalPages;
+        petsNextBtn.style.opacity = currentPage === totalPages ? '0.5' : '1';
+        petsNextBtn.style.cursor = currentPage === totalPages ? 'not-allowed' : 'pointer';
+    }
+    
+    if (petsDotWrap) {
+        petsDotWrap.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            const dot = document.createElement('div');
+            dot.style.width = i === currentPage ? '24px' : '8px';
+            dot.style.height = '8px';
+            dot.style.borderRadius = '4px';
+            dot.style.background = i === currentPage ? 'var(--primary)' : 'rgba(0,150,136,0.2)';
+            dot.style.transition = 'all 0.3s ease';
+            dot.style.cursor = 'pointer';
+            dot.onclick = () => {
+                currentPage = i;
+                renderPage();
+                scrollToGrid();
+            };
+            petsDotWrap.appendChild(dot);
+        }
+    }
+  }
+
+  function renderPage() {
+    // Hide all
+    petData.forEach(p => p.cardElement.style.display = 'none');
+    
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    
+    filteredCards.slice(start, end).forEach(p => {
+        p.cardElement.style.display = '';
+        p.cardElement.style.animation = 'none'; 
+        p.cardElement.offsetHeight; 
+        p.cardElement.style.animation = 'fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both';
     });
     
-    // Optional: Hide/Show sections based on if there are visible cards
+    updatePagination();
+  }
+
+  window.changePage = function(direction) {
+    const totalPages = Math.ceil(filteredCards.length / itemsPerPage);
+    currentPage += direction;
+    if (currentPage < 1) currentPage = 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    renderPage();
+    scrollToGrid();
+  };
+  
+  function scrollToGrid() {
+    const petsGrid = document.getElementById('petsGrid');
+    if (petsGrid) {
+      const topOffset = petsGrid.getBoundingClientRect().top + window.scrollY - 100;
+      window.scrollTo({ top: topOffset, behavior: 'smooth' });
+    }
+  }
+
+  // Filter cards on the page
+  function filterCards(query) {
+    filteredCards = [];
+    petData.forEach(p => {
+      const matchesSearch = !query || p.searchText.includes(query);
+      if (matchesSearch) {
+        filteredCards.push(p);
+      }
+    });
+    
+    currentPage = 1;
+    renderPage();
+    
     const petsGrid = document.getElementById('petsGrid');
     const sectionHeader = document.querySelector('.premium-section-header');
     
     if (petsGrid && sectionHeader) {
-      if (visibleCount === 0) {
+      if (filteredCards.length === 0) {
         // You could show an empty message here if desired
       }
     }
   }
+
+  // Initialize view
+  renderPage();
 
   // Render search dropdown
   function renderSearchDropdown(query) {

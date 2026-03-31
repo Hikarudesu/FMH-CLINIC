@@ -28,20 +28,7 @@
 
 /* Animated gradient border glow */
 .c-filter-bar__glow {
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 150, 136, 0.08) 0%,
-    transparent 30%,
-    transparent 70%,
-    rgba(0, 150, 136, 0.06) 100%
-  );
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.8;
-  transition: opacity 0.4s ease;
+  display: none;
 }
 
 .c-filter-bar:hover .c-filter-bar__glow {
@@ -69,16 +56,16 @@
   min-width: 250px;
   height: 48px;
   z-index: 11;
-  background: rgba(0,0,0,0.02);
+  background: var(--surface);
   border-radius: 12px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   transition: all 0.3s ease;
 }
 
 .c-filter-bar__search:focus-within {
   background: var(--surface);
-  border-color: rgba(0, 150, 136, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 150, 136, 0.08);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .c-filter-bar__search-icon {

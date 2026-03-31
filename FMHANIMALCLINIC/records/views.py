@@ -407,14 +407,6 @@ def admin_record_edit(request, pk):
                 elif pet_sex_str == "MALE":
                     pet.sex = "MALE"
 
-                # --- Update Vet if provided ---
-                vet_id_post = request.POST.get('vet_id', '').strip()
-                if vet_id_post:
-                    try:
-                        updated_record.vet = StaffMember.objects.get(pk=vet_id_post)
-                    except StaffMember.DoesNotExist:
-                        pass
-
                 pet.save()
                 updated_record.save()
                 
@@ -577,11 +569,20 @@ def admin_add_entry(request, pk):
             # Touch the parent record so updated_at changes (also saves branch/vet update)
             record.save()
 
-            # Sync pet clinical status
+            # Sync pet clinical status (both legacy status and clinical_status FK)
             if entry.action_required != 'HEALTHY':
                 record.pet.status = entry.action_required
             else:
                 record.pet.status = 'HEALTHY'
+
+            # Also sync the clinical_status ForeignKey
+            from settings.models import ClinicalStatus
+            try:
+                clinical_status_obj = ClinicalStatus.objects.get(code=record.pet.status)
+                record.pet.clinical_status = clinical_status_obj
+            except ClinicalStatus.DoesNotExist:
+                pass
+
             record.pet.save()
 
             messages.success(
@@ -654,6 +655,15 @@ def admin_entry_edit(request, entry_pk):
                     record.pet.status = latest_entry.action_required
                 else:
                     record.pet.status = 'HEALTHY'
+
+                # Also sync the clinical_status ForeignKey
+                from settings.models import ClinicalStatus
+                try:
+                    clinical_status_obj = ClinicalStatus.objects.get(code=record.pet.status)
+                    record.pet.clinical_status = clinical_status_obj
+                except ClinicalStatus.DoesNotExist:
+                    pass
+
                 record.pet.save()
 
             messages.success(request, 'Visit entry updated.')

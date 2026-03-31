@@ -47,13 +47,7 @@ class AdminPetForm(forms.ModelForm):
     - WALKIN: guest owner plain-text fields are filled in instead.
     """
     
-    # Explicitly declare status as ModelChoiceField to work with ClinicalStatus ForeignKey
-    status = forms.ModelChoiceField(
-        queryset=None,  # Will be set in __init__
-        required=False,
-        empty_label='-- Select Status --',
-        widget=forms.Select(attrs={'class': 'pf-input'})
-    )
+
 
     class Meta:
         model = Pet
@@ -66,7 +60,7 @@ class AdminPetForm(forms.ModelForm):
             'guest_owner_email', 'guest_owner_address',
             # Pet details
             'photo', 'name', 'species', 'breed',
-            'date_of_birth', 'sex', 'status', 'color', 'is_active',
+            'date_of_birth', 'sex', 'clinical_status', 'color', 'is_active',
         ]
         widgets = {
             'source': forms.Select(attrs={'class': 'pf-input', 'id': 'id_source'}),
@@ -89,7 +83,7 @@ class AdminPetForm(forms.ModelForm):
             'breed': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Labrador'}),
             'date_of_birth': forms.DateInput(attrs={'class': 'pf-input', 'type': 'date'}),
             'sex': forms.Select(attrs={'class': 'pf-input'}),
-            # status widget is defined in the field declaration above
+            'clinical_status': forms.Select(attrs={'class': 'pf-input'}),
             'color': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Brown, Black/White'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'pf-checkbox'}),
         }
@@ -116,11 +110,12 @@ class AdminPetForm(forms.ModelForm):
         for f in ['guest_owner_name', 'guest_owner_phone', 'guest_owner_email', 'guest_owner_address']:
             self.fields[f].required = False
 
-        # Set up status with dynamic choices (mapped to clinical_status backend)
+        # Set up clinical_status with dynamic choices
         from settings.models import ClinicalStatus
-        self.fields['status'].queryset = ClinicalStatus.objects.filter(is_active=True).order_by('order', 'name')
-        self.fields['status'].label = 'Clinical Status'
-        # empty_label is already set in field declaration
+        self.fields['clinical_status'].queryset = ClinicalStatus.objects.filter(is_active=True).order_by('order', 'name')
+        self.fields['clinical_status'].label = 'Clinical Status'
+        self.fields['clinical_status'].empty_label = '-- Select Status --'
+        self.fields['clinical_status'].required = False
 
         # Make source field read-only when editing existing pet to prevent data loss
         if self.instance and self.instance.pk:
@@ -128,11 +123,7 @@ class AdminPetForm(forms.ModelForm):
             self.fields['source'].help_text = 'Patient type cannot be changed after registration to prevent data loss.'
             
             # For editing, show all statuses including inactive ones
-            self.fields['status'].queryset = ClinicalStatus.objects.all().order_by('order', 'name')
-            
-            # Set initial value from clinical_status ForeignKey
-            if self.instance.clinical_status:
-                self.fields['status'].initial = self.instance.clinical_status
+            self.fields['clinical_status'].queryset = ClinicalStatus.objects.all().order_by('order', 'name')
 
             # Also disable the opposite owner type fields based on current source
             if self.instance.source == Pet.Source.PORTAL:
@@ -191,18 +182,12 @@ class AdminPetForm(forms.ModelForm):
         return cleaned
     
     def save(self, commit=True):
-        """Override save to map 'status' field to 'clinical_status' ForeignKey."""
         instance = super().save(commit=False)
-        
-        # Map the 'status' field (ModelChoiceField) to 'clinical_status' ForeignKey
-        if 'status' in self.cleaned_data:
-            clinical_status_obj = self.cleaned_data['status']
-            instance.clinical_status = clinical_status_obj
-            # Also update legacy status field for backward compatibility
-            if clinical_status_obj:
-                instance.status = clinical_status_obj.code
-            else:
-                instance.status = ''
+        # Sync legacy status field for backward compatibility
+        if instance.clinical_status:
+            instance.status = instance.clinical_status.code
+        else:
+            instance.status = ''
         
         if commit:
             instance.save()

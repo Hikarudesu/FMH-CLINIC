@@ -215,7 +215,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Attending Veterinarian</label>
-                    <select name="vet_id" id="id_vet" class="form-control-custom">
+                    <select name="vet" id="id_vet" class="form-control-custom">
                         <option value="">— Select Veterinarian —</option>
                         {% for vet in vets %}
                         <option value="{{ vet.id }}" data-branch="{{ vet.branch_id }}">Dr. {{ vet.first_name }} {{ vet.last_name }}{% if vet.license_number %} (PRC {{ vet.license_number }}){% endif %}</option>

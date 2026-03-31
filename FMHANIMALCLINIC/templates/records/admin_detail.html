@@ -967,7 +967,7 @@
                     </div>
                     <div class="em-field">
                         <label>Attending Veterinarian</label>
-                        <select name="vet_id" id="emVet" style="width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13px; color:var(--text-primary); background:var(--bg); font-family:inherit;">
+                        <select name="vet" id="emVet" style="width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13px; color:var(--text-primary); background:var(--bg); font-family:inherit;">
                             <option value="">— Select Veterinarian —</option>
                             {% for vet in vets %}
                             <option value="{{ vet.id }}" data-branch="{{ vet.branch_id }}">Dr. {{ vet.first_name }} {{ vet.last_name }}{% if vet.license_number %} (PRC {{ vet.license_number }}){% endif %}</option>
