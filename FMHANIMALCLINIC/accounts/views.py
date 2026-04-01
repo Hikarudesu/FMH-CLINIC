@@ -249,7 +249,7 @@ def admin_dashboard_view(request):
     from patients.models import Pet
     from employees.models import StaffMember
     from notifications.models import Notification
-    from pos.models import Sale, Payment
+    from pos.models import Sale, Payment, SaleItem
     from inventory.models import Product
     from billing.models import Service
     from inquiries.models import Inquiry
@@ -315,6 +315,44 @@ def admin_dashboard_view(request):
             'revenue': float(daily_revenue)
         })
 
+    # Monthly revenue chart data (last 6 months)
+    monthly_revenue_data = []
+    for i in range(6):
+        # Calculate the first day of the month, i months ago
+        if i == 0:
+            # Current month
+            month_start = today.replace(day=1)
+        else:
+            # Previous months
+            if today.month - i <= 0:
+                month_start = today.replace(year=today.year - 1, month=today.month - i + 12, day=1)
+            else:
+                month_start = today.replace(month=today.month - i, day=1)
+        
+        # Calculate the last day of that month
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1, day=1) - timedelta(days=1)
+        
+        # Calculate revenue for that month
+        if request.user.is_admin_role():  # HQ admin sees all branches
+            monthly_revenue = Sale.objects.filter(
+                created_at__date__range=[month_start, month_end],
+                status='COMPLETED'
+            ).aggregate(total=Sum('total'))['total'] or 0
+        else:  # Branch admin sees only their branch
+            monthly_revenue = Sale.objects.filter(
+                branch=request.user.branch,
+                created_at__date__range=[month_start, month_end],
+                status='COMPLETED'
+            ).aggregate(total=Sum('total'))['total'] or 0
+            
+        monthly_revenue_data.insert(0, {  # Insert at beginning to maintain chronological order
+            'month': month_start.strftime('%b %Y'),
+            'revenue': float(monthly_revenue)
+        })
+
     # Appointment by status breakdown
     appointment_status_breakdown = [
         {'status': 'Pending', 'count': Appointment.objects.filter(status='PENDING', pet__isnull=False).count()},
@@ -322,6 +360,69 @@ def admin_dashboard_view(request):
         {'status': 'Completed', 'count': Appointment.objects.filter(status='COMPLETED', pet__isnull=False).count()},
         {'status': 'Cancelled', 'count': Appointment.objects.filter(status='CANCELLED', pet__isnull=False).count()},
     ]
+
+    # ─── WEEKLY PERFORMANCE COMPARISON DATA ───
+    last_week_start = week_start - timedelta(days=7)
+    last_week_end = week_start - timedelta(days=1)
+    
+    # This week metrics
+    this_week_appointments = Appointment.objects.filter(
+        appointment_date__gte=week_start,
+        appointment_date__lte=week_end,
+        pet__isnull=False
+    ).count()
+    
+    this_week_completed = Appointment.objects.filter(
+        appointment_date__gte=week_start,
+        appointment_date__lte=week_end,
+        pet__isnull=False,
+        status='COMPLETED'
+    ).count()
+    
+    this_week_revenue = Sale.objects.filter(
+        created_at__date__gte=week_start,
+        created_at__date__lte=week_end,
+        status='COMPLETED'
+    ).aggregate(total=Sum('total'))['total'] or 0
+    this_week_revenue_k = round(float(this_week_revenue) / 1000, 1)
+    
+    this_week_products = SaleItem.objects.filter(
+        sale__created_at__date__gte=week_start,
+        sale__created_at__date__lte=week_end,
+        sale__status='COMPLETED'
+    ).aggregate(total=Sum('quantity'))['total'] or 0
+    
+    # Last week metrics
+    last_week_appointments = Appointment.objects.filter(
+        appointment_date__gte=last_week_start,
+        appointment_date__lte=last_week_end,
+        pet__isnull=False
+    ).count()
+    
+    last_week_completed = Appointment.objects.filter(
+        appointment_date__gte=last_week_start,
+        appointment_date__lte=last_week_end,
+        pet__isnull=False,
+        status='COMPLETED'
+    ).count()
+    
+    last_week_customers = User.objects.filter(
+        date_joined__date__gte=last_week_start,
+        date_joined__date__lte=last_week_end
+    ).count()
+    
+    last_week_revenue = Sale.objects.filter(
+        created_at__date__gte=last_week_start,
+        created_at__date__lte=last_week_end,
+        status='COMPLETED'
+    ).aggregate(total=Sum('total'))['total'] or 0
+    last_week_revenue_k = round(float(last_week_revenue) / 1000, 1)
+    
+    last_week_products = SaleItem.objects.filter(
+        sale__created_at__date__gte=last_week_start,
+        sale__created_at__date__lte=last_week_end,
+        sale__status='COMPLETED'
+    ).aggregate(total=Sum('quantity'))['total'] or 0
 
     # Branch-wise appointment statistics
     branch_appointments = Branch.objects.filter(is_active=True).annotate(
@@ -479,8 +580,166 @@ def admin_dashboard_view(request):
         new_inquiry_count = 0
         recent_inquiries = []
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # MULTI-BRANCH ANALYTICS (HQ VIEW)
+    # ═══════════════════════════════════════════════════════════════════════
+
+    # Check if user is HQ admin (can see all branches)
+    is_hq_admin = request.user.hierarchy_level >= 10 if hasattr(request.user, 'hierarchy_level') else False
+
+    # Branch Customer Distribution (This Week) - for pie chart with percentages
+    branch_customer_data = []
+    total_customers_all_branches = 0
+    
+    for branch in branches:
+        # Count unique customers (users) with appointments this week at this branch
+        customer_count = Appointment.objects.filter(
+            branch=branch,
+            appointment_date__gte=week_start,
+            appointment_date__lte=week_end,
+            pet__isnull=False
+        ).values('user').distinct().count()
+        
+        # Count walk-in appointments (no user) as separate customers
+        walkin_count = Appointment.objects.filter(
+            branch=branch,
+            appointment_date__gte=week_start,
+            appointment_date__lte=week_end,
+            pet__isnull=False,
+            user__isnull=True
+        ).count()
+        
+        total_branch_customers = customer_count + walkin_count
+        total_customers_all_branches += total_branch_customers
+        
+        branch_customer_data.append({
+            'name': branch.name,
+            'customers': total_branch_customers,
+            'percentage': 0  # Will calculate after totaling
+        })
+    
+    # Calculate percentages
+    for branch_data in branch_customer_data:
+        if total_customers_all_branches > 0:
+            branch_data['percentage'] = round(
+                (branch_data['customers'] / total_customers_all_branches) * 100, 1
+            )
+
+    # Branch Revenue Comparison (This Week)
+    branch_revenue_data = []
+    total_revenue_all_branches = Decimal('0')
+    
+    for branch in branches:
+        branch_revenue = Sale.objects.filter(
+            branch=branch,
+            created_at__date__gte=week_start,
+            created_at__date__lte=week_end,
+            status='COMPLETED'
+        ).aggregate(total=Sum('total'))['total'] or Decimal('0')
+        
+        total_revenue_all_branches += branch_revenue
+        
+        branch_revenue_data.append({
+            'name': branch.name,
+            'revenue': float(branch_revenue),
+            'percentage': 0
+        })
+    
+    # Calculate revenue percentages
+    for branch_data in branch_revenue_data:
+        if total_revenue_all_branches > 0:
+            branch_data['percentage'] = round(
+                (Decimal(str(branch_data['revenue'])) / total_revenue_all_branches) * 100, 1
+            )
+
+    # Branch Appointment Count (This Week)
+    branch_appointment_data = []
+    total_appointments_all_branches = 0
+    
+    for branch in branches:
+        appt_count = Appointment.objects.filter(
+            branch=branch,
+            appointment_date__gte=week_start,
+            appointment_date__lte=week_end,
+            pet__isnull=False
+        ).count()
+        
+        total_appointments_all_branches += appt_count
+        
+        branch_appointment_data.append({
+            'name': branch.name,
+            'appointments': appt_count,
+            'percentage': 0
+        })
+    
+    # Calculate appointment percentages
+    for branch_data in branch_appointment_data:
+        if total_appointments_all_branches > 0:
+            branch_data['percentage'] = round(
+                (branch_data['appointments'] / total_appointments_all_branches) * 100, 1
+            )
+
+    # Branch Trend Data (Last 7 Days) - for multi-line chart
+    branch_trend_data = {branch.name: [] for branch in branches}
+    trend_labels = []
+    
+    for i in range(7):
+        day = today - timedelta(days=6-i)
+        trend_labels.append(day.strftime('%a'))
+        
+        for branch in branches:
+            day_customers = Appointment.objects.filter(
+                branch=branch,
+                appointment_date=day,
+                pet__isnull=False
+            ).values('user').distinct().count()
+            
+            # Add walk-ins
+            day_walkins = Appointment.objects.filter(
+                branch=branch,
+                appointment_date=day,
+                pet__isnull=False,
+                user__isnull=True
+            ).count()
+            
+            branch_trend_data[branch.name].append(day_customers + day_walkins)
+
+    # Monthly Branch Performance (Last 6 months)
+    branch_monthly_data = {branch.name: [] for branch in branches}
+    monthly_labels = []
+    
+    for i in range(5, -1, -1):
+        # Calculate month offset
+        month_date = today.replace(day=1)
+        for _ in range(i):
+            month_date = (month_date - timedelta(days=1)).replace(day=1)
+        
+        monthly_labels.append(month_date.strftime('%b'))
+        
+        # Get last day of month
+        if month_date.month == 12:
+            next_month = month_date.replace(year=month_date.year + 1, month=1)
+        else:
+            next_month = month_date.replace(month=month_date.month + 1)
+        last_day = (next_month - timedelta(days=1)).day
+        month_end = month_date.replace(day=last_day)
+        
+        for branch in branches:
+            monthly_customers = Appointment.objects.filter(
+                branch=branch,
+                appointment_date__gte=month_date,
+                appointment_date__lte=month_end,
+                pet__isnull=False
+            ).values('user').distinct().count()
+            
+            branch_monthly_data[branch.name].append(monthly_customers)
+
+    # Branch colors for consistent styling
+    branch_colors = ['#009688', '#00BCD4', '#4CAF50', '#FF9800', '#E91E63', '#9C27B0']
+
     # Convert data to JSON for charts (use DjangoJSONEncoder for Decimal support)
     revenue_by_day_json = json.dumps(revenue_by_day, cls=DjangoJSONEncoder)
+    monthly_revenue_data_json = json.dumps(monthly_revenue_data, cls=DjangoJSONEncoder)
     appointment_status_breakdown_json = json.dumps(appointment_status_breakdown, cls=DjangoJSONEncoder)
     pet_species_breakdown_json = json.dumps(pet_species_breakdown, cls=DjangoJSONEncoder)
     payment_method_stats_list = list(payment_method_stats)
@@ -489,6 +748,20 @@ def admin_dashboard_view(request):
         {'source': 'Walk-in', 'count': appointment_sources['WALKIN']},
         {'source': 'Online Portal', 'count': appointment_sources['PORTAL']}
     ], cls=DjangoJSONEncoder)
+    
+    # Multi-branch chart data JSON
+    branch_customer_json = json.dumps(branch_customer_data, cls=DjangoJSONEncoder)
+    branch_revenue_json = json.dumps(branch_revenue_data, cls=DjangoJSONEncoder)
+    branch_appointment_json = json.dumps(branch_appointment_data, cls=DjangoJSONEncoder)
+    branch_trend_json = json.dumps({
+        'labels': trend_labels,
+        'datasets': branch_trend_data
+    }, cls=DjangoJSONEncoder)
+    branch_monthly_json = json.dumps({
+        'labels': monthly_labels,
+        'datasets': branch_monthly_data
+    }, cls=DjangoJSONEncoder)
+    branch_colors_json = json.dumps(branch_colors[:len(branches)], cls=DjangoJSONEncoder)
 
     return render(request, 'accounts/admin_dashboard.html', {
         'today_count': today_count,
@@ -502,6 +775,7 @@ def admin_dashboard_view(request):
         'recent_appointments': recent_appointments,
         'unread_notif_count': unread_notif_count,
         'revenue_by_day': revenue_by_day_json,
+        'monthly_revenue_data': monthly_revenue_data_json,
         'appointment_status_breakdown': appointment_status_breakdown_json,
         'branch_appointments': branch_appointments,
         'staff_performance': staff_performance,
@@ -526,6 +800,30 @@ def admin_dashboard_view(request):
         'total_revenue_this_week': total_revenue_this_week,
         'new_inquiry_count': new_inquiry_count,
         'recent_inquiries': recent_inquiries,
+        # Multi-branch analytics
+        'is_hq_admin': is_hq_admin,
+        'branch_customer_data': branch_customer_data,
+        'branch_customer_json': branch_customer_json,
+        'branch_revenue_data': branch_revenue_data,
+        'branch_revenue_json': branch_revenue_json,
+        'branch_appointment_data': branch_appointment_data,
+        'branch_appointment_json': branch_appointment_json,
+        'branch_trend_json': branch_trend_json,
+        'branch_monthly_json': branch_monthly_json,
+        'branch_colors_json': branch_colors_json,
+        'total_customers_all_branches': total_customers_all_branches,
+        'total_revenue_all_branches': float(total_revenue_all_branches),
+        'total_appointments_all_branches': total_appointments_all_branches,
+        # Weekly comparison chart data
+        'this_week_appointments': this_week_appointments,
+        'this_week_completed': this_week_completed,
+        'this_week_revenue_k': this_week_revenue_k,
+        'this_week_products': this_week_products,
+        'last_week_appointments': last_week_appointments,
+        'last_week_completed': last_week_completed,
+        'last_week_customers': last_week_customers,
+        'last_week_revenue_k': last_week_revenue_k,
+        'last_week_products': last_week_products,
     })
 
 
