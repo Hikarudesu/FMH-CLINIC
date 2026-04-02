@@ -444,7 +444,7 @@
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-card);
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
 
@@ -458,7 +458,7 @@
     height: 4px;
     background: linear-gradient(90deg, transparent, var(--primary), transparent);
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .hero-stat-card:hover {
@@ -479,7 +479,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .hero-stat-icon i {
@@ -596,7 +596,7 @@
     font-weight: 600;
     color: #92400e;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 6px 12px;
     background: rgba(255,255,255,0.5);
     border-radius: 8px;
@@ -615,7 +615,7 @@
     color: #92400e;
     cursor: pointer;
     opacity: 0.6;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .alert-close:hover { opacity: 1; }
@@ -653,33 +653,15 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     box-shadow: var(--shadow-card);
-  }
-  
-  .chart-card-modern::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #009688, #00bcd4, #6366f1, #8b5cf6);
-    background-size: 200% 100%;
-    opacity: 0;
-    transition: opacity 0.3s ease;
   }
   
   .chart-card-modern:hover {
     transform: translateY(-8px);
     box-shadow: 0 24px 64px rgba(0, 150, 136, 0.12);
     border-color: transparent;
-  }
-  
-  .chart-card-modern:hover::before {
-    opacity: 1;
-    animation: shimmer 2s linear infinite;
   }
   
   .chart-card-modern.full {
@@ -725,7 +707,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    transition: transform 0.3s ease;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .chart-badge.purple {
@@ -836,7 +818,7 @@
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 24px;
-    transition: all 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: var(--shadow-card);
   }
   
@@ -886,7 +868,7 @@
     padding: 14px 8px;
     background: var(--bg);
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .metric-item:hover {
@@ -926,7 +908,7 @@
     padding: 10px 14px;
     background: var(--bg);
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .service-row:hover {

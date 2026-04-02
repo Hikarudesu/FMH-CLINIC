@@ -20,6 +20,16 @@ from .decorators import module_permission_required, admin_only
 from .forms import PetOwnerRegistrationForm
 
 
+def get_month_offset(base_date, months_back):
+    """Calculate date offset by months without external dependencies."""
+    year = base_date.year
+    month = base_date.month - months_back
+    while month <= 0:
+        month += 12
+        year -= 1
+    return date(year, month, 1)
+
+
 def login_view(request):
     """Login page — redirects to correct portal after login."""
     next_url = request.GET.get('next') or request.POST.get('next')
@@ -108,15 +118,20 @@ def logout_view(request):
 
 @login_required
 def user_dashboard_view(request):
-    """User portal dashboard with follow-ups, appointments, and notifications."""
+    """User portal dashboard with follow-ups, appointments, notifications, and charts."""
     from notifications.models import FollowUp, Notification
     from appointments.models import Appointment
     from patients.models import Pet
+    from pos.models import Sale, SaleItem
+    from decimal import Decimal
+    import json
+    from dateutil.relativedelta import relativedelta
 
     today = date.today()
 
-    # Pet count
-    pet_count = request.user.pets.count()
+    # Pet count and pets list
+    user_pets = request.user.pets.all()
+    pet_count = user_pets.count()
 
     # Upcoming appointments (next 7 days) - filter out deleted pets
     upcoming_appointments = Appointment.objects.filter(
@@ -128,6 +143,10 @@ def user_dashboard_view(request):
         'branch', 'preferred_vet'
     ).order_by('appointment_date', 'appointment_time')
     upcoming_count = upcoming_appointments.count()
+    
+    # Confirmed vs pending for upcoming
+    upcoming_confirmed = upcoming_appointments.filter(status='CONFIRMED').count()
+    upcoming_pending = upcoming_appointments.filter(status='PENDING').count()
 
     # Follow-ups for this user's appointments
     follow_ups = FollowUp.objects.filter(
@@ -136,6 +155,13 @@ def user_dashboard_view(request):
         follow_up_date__gte=today,
     ).order_by('follow_up_date')
     follow_up_count = follow_ups.count()
+    
+    # Overdue follow-ups
+    overdue_follow_ups = FollowUp.objects.filter(
+        appointment__user=request.user,
+        is_completed=False,
+        follow_up_date__lt=today,
+    ).count()
 
     # Unread notifications
     unread_notif_count = Notification.objects.filter(
@@ -146,12 +172,15 @@ def user_dashboard_view(request):
     from accounts.models import UserActivity
     activities_list = UserActivity.objects.filter(user=request.user).order_by('-timestamp')
     
-    paginator = Paginator(activities_list, 5)  # Show 5 activities per page
+    paginator = Paginator(activities_list, 5)
     page_number = request.GET.get('page')
     recent_activities = paginator.get_page(page_number)
 
-    # Pet species breakdown
-    pet_species_breakdown = request.user.pets.values('species').annotate(count=Count('id')).order_by('-count')
+    # Pet species breakdown with percentages
+    pet_species_breakdown = list(request.user.pets.values('species').annotate(count=Count('id')).order_by('-count'))
+    for species in pet_species_breakdown:
+        species['percentage'] = round((species['count'] / pet_count * 100), 1) if pet_count > 0 else 0
+    pet_species_json = json.dumps(pet_species_breakdown)
 
     # Vaccination appointments tracking
     vaccination_appointments = Appointment.objects.filter(
@@ -197,20 +226,169 @@ def user_dashboard_view(request):
         appointment_date__gte=today,
     ).count()
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Spending & Financial Data
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    # Total spending (this year)
+    year_start = date(today.year, 1, 1)
+    total_spent_this_year = Sale.objects.filter(
+        customer=request.user,
+        status='COMPLETED',
+        completed_at__date__gte=year_start
+    ).aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    
+    # Total spending (all time)
+    total_spent_all_time = Sale.objects.filter(
+        customer=request.user,
+        status='COMPLETED'
+    ).aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+    
+    # Spending breakdown by service category
+    spending_by_category = SaleItem.objects.filter(
+        sale__customer=request.user,
+        sale__status='COMPLETED'
+    ).values('item_type').annotate(
+        total=Sum(F('unit_price') * F('quantity') - F('discount'))
+    ).order_by('-total')
+    
+    category_labels = {
+        'SERVICE': 'Services',
+        'PRODUCT': 'Products',
+        'MEDICATION': 'Medications'
+    }
+    spending_breakdown = []
+    for item in spending_by_category:
+        spending_breakdown.append({
+            'category': category_labels.get(item['item_type'], item['item_type']),
+            'total': float(item['total'] or 0)
+        })
+    spending_breakdown_json = json.dumps(spending_breakdown)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Monthly Appointment History (last 6 months)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    monthly_appointments = []
+    for i in range(5, -1, -1):
+        m_start = get_month_offset(today, i)
+        if m_start.month == 12:
+            m_end = date(m_start.year + 1, 1, 1) - timedelta(days=1)
+        else:
+            m_end = date(m_start.year, m_start.month + 1, 1) - timedelta(days=1)
+        
+        count = Appointment.objects.filter(
+            user=request.user,
+            pet__isnull=False,
+            appointment_date__range=[m_start, m_end]
+        ).exclude(status='CANCELLED').count()
+        
+        monthly_appointments.append({
+            'month': m_start.strftime('%b'),
+            'count': count
+        })
+    monthly_appointments_json = json.dumps(monthly_appointments)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Pet Health Status Distribution
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    pet_health_stats = list(user_pets.values('status').annotate(count=Count('id')).order_by('-count'))
+    health_labels = {
+        'HEALTHY': 'Healthy',
+        'MONITOR': 'Monitoring',
+        'TREATMENT': 'In Treatment',
+        'SURGERY': 'Post-Surgery',
+        'DIAGNOSTICS': 'Diagnostics',
+        'CRITICAL': 'Critical'
+    }
+    pet_health_breakdown = []
+    for stat in pet_health_stats:
+        pet_health_breakdown.append({
+            'status': health_labels.get(stat['status'], stat['status']),
+            'count': stat['count']
+        })
+    pet_health_json = json.dumps(pet_health_breakdown)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Appointment Status Distribution (for chart)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    appointment_status_stats = Appointment.objects.filter(
+        user=request.user,
+        pet__isnull=False,
+        appointment_date__gte=today - timedelta(days=90)
+    ).values('status').annotate(count=Count('id')).order_by('-count')
+    
+    status_labels = {
+        'PENDING': 'Pending',
+        'CONFIRMED': 'Confirmed',
+        'COMPLETED': 'Completed',
+        'CANCELLED': 'Cancelled'
+    }
+    appointment_status_breakdown = []
+    for stat in appointment_status_stats:
+        appointment_status_breakdown.append({
+            'status': status_labels.get(stat['status'], stat['status']),
+            'count': stat['count']
+        })
+    appointment_status_json = json.dumps(appointment_status_breakdown)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Visits per Pet (for chart)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    visits_per_pet = Appointment.objects.filter(
+        user=request.user,
+        pet__isnull=False
+    ).exclude(status='CANCELLED').values('pet__name').annotate(
+        visits=Count('id')
+    ).order_by('-visits')[:6]
+    visits_per_pet_json = json.dumps(list(visits_per_pet))
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # NEW: Recent completed appointments (for medical records section)
+    # ═══════════════════════════════════════════════════════════════════════════
+    
+    recent_completed = Appointment.objects.filter(
+        user=request.user,
+        pet__isnull=False,
+        status='COMPLETED'
+    ).select_related('branch', 'preferred_vet', 'pet').order_by('-appointment_date')[:5]
+
     return render(request, 'accounts/user_dashboard.html', {
+        # Basic stats
         'pet_count': pet_count,
         'upcoming_appointments': upcoming_appointments[:5],
         'upcoming_count': upcoming_count,
+        'upcoming_confirmed': upcoming_confirmed,
+        'upcoming_pending': upcoming_pending,
         'follow_ups': follow_ups,
         'follow_up_count': follow_up_count,
+        'overdue_follow_ups': overdue_follow_ups,
         'unread_notif_count': unread_notif_count,
         'recent_activities': recent_activities,
         'pet_species_breakdown': pet_species_breakdown,
+        'pet_species_json': pet_species_json,
         'vaccination_appointments': vaccination_appointments,
         'cancelled_appointments_count': cancelled_appointments_count,
         'appointments_this_month': appointments_this_month,
         'pending_reservations': pending_reservations,
         'approved_reservations': approved_reservations,
+        
+        # New: Financial data
+        'total_spent_this_year': total_spent_this_year,
+        'total_spent_all_time': total_spent_all_time,
+        'spending_breakdown_json': spending_breakdown_json,
+        
+        # New: Chart data
+        'monthly_appointments_json': monthly_appointments_json,
+        'pet_health_json': pet_health_json,
+        'appointment_status_json': appointment_status_json,
+        'visits_per_pet_json': visits_per_pet_json,
+        
+        # New: Recent medical records
+        'recent_completed': recent_completed,
     })
 
 
