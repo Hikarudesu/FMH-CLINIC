@@ -12,574 +12,1259 @@
 
 
 
-<!-- Stat Cards -->
-<div class="stats-grid">
-  <div class="stat-card teal">
-    <div class="stat-label"><i class='bx bx-calendar-check'></i> Today's Appointments</div>
-    <div class="stat-value">{{ today_count }}</div>
-    <div class="stat-sub">{{ today_confirmed }} confirmed, {{ today_pending }} pending</div>
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODERN ADMIN DASHBOARD - COMPLETE REDESIGN -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<!-- HERO STATS ROW -->
+<div class="hero-stats">
+  <div class="hero-stat-card">
+    <div class="hero-stat-icon teal">
+      <i class='bx bx-calendar-check'></i>
+    </div>
+    <div class="hero-stat-content">
+      <span class="hero-stat-value">{{ today_count }}</span>
+      <span class="hero-stat-label">Today's Appointments</span>
+      <div class="hero-stat-meta">
+        <span class="meta-item success"><i class='bx bx-check'></i> {{ today_confirmed }} confirmed</span>
+        <span class="meta-item warning"><i class='bx bx-time'></i> {{ today_pending }} pending</span>
+      </div>
+    </div>
   </div>
-  <div class="stat-card blue">
-    <div class="stat-label"><i class='bx bxs-dog'></i> Registered Pets</div>
-    <div class="stat-value">{{ patient_count }}</div>
-    <div class="stat-sub">total in system</div>
+  
+  <div class="hero-stat-card">
+    <div class="hero-stat-icon blue">
+      <i class='bx bxs-dog'></i>
+    </div>
+    <div class="hero-stat-content">
+      <span class="hero-stat-value">{{ patient_count }}</span>
+      <span class="hero-stat-label">Registered Pets</span>
+      <div class="hero-stat-meta">
+        <span class="meta-item">+{{ new_patients_this_week }} this week</span>
+      </div>
+    </div>
   </div>
-  <div class="stat-card orange">
-    <div class="stat-label"><i class='bx bx-building-house'></i> Active Branches</div>
-    <div class="stat-value">{{ branches|length }}</div>
-    <div class="stat-sub">{{ branches|length }} branch{{ branches|length|pluralize:"es" }}</div>
+  
+  <div class="hero-stat-card">
+    <div class="hero-stat-icon purple">
+      <i class='bx bx-money'></i>
+    </div>
+    <div class="hero-stat-content">
+      <span class="hero-stat-value">₱{{ total_revenue_this_week|floatformat:0 }}</span>
+      <span class="hero-stat-label">Weekly Revenue</span>
+      <div class="hero-stat-meta">
+        <span class="meta-item {% if revenue_growth >= 0 %}success{% else %}danger{% endif %}">
+          <i class='bx bx-trending-{% if revenue_growth >= 0 %}up{% else %}down{% endif %}'></i> {{ revenue_growth|floatformat:1 }}% vs last week
+        </span>
+      </div>
+    </div>
   </div>
-  {% if new_inquiry_count > 0 %}
-  <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-    <div class="stat-label" style="color: rgba(255,255,255,0.9);"><i class='bx bx-envelope'></i> New Inquiries</div>
-    <div class="stat-value" style="color: #fff;">{{ new_inquiry_count }}</div>
-    <div class="stat-sub" style="color: rgba(255,255,255,0.8);"><a href="{% url 'inquiries:list' %}?status=NEW" style="color: #fff; text-decoration: underline;">View & Respond</a></div>
+  
+  <div class="hero-stat-card">
+    <div class="hero-stat-icon orange">
+      <i class='bx bx-group'></i>
+    </div>
+    <div class="hero-stat-content">
+      <span class="hero-stat-value">{{ new_customers_this_week }}</span>
+      <span class="hero-stat-label">New Customers</span>
+      <div class="hero-stat-meta">
+        <span class="meta-item">{{ returning_customers_this_week }} returning</span>
+      </div>
+    </div>
   </div>
-  {% else %}
-  <div class="stat-card purple">
-    <div class="stat-label"><i class='bx bx-group'></i> Active Staff</div>
-    <div class="stat-value">{{ active_staff }}</div>
-    <div class="stat-sub">of {{ total_staff }} total staff</div>
+</div>
+
+<!-- ALERT BANNER (if needed) -->
+{% if low_stock_count > 0 or new_inquiry_count > 0 %}
+<div class="alert-banner-modern">
+  <div class="alert-icon">
+    <i class='bx bx-bell bx-tada'></i>
+  </div>
+  <div class="alert-content">
+    <h4>Action Required</h4>
+    <div class="alert-items">
+      {% if low_stock_count > 0 %}
+      <a href="{% url 'inventory:management' %}" class="alert-item">
+        <i class='bx bx-package'></i>
+        <span>{{ low_stock_count }} Low Stock</span>
+      </a>
+      {% endif %}
+      {% if new_inquiry_count > 0 %}
+      <a href="{% url 'inquiries:list' %}?status=NEW" class="alert-item">
+        <i class='bx bx-envelope'></i>
+        <span>{{ new_inquiry_count }} New Inquiries</span>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  <i class='bx bx-x alert-close' onclick="this.parentElement.style.display='none'"></i>
+</div>
+{% endif %}
+
+<!-- MAIN CHARTS GRID -->
+<div class="charts-section">
+  
+  <!-- ROW 1: Revenue & Branch Revenue -->
+  <div class="charts-row">
+    <div class="chart-card-modern large">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-trending-up'></i>
+          <span>Revenue Trend</span>
+        </div>
+        <div class="chart-badge purple">Last 6 Months</div>
+      </div>
+      <div class="chart-body">
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+    
+    {% if branches|length > 1 %}
+    <div class="chart-card-modern">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-money-withdraw'></i>
+          <span>Revenue by Branch</span>
+        </div>
+        <div class="chart-badge teal">This Week</div>
+      </div>
+      <div class="chart-body">
+        <canvas id="branchRevenuePieChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- ROW 2: Most Appointed Branches & Weekly Comparison -->
+  <div class="charts-row">
+    {% if branches|length > 1 %}
+    <div class="chart-card-modern">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-building-house'></i>
+          <span>Most Appointed Branches</span>
+        </div>
+        <div class="chart-badge orange">This Month</div>
+      </div>
+      <div class="chart-body">
+        <canvas id="branchAppointmentChart"></canvas>
+      </div>
+    </div>
+    {% else %}
+    <div class="chart-card-modern">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-calendar-check'></i>
+          <span>Appointment Status</span>
+        </div>
+        <div class="chart-badge orange">Today</div>
+      </div>
+      <div class="chart-body">
+        <canvas id="appointmentStatusChart"></canvas>
+      </div>
+    </div>
+    {% endif %}
+    
+    <div class="chart-card-modern large">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-bar-chart-alt-2'></i>
+          <span>Weekly Comparison</span>
+        </div>
+        <div class="chart-badge emerald">This vs Last Week</div>
+      </div>
+      <div class="chart-body tall">
+        <canvas id="weeklyComparisonChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  {% if branches|length > 1 %}
+  <!-- ROW 3: Branch Growth Trend (Full Width) -->
+  <div class="charts-row">
+    <div class="chart-card-modern full">
+      <div class="chart-header">
+        <div class="chart-title">
+          <i class='bx bx-line-chart'></i>
+          <span>Branch Growth Trend</span>
+        </div>
+        <div class="chart-badge purple">Last 6 Months</div>
+        <a href="{% url 'reports:analytics_dashboard' %}" class="chart-link">
+          View Reports <i class='bx bx-right-arrow-alt'></i>
+        </a>
+      </div>
+      <div class="chart-body wide">
+        <canvas id="branchMonthlyChart"></canvas>
+      </div>
+    </div>
   </div>
   {% endif %}
 </div>
 
-<!-- Revenue Chart -->
-<div class="dashboard-grid">
-  <div class="dashboard-card full-width">
-    <div class="card-header">
-      <h3><i class='bx bx-line-chart'></i> Revenue Trend (Last 7 Days)</h3>
-    </div>
-    <div class="card-body">
-      <canvas id="revenueChart" class="dashboard-chart"></canvas>
-    </div>
+<!-- QUICK INSIGHTS GRID -->
+<div class="insights-section">
+  <div class="section-title">
+    <i class='bx bx-bulb'></i>
+    <span>Quick Insights</span>
   </div>
-</div>
-
-<!-- Customer Analytics -->
-<div class="dashboard-grid">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bxs-dog'></i> Species Distribution</h3>
+  
+  <div class="insights-grid">
+    <!-- Customer Metrics -->
+    <div class="insight-card">
+      <div class="insight-header">
+        <i class='bx bx-user-voice'></i>
+        <span>Customers</span>
+      </div>
+      <div class="insight-metrics">
+        <div class="metric-item">
+          <span class="metric-value success">{{ new_customers_this_week }}</span>
+          <span class="metric-label">New</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-value blue">{{ returning_customers_this_week }}</span>
+          <span class="metric-label">Returning</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-value purple">{{ new_patients_this_week }}</span>
+          <span class="metric-label">Pets Added</span>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      <canvas id="speciesChart" class="dashboard-chart"></canvas>
-    </div>
-  </div>
-
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-pie-chart-alt-2'></i> Appointment Status</h3>
-    </div>
-    <div class="card-body">
-      <canvas id="appointmentStatusChart" class="dashboard-chart"></canvas>
-    </div>
-  </div>
-</div>
-
-<!-- Service Breakdown -->
-<div class="dashboard-grid">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-check-circle'></i> Top Services</h3>
-    </div>
-    <div class="card-body">
-      {% if service_breakdown %}
-        <div class="service-list">
-          {% for service in service_breakdown|slice:":5" %}
-          <div class="service-item">
+    
+    <!-- Top Services -->
+    <div class="insight-card">
+      <div class="insight-header">
+        <i class='bx bx-star'></i>
+        <span>Top Services</span>
+      </div>
+      <div class="service-list-modern">
+        {% if service_breakdown %}
+          {% for service in service_breakdown|slice:":4" %}
+          <div class="service-row">
+            <span class="service-rank">#{{ forloop.counter }}</span>
             <span class="service-name">{{ service.name }}</span>
-            <div class="service-bar">
-              <div class="service-fill" style="width: {{ service.percentage|floatformat:0 }}%"></div>
-            </div>
             <span class="service-count">{{ service.usage_count }}</span>
           </div>
           {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state" style="padding: 18px 0;">
-          <i class='bx bx-check-circle'></i>
-          <h4>No services data</h4>
-          <p>Service usage will appear here.</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-credit-card'></i> Payment Methods</h3>
-    </div>
-    <div class="card-body">
-      <canvas id="paymentMethodChart" class="dashboard-chart"></canvas>
-    </div>
-  </div>
-</div>
-
-<!-- Species & Health Status Distribution -->
-<div class="dashboard-grid">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-user-voice'></i> Customer Analytics</h3>
-    </div>
-    <div class="card-body">
-      <div class="metric-row">
-        <span class="metric-label">New Customers</span>
-        <span class="metric-badge">{{ new_customers_this_week }}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">Returning Customers</span>
-        <span class="metric-badge">{{ returning_customers_this_week }}</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-label">New Pets Registered</span>
-        <span class="metric-badge">{{ new_patients_this_week }}</span>
+        {% else %}
+          <div class="no-data">No data available</div>
+        {% endif %}
       </div>
     </div>
-  </div>
-
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-heart-circle'></i> Pet Health Status</h3>
-    </div>
-    <div class="card-body">
-      {% if pet_health_stats %}
-        <div class="health-grid">
-          {% for status_item in pet_health_stats %}
-          <div class="health-item health-{{ status_item.status|lower }}">
-            <div class="health-count">{{ status_item.count }}</div>
-            <div class="health-label">{{ status_item.status }}</div>
-          </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- Appointment Source & Low Stock Alerts -->
-<div class="dashboard-grid">
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-direction'></i> Appointment Sources</h3>
-    </div>
-    <div class="card-body">
-      <canvas id="appointmentSourceChart" class="dashboard-chart"></canvas>
-    </div>
-  </div>
-
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-exclamation-circle'></i> Low Stock Products</h3>
-    </div>
-    <div class="card-body">
-      {% if low_stock_products %}
-        <div class="low-stock-list">
-          {% for product in low_stock_products|slice:":8" %}
-          <div class="stock-item warning">
-            <div class="stock-info">
-              <span class="stock-name">{{ product.name }}</span>
-              <span class="stock-qty">{{ product.stock_quantity }} left</span>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-state">
-          <i class='bx bx-check-circle'></i>
-          <p>All products adequately stocked</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- Business Metrics Grid -->
-<div class="dashboard-grid">
-  <div class="analytics-card">
-    <div class="metric-header">
-      <i class='bx bx-trending-up metric-icon green'></i>
-      <h4>Revenue Growth</h4>
-    </div>
-    <div class="metric-value">{{ revenue_growth|floatformat:1 }}%</div>
-    <div class="metric-sub">vs last week</div>
-  </div>
-
-  <div class="analytics-card">
-    <div class="metric-header">
-      <i class='bx bx-x-circle metric-icon red'></i>
-      <h4>Cancellation Rate</h4>
-    </div>
-    <div class="metric-value">{{ cancellation_rate|floatformat:1 }}%</div>
-    <div class="metric-sub">of all appointments</div>
-  </div>
-
-  <div class="analytics-card">
-    <div class="metric-header">
-      <i class='bx bx-package metric-icon blue'></i>
-      <h4>Inventory Value</h4>
-    </div>
-    <div class="metric-value">₱{{ total_inventory_value|floatformat:0 }}</div>
-    <div class="metric-sub">in stock</div>
-  </div>
-
-  <div class="analytics-card">
-    <div class="metric-header">
-      <i class='bx bx-user-check metric-icon orange'></i>
-      <h4>New Customers</h4>
-    </div>
-    <div class="metric-value">{{ new_customers_this_week }}</div>
-    <div class="metric-sub">this week</div>
-  </div>
-</div>
-
-<!-- Content Grid -->
-<div class="dashboard-grid">
-  <!-- Today's Appointments -->
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bxs-calendar'></i> Today's Appointments</h3>
-      <a href="{% url 'appointments:admin_list' %}" class="card-action">View All</a>
-    </div>
-    <div class="card-body">
-      {% if todays_appointments %}
-      <table class="portal-table">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Patient</th>
-            <th>Owner</th>
-            <th>Vet</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for appt in todays_appointments %}
-          <tr>
-            <td>{{ appt.appointment_time_display }}</td>
-            <td><strong>{{ appt.pet_name }}</strong></td>
-            <td>{{ appt.owner_name }}</td>
-            <td>{{ appt.preferred_vet.full_name|default:"Any available" }}</td>
-            <td>
-              <span class="status-badge {{ appt.status|lower }}">{{ appt.get_status_display }}</span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <div class="empty-state" style="padding: 18px 0;">
-        <i class='bx bx-calendar-x'></i>
-        <h4>No appointments today</h4>
-        <p>Appointments will show here when booked.</p>
+    
+    {% if branches|length > 1 %}
+    <!-- Branch Summary -->
+    <div class="insight-card wide">
+      <div class="insight-header">
+        <i class='bx bx-buildings'></i>
+        <span>Branch Performance</span>
       </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- New Inquiries Widget -->
-  <div class="dashboard-card">
-    <div class="card-header">
-      <h3><i class='bx bx-envelope'></i> New Inquiries</h3>
-      <a href="{% url 'inquiries:list' %}" class="card-action">View All</a>
-    </div>
-    <div class="card-body">
-      {% if recent_inquiries %}
-      <ul class="activity-list">
-        {% for inquiry in recent_inquiries %}
-        <li class="activity-item">
-          <div class="activity-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
-            <i class='bx bx-envelope'></i>
+      <div class="branch-bars">
+        {% for branch_data in branch_revenue_data %}
+        <div class="branch-bar-item">
+          <div class="branch-bar-label">
+            <span class="branch-name">{{ branch_data.name }}</span>
+            <span class="branch-value">₱{{ branch_data.revenue|floatformat:0 }}</span>
           </div>
-          <div class="activity-text">
-            <p><strong>{{ inquiry.full_name }}</strong> — {{ inquiry.message|truncatewords:8 }}</p>
-            <span>{{ inquiry.created_at|timesince }} ago{% if inquiry.branch %} · {{ inquiry.branch.name }}{% endif %}</span>
+          <div class="branch-bar-track">
+            <div class="branch-bar-fill" style="--target-width: {{ branch_data.percentage }}%; background: linear-gradient(90deg, #009688, #00bcd4);"></div>
           </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <div class="empty-state" style="padding: 18px 0;">
-        <i class='bx bx-envelope-open'></i>
-        <h4>No new inquiries</h4>
-        <p>New contact form submissions will appear here.</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- Branch Overview -->
-<div class="dashboard-grid">
-  <div class="dashboard-card full-width">
-    <div class="card-header">
-      <h3><i class='bx bxs-building-house'></i> Branch Overview</h3>
-    </div>
-    <div class="card-body">
-      {% if branches %}
-      <div class="branch-grid">
-        {% for branch in branches %}
-        <div class="branch-card">
-          <div class="branch-card-bubble">
-            <div class="branch-icon-bubble">
-              <i class='bx bxs-building'></i>
-            </div>
-            <div class="branch-info-bubble">
-              <h3>{{ branch.name }}</h3>
-              <p><i class='bx bx-map'></i> {{ branch.address|default:"No address set" }}</p>
-            </div>
-            <div class="branch-status-indicator">
-              <span class="status-pulse"></span>
-            </div>
-          </div>
+          <span class="branch-percentage">{{ branch_data.percentage }}%</span>
         </div>
         {% endfor %}
       </div>
-      {% else %}
-      <div class="empty-state">
-        <i class='bx bx-building-house'></i>
-        <h4>No branches configured</h4>
-        <p>Add branches in the admin panel.</p>
-      </div>
-      {% endif %}
     </div>
+    {% endif %}
   </div>
 </div>
 
+<!-- TODAY'S SCHEDULE -->
+<div class="schedule-section">
+  <div class="section-title">
+    <i class='bx bx-calendar'></i>
+    <span>Today's Schedule</span>
+    <a href="{% url 'appointments:admin_list' %}" class="section-link">View All <i class='bx bx-right-arrow-alt'></i></a>
+  </div>
+  
+  <div class="schedule-table-wrapper">
+    {% if todays_appointments %}
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Patient</th>
+          <th>Owner</th>
+          <th>Branch</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for appt in todays_appointments %}
+        <tr>
+          <td>
+            <span class="time-badge">{{ appt.appointment_time_display }}</span>
+          </td>
+          <td>
+            <div class="patient-info">
+              <i class='bx bxs-dog'></i>
+              <span>{{ appt.pet_name }}</span>
+            </div>
+          </td>
+          <td>{{ appt.owner_name }}</td>
+          <td><span class="branch-tag">{{ appt.branch.name }}</span></td>
+          <td><span class="status-pill {{ appt.status|lower }}">{{ appt.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-schedule">
+      <i class='bx bx-calendar-x'></i>
+      <h4>No appointments today</h4>
+      <p>Schedule will appear here when appointments are booked.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- MODERN DASHBOARD STYLES - COMPLETE REDESIGN -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
 <style>
-  /* Modern Animations for Charts */
-  @keyframes chartSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* ═══════════════════════════════════════════════ */
+  /* ROOT VARIABLES & ANIMATIONS */
+  /* ═══════════════════════════════════════════════ */
+  
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 150, 136, 0.15); }
+    50% { box-shadow: 0 0 40px rgba(0, 150, 136, 0.3); }
+  }
+  
+  /* ═══════════════════════════════════════════════ */
+  /* SCROLL-TRIGGERED ANIMATIONS (Clean Fade-In)   */
+  /* ═══════════════════════════════════════════════ */
+  
+  @keyframes expandWidth {
+    from { width: 0; }
+    to { width: var(--target-width, 100%); }
+  }
+  
+  /* Prevent horizontal scrollbar from translateX animations */
+  .portal-content {
+    overflow-x: hidden;
+  }
+  
+  /* Base: hidden state */
+  .dash-fade {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.33, 1, 0.68, 1),
+                transform 0.7s cubic-bezier(0.33, 1, 0.68, 1);
   }
 
-  @keyframes chartPulse {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(0, 150, 136, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 8px rgba(0, 150, 136, 0);
-    }
+  /* Directional variants */
+  .dash-fade.from-left {
+    transform: translateX(-24px);
+  }
+  .dash-fade.from-right {
+    transform: translateX(24px);
   }
 
-  @keyframes chartGlow {
-    0%, 100% {
-      filter: drop-shadow(0 0 0px rgba(0, 150, 136, 0.3));
-    }
-    50% {
-      filter: drop-shadow(0 0 8px rgba(0, 150, 136, 0.5));
-    }
+  /* Revealed state */
+  .dash-fade.visible {
+    opacity: 1;
+    transform: translate(0, 0);
   }
 
-  /* Apply to dashboard charts */
-  .dashboard-chart {
-    animation: chartSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
+  /* Stagger delays */
+  .dash-fade.stagger-1 { transition-delay: 0.06s; }
+  .dash-fade.stagger-2 { transition-delay: 0.12s; }
+  .dash-fade.stagger-3 { transition-delay: 0.18s; }
+  .dash-fade.stagger-4 { transition-delay: 0.24s; }
+  .dash-fade.stagger-5 { transition-delay: 0.30s; }
+  .dash-fade.stagger-6 { transition-delay: 0.36s; }
 
-  #speciesChart {
-    animation: chartSlideIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both,
-              chartGlow 6s ease-in-out 1.2s infinite;
-  }
-
-  /* Hover effect enhancement */
-  .dashboard-card:has(#speciesChart):hover .dashboard-chart {
-    filter: brightness(1.05);
-  }
-
-  /* ══════════════════════════════════════════════ */
-  /* MODERN BUBBLE BRANCH CARD REDESIGN */
-  /* ══════════════════════════════════════════════ */
-
-  .branch-grid {
+  /* ═══════════════════════════════════════════════ */
+  /* HERO STATS ROW */
+  /* ═══════════════════════════════════════════════ */
+  
+  .hero-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-    padding: 8px 0;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 28px;
   }
-
-  .branch-card {
-    perspective: 1000px;
-    animation: bubbleSlide 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  
+  @media (max-width: 1200px) {
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
   }
-
-  .branch-card:nth-child(2) {
-    animation-delay: 0.1s;
+  
+  @media (max-width: 640px) {
+    .hero-stats { grid-template-columns: 1fr; }
   }
-
-  .branch-card:nth-child(3) {
-    animation-delay: 0.2s;
-  }
-
-  .branch-card:nth-child(4) {
-    animation-delay: 0.3s;
-  }
-
-  @keyframes bubbleSlide {
-    from {
-      opacity: 0;
-      transform: translateY(20px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  .branch-card-bubble {
+  
+  .hero-stat-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 28px;
+    border-radius: 20px;
+    padding: 24px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 18px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-card);
-    min-height: 120px;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  
 
-  /* Bubble background animation */
-  .branch-card-bubble::before {
+  
+  .hero-stat-card::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(0, 150, 136, 0.08) 0%, transparent 70%);
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
     opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    border-radius: 24px;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-  .branch-card:hover .branch-card-bubble {
-    border-color: var(--primary);
-    box-shadow: 0 8px 24px rgba(0, 150, 136, 0.15);
+  
+  .hero-stat-card:hover {
     transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
   }
-
-  .branch-card:hover .branch-card-bubble::before {
+  
+  .hero-stat-card:hover::before {
     opacity: 1;
   }
-
-  /* Icon Bubble */
-  .branch-icon-bubble {
-    width: 80px;
-    height: 80px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, var(--primary) 0%, #00897b 100%);
+  
+  .hero-stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 8px 20px rgba(0, 150, 136, 0.25);
-    position: relative;
-    z-index: 1;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-  .branch-icon-bubble i {
-    font-size: 32px;
+  
+  .hero-stat-icon i {
+    font-size: 26px;
     color: white;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-
-  .branch-card:hover .branch-icon-bubble {
-    transform: scale(1.15) rotate(-5deg);
-    box-shadow: 0 12px 32px rgba(0, 150, 136, 0.35);
+  
+  .hero-stat-icon.teal { background: linear-gradient(135deg, #009688 0%, #00796b 100%); }
+  .hero-stat-icon.blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  .hero-stat-icon.purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+  .hero-stat-icon.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  
+  .hero-stat-card:hover .hero-stat-icon {
+    transform: scale(1.1) rotate(-5deg);
   }
-
-  .branch-card:hover .branch-icon-bubble i {
-    transform: scale(1.25) rotate(10deg);
-  }
-
-  /* Info Section */
-  .branch-info-bubble {
+  
+  .hero-stat-content {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    z-index: 1;
+    gap: 4px;
   }
+  
+  .hero-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-1);
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  
+  .hero-stat-label {
+    font-size: 13px;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  
+  .hero-stat-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  
+  .meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+  
+  .meta-item.success { color: #10b981; }
+  .meta-item.warning { color: #f59e0b; }
+  .meta-item.danger { color: #ef4444; }
+  
+  .meta-item i { font-size: 14px; }
 
-  .branch-info-bubble h3 {
-    font-size: 17px;
+  /* ═══════════════════════════════════════════════ */
+  /* ALERT BANNER MODERN */
+  /* ═══════════════════════════════════════════════ */
+  
+  .alert-banner-modern {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #fcd34d;
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .alert-icon {
+    width: 48px;
+    height: 48px;
+    background: #f59e0b;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  
+  .alert-icon i {
+    font-size: 24px;
+    color: white;
+  }
+  
+  .alert-content { flex: 1; }
+  
+  .alert-content h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #78350f;
+  }
+  
+  .alert-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  
+  .alert-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 8px;
+  }
+  
+  .alert-item:hover {
+    background: rgba(255,255,255,0.8);
+    transform: translateY(-2px);
+  }
+  
+  .alert-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 20px;
+    color: #92400e;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .alert-close:hover { opacity: 1; }
+
+  /* ═══════════════════════════════════════════════ */
+  /* CHARTS SECTION */
+  /* ═══════════════════════════════════════════════ */
+  
+  .charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 24px;
+  }
+  
+  .charts-row:nth-child(2) {
+    grid-template-columns: 1fr 1.5fr;
+  }
+  
+  @media (max-width: 992px) {
+    .charts-row,
+    .charts-row:nth-child(2) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .chart-card-modern {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .chart-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 64px rgba(0, 150, 136, 0.12);
+    border-color: transparent;
+  }
+  
+  .chart-card-modern.full {
+    grid-column: 1 / -1;
+  }
+  
+  .chart-card-modern.large {
+    flex: 1.5;
+  }
+  
+  .chart-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .chart-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+  
+  .chart-title i {
+    font-size: 20px;
+    color: var(--primary);
+  }
+  
+  .chart-title span {
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-1);
-    margin: 0;
-    letter-spacing: -0.3px;
-    transition: color 0.3s ease;
   }
+  
+  .chart-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .chart-badge.purple {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+  }
+  
+  .chart-badge.teal {
+    background: rgba(0, 150, 136, 0.1);
+    color: #009688;
+  }
+  
+  .chart-badge.orange {
+    background: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+  }
+  
+  .chart-badge.emerald {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+  
+  .chart-card-modern:hover .chart-badge {
+    transform: scale(1.05);
+  }
+  
+  .chart-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    margin-left: auto;
+    transition: all 0.2s ease;
+  }
+  
+  .chart-link:hover {
+    gap: 8px;
+  }
+  
+  .chart-body {
+    padding: 24px;
+    height: 280px;
+    position: relative;
+  }
+  
+  .chart-body.tall { height: 320px; }
+  .chart-body.wide { height: 260px; }
 
-  .branch-card:hover .branch-info-bubble h3 {
+  /* ═══════════════════════════════════════════════ */
+  /* INSIGHTS SECTION */
+  /* ═══════════════════════════════════════════════ */
+  
+  .insights-section {
+    margin-bottom: 32px;
+  }
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .section-title i {
+    font-size: 22px;
+    color: var(--primary);
+  }
+  
+  .section-title span {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  
+  .section-link {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+    transition: gap 0.2s ease;
+  }
+  
+  .section-link:hover { gap: 8px; }
+  
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  
+  @media (max-width: 1100px) {
+    .insights-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  
+  @media (max-width: 700px) {
+    .insights-grid { grid-template-columns: 1fr; }
+  }
+  
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-card);
+  }
+  
+  .insight-card.wide {
+    grid-column: span 1;
+  }
+  
+  @media (min-width: 1100px) {
+    .insight-card.wide { grid-column: span 1; }
+  }
+  
+  .insight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+    border-color: var(--primary);
+  }
+  
+  .insight-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .insight-header i {
+    font-size: 20px;
+    color: var(--primary);
+  }
+  
+  .insight-header span {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  
+  .insight-metrics {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+  }
+  
+  .metric-item {
+    flex: 1;
+    text-align: center;
+    padding: 14px 8px;
+    background: var(--bg);
+    border-radius: 12px;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .metric-item:hover {
+    transform: translateY(-2px);
+  }
+  
+  .metric-value {
+    display: block;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -1px;
+  }
+  
+  .metric-value.success { color: #10b981; }
+  .metric-value.blue { color: #3b82f6; }
+  .metric-value.purple { color: #8b5cf6; }
+  
+  .metric-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .service-list-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .service-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 10px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .service-row:hover {
+    transform: translateX(4px);
+    background: rgba(0, 150, 136, 0.05);
+  }
+  
+  .service-rank {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 8px;
+  }
+  
+  .service-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  
+  .service-count {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    padding: 4px 10px;
+    background: rgba(0, 150, 136, 0.1);
+    border-radius: 8px;
+  }
+  
+  .no-data {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  
+  /* Branch Bars */
+  .branch-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .branch-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .branch-bar-label {
+    width: 140px;
+    flex-shrink: 0;
+  }
+  
+  .branch-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 2px;
+  }
+  
+  .branch-value {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  
+  .branch-bar-track {
+    flex: 1;
+    height: 10px;
+    background: var(--bg);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  
+  .branch-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    width: 0;
+    transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+  }
+  
+  .dash-fade.visible .branch-bar-fill {
+    width: var(--target-width, 100%);
+  }
+  
+  .branch-percentage {
+    width: 40px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--primary);
   }
 
-  .branch-info-bubble p {
+  /* ═══════════════════════════════════════════════ */
+  /* SCHEDULE SECTION */
+  /* ═══════════════════════════════════════════════ */
+  
+  .schedule-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .schedule-section > .section-title {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  
+  .schedule-table-wrapper {
+    padding: 0;
+    overflow-x: auto;
+  }
+  
+  .schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .schedule-table th,
+  .schedule-table td {
+    padding: 16px 24px;
+    text-align: left;
+    font-size: 13px;
+  }
+  
+  .schedule-table thead {
+    background: var(--bg);
+  }
+  
+  .schedule-table th {
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  
+  .schedule-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s ease;
+  }
+  
+  .schedule-table tbody tr:hover {
+    background: rgba(0, 150, 136, 0.03);
+  }
+  
+  .schedule-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  
+  .time-badge {
+    display: inline-flex;
+    padding: 6px 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    font-weight: 600;
+    color: var(--text-1);
+    font-size: 12px;
+  }
+  
+  .patient-info {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
-    color: var(--text-3);
-    margin: 0;
-    transition: color 0.3s ease;
+    font-weight: 600;
+    color: var(--text-1);
   }
-
-  .branch-card:hover .branch-info-bubble p {
-    color: var(--text-2);
-  }
-
-  .branch-info-bubble p i {
-    font-size: 14px;
+  
+  .patient-info i {
+    font-size: 18px;
     color: var(--primary);
-    flex-shrink: 0;
+  }
+  
+  .branch-tag {
+    display: inline-flex;
+    padding: 4px 10px;
+    background: rgba(0, 150, 136, 0.1);
+    color: #009688;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .status-pill {
+    display: inline-flex;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  
+  .status-pill.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+  .status-pill.confirmed { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+  .status-pill.completed { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+  .status-pill.cancelled { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+  .status-pill.no_show { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+  
+  .empty-schedule {
+    padding: 60px 24px;
+    text-align: center;
+  }
+  
+  .empty-schedule i {
+    font-size: 48px;
+    color: var(--text-3);
+    margin-bottom: 16px;
+    display: block;
+  }
+  
+  .empty-schedule h4 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  
+  .empty-schedule p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-3);
   }
 
-  /* Status Indicator */
-  .branch-status-indicator {
-    position: relative;
-    width: 16px;
-    height: 16px;
-    margin-left: auto;
-    flex-shrink: 0;
-    z-index: 2;
+  /* ═══════════════════════════════════════════════ */
+  /* DARK MODE ADJUSTMENTS */
+  /* ═══════════════════════════════════════════════ */
+  
+  [data-theme="dark"] .alert-banner-modern {
+    background: linear-gradient(135deg, #422006 0%, #713f12 100%);
+    border-color: #a16207;
   }
-
-  .status-pulse {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #4caf50;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-    animation: bubblePulse 2.5s ease-in-out infinite;
-  }
-
-  @keyframes bubblePulse {
-    0%, 100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.3);
-      opacity: 0.7;
-    }
-  }
+  
+  [data-theme="dark"] .alert-content h4 { color: #fef3c7; }
+  [data-theme="dark"] .alert-item { color: #fde68a; background: rgba(0,0,0,0.2); }
+  [data-theme="dark"] .alert-close { color: #fde68a; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  
+  // ═══════════════════════════════════════════════════════════════════════
+  // SCROLL-TRIGGERED ANIMATIONS (Clean Fade-In System)
+  // ═══════════════════════════════════════════════════════════════════════
+  
+  function initDashboardAnimations() {
+    // Hero stat cards — staggered fade up
+    document.querySelectorAll('.hero-stat-card').forEach((card, i) => {
+      card.classList.add('dash-fade', `stagger-${i + 1}`);
+    });
+    
+    // Chart cards — alternate left/right per row
+    document.querySelectorAll('.charts-row').forEach(row => {
+      const cards = row.querySelectorAll('.chart-card-modern');
+      cards.forEach((card, i) => {
+        card.classList.add('dash-fade', i === 0 ? 'from-left' : 'from-right');
+        if (i > 0) card.classList.add('stagger-2');
+      });
+    });
+    
+    // Alert banner
+    const alert = document.querySelector('.alert-banner-modern');
+    if (alert) alert.classList.add('dash-fade');
+    
+    // Section titles
+    document.querySelectorAll('.insights-section > .section-title').forEach(el => {
+      el.classList.add('dash-fade', 'from-left');
+    });
+    document.querySelectorAll('.schedule-section > .section-title').forEach(el => {
+      el.classList.add('dash-fade', 'from-left');
+    });
+    
+    // Insight cards — staggered
+    document.querySelectorAll('.insight-card').forEach((card, i) => {
+      card.classList.add('dash-fade', `stagger-${i + 1}`);
+    });
+    
+    // Branch bar items
+    document.querySelectorAll('.branch-bar-item').forEach((bar, i) => {
+      bar.classList.add('dash-fade', 'from-right', `stagger-${i + 1}`);
+    });
+    
+    // Schedule section
+    const schedule = document.querySelector('.schedule-section');
+    if (schedule) schedule.classList.add('dash-fade');
+    
+    // Table rows
+    document.querySelectorAll('.schedule-table tbody tr').forEach((row, i) => {
+      row.classList.add('dash-fade', `stagger-${Math.min(i + 1, 6)}`);
+    });
+  }
+  
+  
+
+  // ─── Step 1: add .dash-fade classes (elements start hidden) ───────────
+  initDashboardAnimations();
+  
+  // ─── Step 2: createDashObserver is called AFTER all charts are ready ──
+  //     We define it here but call it at the bottom of DOMContentLoaded
+  function startDashAnimations() {
+    const allFades = Array.from(document.querySelectorAll('.dash-fade'));
+    
+    // Helper: is this element currently in the viewport?
+    function isInView(el) {
+      const r = el.getBoundingClientRect();
+      return r.top < window.innerHeight && r.bottom > 0;
+    }
+    
+    // Helper: get the stagger delay in ms from the element's CSS transition-delay
+    function getStaggerMs(el) {
+      return Math.round((parseFloat(getComputedStyle(el).transitionDelay) || 0) * 1000);
+    }
+    
+    // Helper: reveal an element and replay any chart inside it
+    function revealEl(el, extraDelay) {
+      const stagger = getStaggerMs(el);
+      const total = extraDelay + stagger;
+      setTimeout(() => el.classList.add('visible'), total);
+      el.querySelectorAll('canvas').forEach(canvas => {
+        const chart = Chart.getChart(canvas);
+        if (chart) setTimeout(() => { chart.reset(); chart.update(); }, total + 350);
+      });
+    }
+    
+    // Pass 1 — Elements already in viewport: reveal with a base delay of 80ms
+    //           so the browser paints opacity:0 before transitioning to opacity:1
+    const inView = allFades.filter(isInView);
+    const offScreen = allFades.filter(el => !isInView(el));
+    
+    inView.forEach(el => revealEl(el, 80));
+    
+    // Pass 2 — Off-screen elements: use IntersectionObserver (no extra delay needed)
+    if (offScreen.length) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            revealEl(entry.target, 0);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { root: null, threshold: 0.05, rootMargin: '0px' });
+      offScreen.forEach(el => observer.observe(el));
+    }
+  }
   
   // -- Global Chart Defaults & Premium Styling --
   Chart.defaults.font.family = "'Inter', 'Segoe UI', system-ui, sans-serif";
@@ -598,13 +1283,21 @@ document.addEventListener('DOMContentLoaded', function() {
     titleFont: { size: 14, weight: '600' },
     bodyFont: { size: 13 },
     displayColors: true,
-    backdropFilter: 'blur(8px)' // Note: native chart.js tooltips don't perfectly support backdrop-filter via canvas, but the rgba alpha gives the glass effect
+    backdropFilter: 'blur(8px)'
   };
 
-  // 1. Revenue Chart (Last 7 days) -> Gradient Line Chart
+  // Branch colors for multi-branch charts (initialize early for all charts)
+  {% if branches|length > 1 %}
+  const branchColors = {{ branch_colors_json|safe }};
+  {% else %}
+  const branchColors = ['#009688', '#00BCD4', '#4CAF50', '#FF9800', '#E91E63', '#9C27B0'];
+  {% endif %}
+
+  // 1. Revenue Chart (Last 6 months) -> Monthly Trend Line Chart
   const revenueCtx = document.getElementById('revenueChart');
   if (revenueCtx) {
-    const revenueData = {{ revenue_by_day|safe }};
+    // Use monthly revenue data instead of daily
+    const monthlyRevenueData = {{ monthly_revenue_data|safe }};
     const gradient = revenueCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
     gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
@@ -612,10 +1305,10 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(revenueCtx, {
       type: 'line',
       data: {
-        labels: revenueData.map(item => item.date),
+        labels: monthlyRevenueData.map(item => item.month),
         datasets: [{
-          label: 'Revenue (₱)',
-          data: revenueData.map(item => item.revenue),
+          label: 'Monthly Revenue (₱)',
+          data: monthlyRevenueData.map(item => item.revenue),
           borderColor: '#6366f1', // Indigo
           backgroundColor: gradient,
           borderWidth: 3,
@@ -649,188 +1342,505 @@ document.addEventListener('DOMContentLoaded', function() {
               callback: function(v) { return '₱' + v.toLocaleString(); } 
             } 
           }
+        },
+        animation: {
+          duration: 1800,
+          easing: 'easeInOutCubic',
+          delay(ctx) {
+            return ctx.type === 'data' ? ctx.dataIndex * 100 : 0;
+          }
         }
       }
     });
-    revenueCtx.parentElement.style.height = '320px'; // Give dynamic room for the gradient
+    revenueCtx.parentElement.style.height = '320px';
   }
 
-  // 2. Appointment Status Chart -> Modern Doughnut
-  const statusCtx = document.getElementById('appointmentStatusChart');
-  if (statusCtx) {
-    const statusData = {{ appointment_status_breakdown|safe }};
-    new Chart(statusCtx, {
+  // ═══════════════════════════════════════════════════════════════════════
+  // CHART 2: MOST APPOINTED BRANCHES (Modern Doughnut Chart)
+  // ═══════════════════════════════════════════════════════════════════════
+  
+  {% if branches|length > 1 %}
+  const branchAppointmentCtx = document.getElementById('branchAppointmentChart');
+  if (branchAppointmentCtx) {
+    const branchAppointmentData = {{ branch_appointment_data|safe }};
+    const totalAppointments = branchAppointmentData.reduce((sum, item) => sum + item.appointments, 0);
+    
+    new Chart(branchAppointmentCtx, {
       type: 'doughnut',
       data: {
-        labels: statusData.map(item => item.status),
+        labels: branchAppointmentData.map(item => item.name),
         datasets: [{
-          data: statusData.map(item => item.count),
-          // Emerald, Amber, Blue, Rose
-          backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#f43f5e'],
-          borderColor: 'var(--surface, #ffffff)',
+          label: 'Appointments',
+          data: branchAppointmentData.map(item => item.appointments),
+          backgroundColor: branchColors,
+          borderColor: '#fff',
           borderWidth: 3,
-          hoverOffset: 4,
-          borderRadius: 5 // Rounded arc caps
+          hoverOffset: 12,
+          hoverBorderWidth: 4
         }]
       },
       options: {
         responsive: true,
-        cutout: '75%', // Sleek ring
-        plugins: { 
-          legend: { 
-            position: 'bottom',
-            labels: { usePointStyle: true, padding: 20, font: { size: 13, weight: '500' } }
-          },
-          tooltip: commonTooltip
-        }
-      }
-    });
-  }
-
-  // 3. Payment Method Chart -> Rounded Pill Bar Chart with Gradient
-  const paymentCtx = document.getElementById('paymentMethodChart');
-  if (paymentCtx) {
-    const paymentData = {{ payment_method_stats_json|safe }};
-    const gradientBar = paymentCtx.getContext('2d').createLinearGradient(0, 0, 400, 0);
-    gradientBar.addColorStop(0, '#8b5cf6'); // Violet
-    gradientBar.addColorStop(1, '#d946ef'); // Fuchsia
-
-    new Chart(paymentCtx, {
-      type: 'bar',
-      data: {
-        labels: paymentData.map(item => item.method),
-        datasets: [{
-          label: 'Transactions',
-          data: paymentData.map(item => item.count),
-          backgroundColor: gradientBar,
-          borderRadius: 100, // Fully rounded
-          borderSkipped: false, // Round both left and right
-          barPercentage: 0.45 // Slimmer bars
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        plugins: { 
-          legend: { display: false },
-          tooltip: commonTooltip
+        maintainAspectRatio: false,
+        cutout: '40%',
+        layout: {
+          padding: {
+            top: 0,
+            bottom: 0
+          }
         },
-        scales: { 
-          x: { beginAtZero: true, grid: { display: false, drawBorder: false } },
-          y: { grid: { display: false, drawBorder: false } }
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 12,
+              boxWidth: 10,
+              boxHeight: 10,
+              font: { size: 11, weight: '600', family: 'Inter, sans-serif' },
+              color: '#64748b',
+              generateLabels: function(chart) {
+                const data = chart.data;
+                return data.labels.map((label, i) => {
+                  const value = data.datasets[0].data[i];
+                  const percentage = totalAppointments > 0 ? ((value / totalAppointments) * 100).toFixed(1) : 0;
+                  return {
+                    text: `${label}: ${value} (${percentage}%)`,
+                    fillStyle: data.datasets[0].backgroundColor[i],
+                    strokeStyle: data.datasets[0].backgroundColor[i],
+                    lineWidth: 0,
+                    pointStyle: 'circle',
+                    hidden: false,
+                    index: i
+                  };
+                });
+              }
+            },
+            align: 'center'
+          },
+          tooltip: {
+            ...commonTooltip,
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const percentage = totalAppointments > 0 ? ((value / totalAppointments) * 100).toFixed(1) : 0;
+                return `${context.label}: ${value} appointments (${percentage}%)`;
+              }
+            }
+          }
+        },
+        animation: {
+          animateRotate: true,
+          animateScale: false,
+          duration: 1500,
+          easing: 'easeInOutCubic'
         }
       }
     });
   }
-
-  // Custom Plugin: Draw Center Text in Doughnut
-  const centerTextPlugin = {
-    id: 'centerText',
-    beforeDraw: function(chart) {
-      if (chart.config.options.elements && chart.config.options.elements.center) {
+  {% else %}
+  // Single branch - show appointment status instead
+  const appointmentStatusCtx = document.getElementById('appointmentStatusChart');
+  if (appointmentStatusCtx) {
+    const statusData = {{ appointment_status_breakdown|safe }};
+    
+    // Modern gradient colors for status
+    const statusColors = {
+      'Pending': '#f59e0b',
+      'Confirmed': '#10b981', 
+      'Completed': '#6366f1',
+      'Cancelled': '#ef4444',
+      'No Show': '#64748b'
+    };
+    
+    const colors = statusData.map(item => statusColors[item.status] || '#94a3b8');
+    const totalAppts = statusData.reduce((sum, item) => sum + item.count, 0);
+    
+    // Create center text plugin for this chart
+    const appointmentCenterPlugin = {
+      id: 'appointmentCenterText',
+      beforeDraw: function(chart) {
         const { ctx, chartArea } = chart;
         if (!chartArea) return;
         ctx.save();
         const centerX = (chartArea.left + chartArea.right) / 2;
         const centerY = (chartArea.top + chartArea.bottom) / 2;
         
-        const text = chart.config.options.elements.center.text;
-        const subtext = chart.config.options.elements.center.subtext;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Large number
+        ctx.font = 'bold 42px Inter, sans-serif';
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-1') || '#1e293b';
+        ctx.fillText(totalAppts.toString(), centerX, centerY - 8);
+        
+        // Label
+        ctx.font = '500 13px Inter, sans-serif';
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-3') || '#94a3b8';
+        ctx.fillText('Total Today', centerX, centerY + 20);
+        ctx.restore();
+      }
+    };
+    
+    new Chart(appointmentStatusCtx, {
+      type: 'doughnut',
+      plugins: [appointmentCenterPlugin],
+      data: {
+        labels: statusData.map(item => item.status),
+        datasets: [{
+          data: statusData.map(item => item.count),
+          backgroundColor: colors,
+          borderColor: 'rgba(255, 255, 255, 0.8)',
+          borderWidth: 3,
+          hoverOffset: 12,
+          borderRadius: 6,
+          spacing: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 20,
+              font: { size: 12, weight: '600' },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                return data.labels.map((label, i) => ({
+                  text: `${label} (${data.datasets[0].data[i]})`,
+                  fillStyle: data.datasets[0].backgroundColor[i],
+                  strokeStyle: data.datasets[0].backgroundColor[i],
+                  lineWidth: 0,
+                  pointStyle: 'circle',
+                  hidden: false,
+                  index: i
+                }));
+              }
+            }
+          },
+          tooltip: {
+            ...commonTooltip,
+            callbacks: {
+              label: function(context) {
+                const percent = totalAppts > 0 ? ((context.raw / totalAppts) * 100).toFixed(1) : 0;
+                return `${context.label}: ${context.raw} (${percent}%)`;
+              }
+            }
+          }
+        },
+        animation: {
+          animateRotate: true,
+          animateScale: false,
+          duration: 1500,
+          easing: 'easeInOutCubic'
+        }
+      }
+    });
+  }
+  {% endif %}
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // NEW CHART 2: WEEKLY PERFORMANCE COMPARISON (Modern Grouped Bar)
+  // ═══════════════════════════════════════════════════════════════════════
+  
+  const weeklyComparisonCtx = document.getElementById('weeklyComparisonChart');
+  if (weeklyComparisonCtx) {
+    // Get data from context
+    const weeklyData = {
+      labels: ['Appointments', 'New Customers', 'Revenue (₱K)', 'Completed', 'Products Sold'],
+      thisWeek: [{{ this_week_appointments|default:0 }}, {{ new_customers_this_week|default:0 }}, {{ this_week_revenue_k|default:0 }}, {{ this_week_completed|default:0 }}, {{ this_week_products|default:0 }}],
+      lastWeek: [{{ last_week_appointments|default:0 }}, {{ last_week_customers|default:0 }}, {{ last_week_revenue_k|default:0 }}, {{ last_week_completed|default:0 }}, {{ last_week_products|default:0 }}]
+    };
+    
+    // Create gradient for this week
+    const thisWeekGradient = weeklyComparisonCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    thisWeekGradient.addColorStop(0, '#10b981');
+    thisWeekGradient.addColorStop(1, '#059669');
+    
+    // Create gradient for last week
+    const lastWeekGradient = weeklyComparisonCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    lastWeekGradient.addColorStop(0, '#94a3b8');
+    lastWeekGradient.addColorStop(1, '#64748b');
+    
+    new Chart(weeklyComparisonCtx, {
+      type: 'bar',
+      data: {
+        labels: weeklyData.labels,
+        datasets: [
+          {
+            label: 'This Week',
+            data: weeklyData.thisWeek,
+            backgroundColor: thisWeekGradient,
+            borderRadius: 0,
+            borderSkipped: false,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
+          },
+          {
+            label: 'Last Week',
+            data: weeklyData.lastWeek,
+            backgroundColor: lastWeekGradient,
+            borderRadius: 0,
+            borderSkipped: false,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'rectRounded',
+              padding: 20,
+              font: { size: 12, weight: '600' }
+            }
+          },
+          tooltip: {
+            ...commonTooltip,
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label;
+                const value = context.raw;
+                const otherDataset = context.chart.data.datasets[context.datasetIndex === 0 ? 1 : 0];
+                const otherValue = otherDataset.data[context.dataIndex];
+                const diff = value - otherValue;
+                const diffPercent = otherValue > 0 ? ((diff / otherValue) * 100).toFixed(1) : 0;
+                const arrow = diff >= 0 ? '↑' : '↓';
+                const color = diff >= 0 ? '🟢' : '🔴';
+                
+                if (context.datasetIndex === 0) {
+                  return `${label}: ${value.toLocaleString()} ${color} ${arrow}${Math.abs(diffPercent)}%`;
+                }
+                return `${label}: ${value.toLocaleString()}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { size: 11, weight: '500' } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0, 0, 0, 0.04)', drawBorder: false, borderDash: [4, 4] },
+            ticks: { font: { size: 11 }, precision: 0 }
+          }
+        },
+        animation: {
+          duration: 1600,
+          easing: 'easeInOutCubic',
+          delay(ctx) {
+            if (ctx.type === 'data' && ctx.mode === 'default') {
+              return ctx.dataIndex * 120 + ctx.datasetIndex * 200;
+            }
+            return 0;
+          }
+        }
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // MULTI-BRANCH ANALYTICS CHARTS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  {% if branches|length > 1 %}
+  
+  const branchCustomerData = {{ branch_customer_json|safe }};
+  const branchRevenueData = {{ branch_revenue_json|safe }};
+  const branchAppointmentData = {{ branch_appointment_json|safe }};
+  const branchTrendData = {{ branch_trend_json|safe }};
+  const branchMonthlyData = {{ branch_monthly_json|safe }};
+
+  // Custom plugin for doughnut center text with percentage
+  const branchCenterTextPlugin = {
+    id: 'branchCenterText',
+    beforeDraw: function(chart) {
+      if (chart.config.options.plugins && chart.config.options.plugins.branchCenter) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+        ctx.save();
+        const centerX = (chartArea.left + chartArea.right) / 2;
+        const centerY = (chartArea.top + chartArea.bottom) / 2;
+        
+        const { total, label } = chart.config.options.plugins.branchCenter;
         
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        ctx.font = 'bold 36px Inter, sans-serif';
-        // Allow text to dynamically use variables, fallback to dark slate
+        ctx.font = 'bold 32px Inter, sans-serif';
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-1') || '#1e293b';
-        ctx.fillText(text, centerX, centerY - 10);
+        ctx.fillText(total, centerX, centerY - 8);
         
-        ctx.font = '500 13px Inter, sans-serif';
+        ctx.font = '500 12px Inter, sans-serif';
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-3') || '#94a3b8';
-        ctx.fillText(subtext, centerX, centerY + 16);
+        ctx.fillText(label, centerX, centerY + 18);
         ctx.restore();
       }
     }
   };
-  Chart.register(centerTextPlugin);
+  Chart.register(branchCenterTextPlugin);
 
-  // 4. Species Chart -> Doughnut with Center Total
-  const speciesCtx = document.getElementById('speciesChart');
-  if (speciesCtx) {
-    const speciesData = {{ pet_species_breakdown_json|safe }};
-    const totalPets = speciesData.reduce((sum, item) => sum + item.count, 0);
-
-    new Chart(speciesCtx, {
+  // 6. Branch Revenue Distribution Pie Chart (with percentages)
+  const branchRevenuePieCtx = document.getElementById('branchRevenuePieChart');
+  if (branchRevenuePieCtx) {
+    const totalRevenue = branchRevenueData.reduce((sum, item) => sum + item.revenue, 0);
+    
+    new Chart(branchRevenuePieCtx, {
       type: 'doughnut',
       data: {
-        labels: speciesData.map(item => item.species),
+        labels: branchRevenueData.map(item => `${item.name} (${item.percentage}%)`),
         datasets: [{
-          data: speciesData.map(item => item.count),
-          // Vibrant Modern Palette
-          backgroundColor: ['#8b5cf6', '#ec4899', '#0ea5e9', '#14b8a6', '#f59e0b', '#6366f1'],
+          data: branchRevenueData.map(item => item.revenue),
+          backgroundColor: branchColors,
           borderColor: 'var(--surface, #ffffff)',
           borderWidth: 4,
-          hoverOffset: 6,
-          borderRadius: 5
+          hoverOffset: 8,
+          borderRadius: 6
         }]
       },
       options: {
         responsive: true,
-        cutout: '76%',
-        elements: {
-          center: { text: totalPets.toString(), subtext: 'Total Pets' }
-        },
+        maintainAspectRatio: false,
+        cutout: '70%',
         plugins: {
+          branchCenter: {
+            total: '₱' + (totalRevenue / 1000).toFixed(1) + 'K',
+            label: 'Total Revenue'
+          },
           legend: {
             position: 'bottom',
-            labels: { usePointStyle: true, padding: 20, font: { size: 12, weight: '600' } }
+            labels: { 
+              usePointStyle: true, 
+              padding: 16, 
+              font: { size: 12, weight: '600' },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                return data.labels.map((label, i) => ({
+                  text: label,
+                  fillStyle: data.datasets[0].backgroundColor[i],
+                  strokeStyle: data.datasets[0].backgroundColor[i],
+                  lineWidth: 0,
+                  pointStyle: 'circle',
+                  index: i
+                }));
+              }
+            }
           },
-          tooltip: commonTooltip
+          tooltip: {
+            ...commonTooltip,
+            callbacks: {
+              label: function(context) {
+                const item = branchRevenueData[context.dataIndex];
+                return `₱${item.revenue.toLocaleString()} (${item.percentage}%)`;
+              }
+            }
+          }
         },
         animation: {
           animateRotate: true,
-          animateScale: true,
-          duration: 1200,
-          easing: 'easeOutQuart'
+          animateScale: false,
+          duration: 1500,
+          easing: 'easeInOutCubic'
         }
       }
     });
   }
 
-  // 5. Appointment Source Chart -> Rounded Bar Chart
-  const sourceCtx = document.getElementById('appointmentSourceChart');
-  if (sourceCtx) {
-    const sourceData = {{ appointment_sources_json|safe }};
-    const gradientV = sourceCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-    gradientV.addColorStop(0, '#0ea5e9'); // Light blue
-    gradientV.addColorStop(1, '#3b82f6'); // Royal blue
-
-    new Chart(sourceCtx, {
-      type: 'bar',
+  // Branch Monthly Growth Chart (Multi-Line Chart - Last 6 Months)
+  const branchMonthlyCtx = document.getElementById('branchMonthlyChart');
+  if (branchMonthlyCtx) {
+    const monthlyDatasets = Object.keys(branchMonthlyData.datasets).map((branchName, index) => {
+      const gradient = branchMonthlyCtx.getContext('2d').createLinearGradient(0, 0, 0, 280);
+      gradient.addColorStop(0, branchColors[index % branchColors.length] + '40');
+      gradient.addColorStop(1, branchColors[index % branchColors.length] + '05');
+      
+      return {
+        label: branchName,
+        data: branchMonthlyData.datasets[branchName],
+        borderColor: branchColors[index % branchColors.length],
+        backgroundColor: gradient,
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        pointBackgroundColor: branchColors[index % branchColors.length],
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      };
+    });
+    
+    new Chart(branchMonthlyCtx, {
+      type: 'line',
       data: {
-        labels: sourceData.map(item => item.source),
-        datasets: [{
-          label: 'Appointments',
-          data: sourceData.map(item => item.count),
-          backgroundColor: gradientV,
-          borderRadius: 100, // Pill shaped
-          borderSkipped: false,
-          maxBarThickness: 36 // Slim elegant bars
-        }]
+        labels: branchMonthlyData.labels,
+        datasets: monthlyDatasets
       },
       options: {
         responsive: true,
-        plugins: { 
-          legend: { display: false },
-          tooltip: commonTooltip
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { 
+              usePointStyle: true, 
+              padding: 20, 
+              font: { size: 12, weight: '600' }
+            }
+          },
+          tooltip: {
+            ...commonTooltip,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.parsed.y} customers`;
+              }
+            }
+          }
         },
-        scales: { 
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false, borderDash: [5,5] } },
-          x: { grid: { display: false, drawBorder: false } }
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false, borderDash: [5,5] },
+            ticks: { precision: 0 }
+          },
+          x: { 
+            grid: { display: false, drawBorder: false },
+            ticks: { font: { size: 12, weight: '500' } }
+          }
+        },
+        animation: {
+          duration: 2000,
+          easing: 'easeInOutCubic',
+          delay(ctx) {
+            return ctx.type === 'data' ? ctx.dataIndex * 80 + ctx.datasetIndex * 250 : 0;
+          }
         }
       }
     });
   }
+  
+  {% endif %}
+
+  // ─── Step 3: Start animations AFTER all charts are initialized ────────
+  // This guarantees Chart.getChart(canvas) works for every chart card
+  startDashAnimations();
 });
 </script>
 
