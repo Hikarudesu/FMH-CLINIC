@@ -118,6 +118,31 @@
     }
 
     /* ---- Records table ---- */
+    .rv-records-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-50) #e2e8f0;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 4px;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar-thumb {
+        background: var(--primary-50);
+        border-radius: 4px;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar-thumb:hover {
+        background: var(--primary);
+    }
+    
     .rv-records-table {
         width: 100%;
         border-collapse: collapse;
@@ -428,7 +453,9 @@
         background: #f7f9ff;
     }
 
-    /* ── Edit Entry Modal ── */
+    /* ══════════════════════════════════════════════════════════════════════════ */
+    /* Edit Entry Modal — Quick Create Style                                      */
+    /* ══════════════════════════════════════════════════════════════════════════ */
     .entry-modal-overlay {
         display: none;
         position: fixed;
@@ -438,150 +465,208 @@
         z-index: 9000;
         align-items: center;
         justify-content: center;
+        padding: 100px 20px 40px;
+        overflow-y: auto;
     }
     .entry-modal-overlay.open {
         display: flex;
     }
     @keyframes emSlideUp {
-        from { opacity: 0; transform: translateY(20px) scale(0.98); }
-        to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
     }
     .entry-modal {
         background: var(--surface);
-        border-radius: 18px;
-        box-shadow: 0 28px 70px rgba(0,0,0,0.28);
-        width: 90%;
-        max-width: 700px;
-        max-height: 90vh;
-        overflow-y: auto;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+        width: 580px;
+        max-width: 100%;
+        max-height: calc(100vh - 140px);
         display: flex;
         flex-direction: column;
-        animation: emSlideUp 0.25s ease both;
+        overflow: hidden;
+        animation: emSlideUp 0.3s var(--ease) both;
+        margin: 0;
     }
+    
+    /* Header - QC style */
     .entry-modal-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 20px 24px 18px;
+        padding: 24px 28px 20px;
+        background: var(--surface);
         border-bottom: 1px solid var(--border);
-        background: var(--primary-gradient);
-        border-radius: 18px 18px 0 0;
-        position: sticky;
-        top: 0;
-        z-index: 1;
     }
-    .entry-modal-head h3 {
-        color: #fff;
-        font-size: 1rem;
-        font-weight: 800;
-        margin: 0;
+    .entry-modal-head-title {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 14px;
     }
-    .entry-modal-close {
-        background: rgba(255,255,255,0.2);
-        border: 1.5px solid rgba(255,255,255,0.3);
-        color: #fff;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 18px;
-        font-weight: 700;
+    .entry-modal-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--primary-light);
+        color: var(--primary);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.2s, transform 0.15s;
-        line-height: 1;
+        font-size: 1.4rem;
+    }
+    .entry-modal-head h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--text-1);
+        letter-spacing: -0.01em;
+    }
+    .entry-modal-head p {
+        margin: 2px 0 0;
+        font-size: 0.8rem;
+        color: var(--text-3);
+    }
+    .entry-modal-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        background: var(--bg);
+        color: var(--text-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s;
     }
     .entry-modal-close:hover {
-        background: rgba(255,255,255,0.35);
-        transform: rotate(90deg);
+        background: rgba(230,57,70,0.1);
+        color: var(--accent);
     }
+    
+    /* Body */
     .entry-modal-body {
-        padding: 22px 24px 4px;
+        padding: 24px 28px;
+        overflow-y: auto;
+        max-height: calc(80vh - 150px);
     }
+    
+    .em-section-title {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--primary);
+        margin-bottom: 14px;
+    }
+    .em-section-title:not(:first-child) {
+        margin-top: 24px;
+    }
+    
     .em-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
-        margin-bottom: 14px;
+        gap: 16px;
+        margin-bottom: 0;
     }
     .em-row.single { grid-template-columns: 1fr; }
+    
+    .em-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
     .em-field label {
         display: block;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 5px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-2);
+        text-transform: none;
+        letter-spacing: normal;
+        margin-bottom: 0;
     }
     .em-field input,
-    .em-field textarea {
+    .em-field textarea,
+    .em-field select {
         width: 100%;
         box-sizing: border-box;
-        border: 1.5px solid var(--border);
-        border-radius: 9px;
-        padding: 9px 11px;
-        font-size: 13px;
-        color: var(--text-primary);
+        padding: 11px 14px;
         background: var(--bg);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
         font-family: inherit;
-        transition: border-color 0.2s, box-shadow 0.2s;
+        font-size: 0.875rem;
+        color: var(--text-1);
+        transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
     }
     .em-field input:focus,
-    .em-field textarea:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(99,90,255,0.12);
+    .em-field textarea:focus,
+    .em-field select:focus {
         outline: none;
+        background: var(--surface);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0,150,136,0.1);
+    }
+    .em-field select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235e6278' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 36px;
     }
     .em-field textarea {
         resize: vertical;
-        min-height: 75px;
+        min-height: 80px;
     }
+    
+    /* Footer */
     .entry-modal-foot {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        padding: 16px 24px 22px;
+        padding: 16px 28px;
+        background: var(--surface);
         border-top: 1px solid var(--border);
-        margin-top: 8px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 0;
     }
     .em-btn-cancel {
-        padding: 9px 22px;
+        padding: 10px 20px;
         background: transparent;
         border: 1.5px solid var(--border);
         border-radius: 10px;
-        font-size: 13px;
+        color: var(--text-2);
+        font-size: 0.875rem;
         font-weight: 600;
-        color: var(--text-secondary);
         cursor: pointer;
         transition: all 0.2s;
     }
     .em-btn-cancel:hover {
-        border-color: var(--text-primary);
-        color: var(--text-primary);
+        background: var(--bg);
+        color: var(--text-1);
     }
     .em-btn-save {
-        padding: 9px 26px;
+        padding: 10px 24px;
         background: var(--primary-gradient);
         border: none;
         border-radius: 10px;
-        font-size: 13px;
-        font-weight: 700;
         color: #fff;
+        font-size: 0.875rem;
+        font-weight: 700;
         cursor: pointer;
-        display: inline-flex;
+        box-shadow: 0 4px 12px rgba(0,150,136,0.25);
+        transition: all 0.25s var(--ease);
+        display: flex;
         align-items: center;
-        gap: 7px;
-        transition: all 0.2s;
+        gap: 6px;
     }
     .em-btn-save:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(99,90,255,0.28);
+        box-shadow: 0 6px 16px rgba(0,150,136,0.35);
     }
+    
     .em-click-hint {
         padding: 7px 14px;
         background: #eef5ff;
@@ -592,6 +677,556 @@
         align-items: center;
         gap: 6px;
         font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════════════ */
+    /* RESPONSIVE STYLES                                                          */
+    /* ══════════════════════════════════════════════════════════════════════════ */
+
+    /* Tablet */
+    @media (max-width: 992px) {
+        .rec-detail-hero {
+            padding: 24px 24px 20px;
+        }
+        
+        .rec-detail-hero-inner {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        
+        .rec-detail-hero-text h1 {
+            font-size: 1.25rem;
+        }
+        
+        .rec-hero-actions {
+            width: 100%;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        
+        .rec-hero-divider {
+            display: none;
+        }
+        
+        .rec-hero-btn {
+            padding: 8px 14px;
+            font-size: 0.8rem;
+        }
+        
+        /* Info grids */
+        .rv-info-grid {
+            grid-template-columns: 90px 1fr 90px 1fr;
+        }
+        
+        .rv-info-grid.cols-6 {
+            grid-template-columns: 80px 1fr 80px 1fr;
+        }
+        
+        .rv-info-grid.cols-6 .lbl:nth-child(5),
+        .rv-info-grid.cols-6 .val:nth-child(6) {
+            grid-column: span 1;
+        }
+        
+        /* Records table scroll */
+        .rv-records-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .rv-records-table {
+            min-width: 800px;
+        }
+    }
+
+    /* Mobile Landscape / Small Tablets */
+    @media (max-width: 768px) {
+        .rec-detail-hero {
+            padding: 20px 18px 18px;
+            margin-bottom: 18px;
+        }
+        
+        .rec-detail-hero-text h1 {
+            font-size: 1.15rem;
+        }
+        
+        .rec-detail-hero-text h1 i {
+            font-size: 1.25rem;
+        }
+        
+        .rec-detail-hero-text p {
+            font-size: 0.8rem;
+        }
+        
+        .rec-hero-actions {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .rec-hero-btn {
+            padding: 8px 12px;
+            font-size: 0.78rem;
+            border-radius: 10px;
+        }
+        
+        .rec-hero-btn i {
+            font-size: 1rem;
+        }
+        
+        .rec-hero-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+        }
+        
+        /* Info grids - 2 columns */
+        .rv-info-grid {
+            grid-template-columns: 85px 1fr;
+        }
+        
+        .rv-info-grid.cols-6 {
+            grid-template-columns: 85px 1fr;
+        }
+        
+        .rv-info-grid .val[style*="span 3"] {
+            grid-column: span 1 !important;
+        }
+        
+        /* Header */
+        .rv-header {
+            padding: 16px 20px 14px;
+        }
+        
+        .rv-header-logo {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .rv-header-title {
+            font-size: 16px;
+        }
+        
+        /* Actions */
+        .rv-actions {
+            padding: 10px 16px;
+            flex-wrap: wrap;
+        }
+        
+        /* Footer */
+        .rv-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        /* Signature */
+        .rv-signature-section {
+            justify-content: center;
+            padding: 20px 16px 10px;
+        }
+        
+        .rv-signature-block {
+            min-width: 200px;
+        }
+        
+        /* Modal */
+        .entry-modal {
+            width: 95%;
+            max-height: calc(100vh - 140px);
+        }
+        
+        .entry-modal-overlay {
+            padding: 80px 16px 30px;
+        }
+        
+        .em-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .entry-modal-head {
+            padding: 20px 20px 16px;
+        }
+        
+        .entry-modal-icon {
+            width: 38px;
+            height: 38px;
+            font-size: 1.2rem;
+        }
+        
+        .entry-modal-head h3 {
+            font-size: 1.05rem;
+        }
+        
+        .entry-modal-body {
+            padding: 20px;
+            max-height: calc(100vh - 260px);
+        }
+        
+        .entry-modal-foot {
+            padding: 14px 20px 16px;
+        }
+    }
+
+    /* Mobile Portrait */
+    @media (max-width: 576px) {
+        .rec-detail-hero {
+            padding: 18px 14px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+        }
+        
+        .rec-detail-hero-text h1 {
+            font-size: 1.05rem;
+            flex-wrap: wrap;
+        }
+        
+        .rec-detail-hero-text p {
+            font-size: 0.75rem;
+        }
+        
+        .rec-hero-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .rec-hero-btn {
+            padding: 10px 10px;
+            font-size: 0.72rem;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .rec-hero-btn.btn-pdf {
+            grid-column: span 2;
+        }
+        
+        .rec-hero-btn i {
+            font-size: 0.95rem;
+        }
+        
+        /* Hide button text on very small screens, show only icons */
+        .rec-hero-btn span.btn-text {
+            display: none;
+        }
+        
+        .rec-hero-badge {
+            font-size: 0.65rem;
+            padding: 3px 6px;
+        }
+        
+        /* Info grids */
+        .rv-info-grid,
+        .rv-info-grid.cols-6 {
+            grid-template-columns: 1fr;
+        }
+        
+        .rv-info-grid .lbl {
+            border-right: none;
+            background: #f1f5f9;
+            font-size: 10px;
+            padding: 5px 10px;
+        }
+        
+        .rv-info-grid .val {
+            border-right: none;
+            padding: 8px 10px;
+        }
+        
+        .rv-info-grid .val[style*="span"] {
+            grid-column: span 1 !important;
+        }
+        
+        /* Section headers */
+        .rv-section-hd {
+            font-size: 10px;
+            padding: 5px 10px;
+        }
+        
+        /* Vet banner */
+        .rv-vet-banner {
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            font-size: 11px;
+        }
+        
+        /* Header */
+        .rv-header {
+            padding: 14px 16px 12px;
+        }
+        
+        .rv-header-logo {
+            width: 45px;
+            height: 45px;
+        }
+        
+        .rv-header-title {
+            font-size: 14px;
+        }
+        
+        .rv-header-sub {
+            font-size: 11px;
+        }
+        
+        /* Warnings */
+        .rv-warnings-banner {
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        
+        .rv-warnings-banner-title {
+            font-size: 12px;
+        }
+        
+        .rv-warnings-list {
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .rv-warnings-list li {
+            font-size: 11px;
+        }
+        
+        /* Signature */
+        .rv-signature-section {
+            padding: 16px 12px 8px;
+        }
+        
+        .rv-signature-block {
+            min-width: 180px;
+        }
+        
+        .rv-signature-label {
+            font-size: 10px;
+        }
+        
+        /* Record table */
+        .rv-records-table-wrap {
+            margin: 0 -1px;
+        }
+        
+        .rv-records-table {
+            min-width: 700px;
+        }
+        
+        .rv-records-table th {
+            font-size: 9px;
+            padding: 8px 6px;
+        }
+        
+        .rv-records-table td {
+            font-size: 11px;
+            padding: 10px 8px;
+        }
+        
+        /* Modal */
+        .entry-modal-overlay {
+            padding: 60px 12px 20px;
+            align-items: flex-start;
+        }
+        
+        .entry-modal {
+            width: 100%;
+            border-radius: 16px;
+            max-height: calc(100vh - 100px);
+        }
+        
+        .entry-modal-head {
+            padding: 16px 16px 14px;
+        }
+        
+        .entry-modal-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+        }
+        
+        .entry-modal-head-title {
+            gap: 10px;
+        }
+        
+        .entry-modal-head h3 {
+            font-size: 0.95rem;
+        }
+        
+        .entry-modal-head p {
+            font-size: 0.72rem;
+        }
+        
+        .entry-modal-body {
+            padding: 16px;
+            max-height: calc(100vh - 220px);
+        }
+        
+        .em-section-title {
+            font-size: 0.68rem;
+            margin-bottom: 12px;
+        }
+        
+        .em-field {
+            margin-bottom: 14px;
+        }
+        
+        .em-field label {
+            font-size: 0.75rem;
+        }
+        
+        .em-field input,
+        .em-field textarea,
+        .em-field select {
+            padding: 10px 12px;
+            font-size: 0.85rem;
+        }
+        
+        .entry-modal-foot {
+            padding: 14px 16px;
+            flex-direction: column;
+        }
+        
+        .em-btn-cancel,
+        .em-btn-save {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Footer */
+        .rv-footer {
+            padding: 10px;
+        }
+        
+        .rv-footer-text {
+            font-size: 10px;
+        }
+    }
+
+    /* Very small mobile screens */
+    @media (max-width: 400px) {
+        .rec-detail-hero {
+            padding: 14px 12px 14px;
+        }
+        
+        .rec-detail-hero-text h1 {
+            font-size: 0.95rem;
+        }
+        
+        .rec-hero-actions {
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .rec-hero-btn {
+            padding: 10px 8px;
+            border-radius: 8px;
+        }
+        
+        .rec-hero-btn i {
+            font-size: 1.1rem;
+        }
+        
+        .rec-hero-badge {
+            font-size: 0.62rem;
+            padding: 2px 5px;
+        }
+        
+        /* Records table */
+        .rv-records-table {
+            min-width: 600px;
+        }
+        
+        .rv-records-table th {
+            font-size: 8px;
+            padding: 6px 4px;
+        }
+        
+        .rv-records-table td {
+            font-size: 10px;
+            padding: 8px 6px;
+        }
+        
+        /* Info */
+        .rv-info-grid .lbl {
+            font-size: 9px;
+        }
+        
+        .rv-info-grid .val {
+            font-size: 11px;
+        }
+        
+        /* Modal */
+        .entry-modal-overlay {
+            padding: 10px 8px;
+            align-items: flex-end;
+        }
+        
+        .entry-modal-overlay {
+            padding: 0;
+            align-items: flex-end;
+        }
+        
+        .entry-modal {
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            margin: 0;
+            max-height: 90vh;
+        }
+        
+        .entry-modal-head {
+            padding: 14px 14px 12px;
+        }
+        
+        .entry-modal-head-title {
+            gap: 8px;
+        }
+        
+        .entry-modal-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            border-radius: 8px;
+        }
+        
+        .entry-modal-head h3 {
+            font-size: 0.9rem;
+        }
+        
+        .entry-modal-head p {
+            font-size: 0.68rem;
+        }
+        
+        .entry-modal-body {
+            padding: 14px;
+            max-height: calc(90vh - 140px);
+        }
+        
+        .em-section-title {
+            font-size: 0.65rem;
+            margin-bottom: 10px;
+        }
+        
+        .em-section-title:not(:first-child) {
+            margin-top: 18px;
+        }
+        
+        .em-field {
+            margin-bottom: 12px;
+        }
+        
+        .em-field label {
+            font-size: 0.72rem;
+        }
+        
+        .em-field input,
+        .em-field textarea,
+        .em-field select {
+            font-size: 14px;
+            padding: 10px;
+        }
+        
+        .entry-modal-foot {
+            padding: 12px 14px;
+        }
     }
 </style>
 
@@ -620,30 +1255,30 @@
         </div>
         <div class="rec-hero-actions">
             <a href="{% url 'records:admin_list' %}" class="rec-hero-btn btn-back">
-                <i class='bx bx-arrow-back'></i> Back
+                <i class='bx bx-arrow-back'></i> <span class="btn-text">Back</span>
             </a>
             
             <div class="rec-hero-divider"></div>
             
             <a href="{% url 'records:admin_edit' record.pk %}" class="rec-hero-btn btn-action">
-                <i class='bx bx-edit-alt'></i> Edit Record
+                <i class='bx bx-edit-alt'></i> <span class="btn-text">Edit Record</span>
             </a>
             <a href="{% url 'records:admin_add_entry' record.pk %}" class="rec-hero-btn btn-action">
-                <i class='bx bx-plus-circle'></i> Add Visit Entry
+                <i class='bx bx-plus-circle'></i> <span class="btn-text">Add Visit Entry</span>
             </a>
             <a href="{% url 'diagnostics:run_diagnosis' record.pet.pk %}" class="rec-hero-btn btn-ai">
-                <i class='bx bx-brain'></i> AI Diagnosis
+                <i class='bx bx-brain'></i> <span class="btn-text">AI Diagnosis</span>
             </a>
             
             <div class="rec-hero-divider"></div>
             
             {% if missing_fields %}
             <span class="rec-hero-btn btn-pdf" style="opacity:0.6;cursor:not-allowed;" title="Complete all required fields before downloading PDF">
-                <i class='bx bx-download'></i> Download PDF
+                <i class='bx bx-download'></i> <span class="btn-text">Download PDF</span>
             </span>
             {% else %}
             <a href="{% url 'records:download_pdf' record.pk %}" class="rec-hero-btn btn-pdf">
-                <i class='bx bx-download'></i> Download PDF
+                <i class='bx bx-download'></i> <span class="btn-text">Download PDF</span>
             </a>
             {% endif %}
         </div>
@@ -711,7 +1346,7 @@
     </div>
 
     <!-- Clinical Data Table -->
-    <div style="overflow-x: auto;">
+    <div class="rv-records-table-wrap">
         <table class="rv-records-table">
             <thead>
                 <tr>
@@ -975,15 +1610,22 @@
 <div class="entry-modal-overlay" id="entryModal">
     <div class="entry-modal">
         <div class="entry-modal-head">
-            <h3><i class='bx bx-edit-alt'></i> Edit Visit Entry &mdash; <span id="emDateLabel"></span></h3>
-            <button type="button" class="entry-modal-close" onclick="closeEntryModal()">&times;</button>
+            <div class="entry-modal-head-title">
+                <div class="entry-modal-icon"><i class='bx bx-edit-alt'></i></div>
+                <div>
+                    <h3>Edit Visit Entry</h3>
+                    <p>Update visit from <span id="emDateLabel"></span></p>
+                </div>
+            </div>
+            <button type="button" class="entry-modal-close" onclick="closeEntryModal()"><i class='bx bx-x'></i></button>
         </div>
         <form id="entryEditForm" method="post">
             {% csrf_token %}
             <div class="entry-modal-body">
+                <div class="em-section-title">Visit Date & Schedule</div>
                 <div class="em-row">
                     <div class="em-field">
-                        <label>Date of Visit</label>
+                        <label>Date of Visit *</label>
                         <input type="date" name="date_recorded" id="emDate" required>
                     </div>
                     <div class="em-field">
@@ -991,10 +1633,12 @@
                         <input type="date" name="ff_up" id="emFfup">
                     </div>
                 </div>
+                
+                <div class="em-section-title">Location & Veterinarian</div>
                 <div class="em-row">
                     <div class="em-field">
                         <label>Branch / Location</label>
-                        <select name="branch_id" id="emBranch" style="width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13px; color:var(--text-primary); background:var(--bg); font-family:inherit;">
+                        <select name="branch_id" id="emBranch">
                             <option value="">— Select Branch —</option>
                             {% for branch in branches %}
                             <option value="{{ branch.id }}" data-is-record="{% if record.branch_id == branch.id %}1{% else %}0{% endif %}">{{ branch.name }}</option>
@@ -1003,7 +1647,7 @@
                     </div>
                     <div class="em-field">
                         <label>Attending Veterinarian</label>
-                        <select name="vet" id="emVet" style="width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13px; color:var(--text-primary); background:var(--bg); font-family:inherit;">
+                        <select name="vet" id="emVet">
                             <option value="">— Select Veterinarian —</option>
                             {% for vet in vets %}
                             <option value="{{ vet.id }}" data-branch="{{ vet.branch_id }}">Dr. {{ vet.first_name }} {{ vet.last_name }}{% if vet.license_number %} (PRC {{ vet.license_number }}){% endif %}</option>
@@ -1011,38 +1655,42 @@
                         </select>
                     </div>
                 </div>
+                
+                <div class="em-section-title">Vital Signs</div>
                 <div class="em-row">
                     <div class="em-field">
                         <label>Weight (kg)</label>
                         <input type="number" step="0.01" name="weight" id="emWeight" placeholder="e.g. 5.50">
                     </div>
                     <div class="em-field">
-                        <label>Temperature (&deg;C)</label>
+                        <label>Temperature (°C)</label>
                         <input type="number" step="0.1" name="temperature" id="emTemp" placeholder="e.g. 38.5">
                     </div>
                 </div>
+                
+                <div class="em-section-title">Clinical Notes</div>
                 <div class="em-row single">
                     <div class="em-field">
                         <label>History / Clinical Signs</label>
-                        <textarea name="history_clinical_signs" id="emHistory"></textarea>
+                        <textarea name="history_clinical_signs" id="emHistory" placeholder="Describe symptoms, history, and clinical observations..."></textarea>
                     </div>
                 </div>
                 <div class="em-row single">
                     <div class="em-field">
                         <label>Treatment (Tx)</label>
-                        <textarea name="treatment" id="emTreatment"></textarea>
+                        <textarea name="treatment" id="emTreatment" placeholder="Treatment administered or recommended..."></textarea>
                     </div>
                 </div>
                 <div class="em-row single">
                     <div class="em-field">
                         <label>Prescription (Rx)</label>
-                        <textarea name="rx" id="emRx"></textarea>
+                        <textarea name="rx" id="emRx" placeholder="Medications prescribed..."></textarea>
                     </div>
                 </div>
                 <div class="em-row single">
                     <div class="em-field">
                         <label>Required Clinical Action</label>
-                        <select name="action_required" id="emAction" style="width:100%; box-sizing:border-box; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; font-size:13px; color:var(--text-primary); background:var(--bg); font-family:inherit;">
+                        <select name="action_required" id="emAction">
                             <option value="HEALTHY">Healthy (No Further Action)</option>
                             <option value="MONITOR">Under Monitoring</option>
                             <option value="TREATMENT">In Treatment</option>
