@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import CashDrawer, Sale, SaleItem, Payment, Refund, RefundItem
+from .models import Sale, SaleItem, Payment, Refund, RefundItem
 
 
 class SaleItemInline(admin.TabularInline):
@@ -16,14 +16,6 @@ class PaymentInline(admin.TabularInline):
     extra = 0
 
 
-@admin.register(CashDrawer)
-class CashDrawerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'branch', 'status', 'opened_by', 'opened_at', 'opening_amount', 'expected_cash')
-    list_filter = ('status', 'branch')
-    search_fields = ('branch__name',)
-    readonly_fields = ('opened_at', 'closed_at', 'variance')
-
-
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
     list_display = ('transaction_id', 'branch', 'customer_display_name', 'total', 'status', 'created_at')
@@ -34,7 +26,7 @@ class SaleAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Transaction Info', {
-            'fields': ('transaction_id', 'branch', 'cash_drawer', 'status')
+            'fields': ('transaction_id', 'branch', 'status')
         }),
         ('Customer', {
             'fields': ('customer_type', 'customer', 'pet', 'guest_name', 'guest_phone', 'guest_email')

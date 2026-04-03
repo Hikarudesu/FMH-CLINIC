@@ -17,76 +17,8 @@ from branches.models import Branch
 from inventory.models import Product
 from patients.models import Pet
 
-from .models import CashDrawer, Sale, SaleItem, Payment, Refund
-from .forms import (
-    CashDrawerOpenForm, CashDrawerCloseForm, RefundForm
-)
-
-
-# =============================================================================
-# Cash Drawer Management
-# =============================================================================
-
-@login_required
-@module_permission_required('pos')
-def drawer_status(request):
-    """Check current drawer status and show open/close form."""
-    branch = request.user.branch
-
-    # Get open drawer for this branch
-    open_drawer = CashDrawer.objects.filter(
-        branch=branch, status=CashDrawer.Status.OPEN
-    ).first()
-
-    if request.method == 'POST':
-        if open_drawer:
-            # Close drawer
-            form = CashDrawerCloseForm(request.POST)
-            if form.is_valid():
-                open_drawer.close_drawer(
-                    user=request.user,
-                    actual_cash=form.cleaned_data['actual_cash'],
-                    notes=form.cleaned_data.get('notes', '')
-                )
-                messages.success(request, 'Cash drawer closed successfully.')
-                return redirect('pos:drawer_status')
-        else:
-            # Open drawer
-            form = CashDrawerOpenForm(request.POST)
-            if form.is_valid():
-                drawer = form.save(commit=False)
-                drawer.branch = branch
-                drawer.opened_by = request.user
-                drawer.expected_cash = drawer.opening_amount
-                drawer.save()
-                messages.success(request, 'Cash drawer opened successfully.')
-                return redirect('pos:checkout')
-    else:
-        form = CashDrawerOpenForm() if not open_drawer else CashDrawerCloseForm()
-
-    # Get recent drawer history
-    recent_drawers = CashDrawer.objects.filter(branch=branch).order_by('-opened_at')[:10]
-
-    context = {
-        'open_drawer': open_drawer,
-        'form': form,
-        'recent_drawers': recent_drawers,
-    }
-    return render(request, 'pos/drawer_status.html', context)
-
-
-@login_required
-@module_permission_required('pos', 'VIEW')
-def drawer_history(request):
-    """View cash drawer history."""
-    branch = request.user.branch
-    drawers = CashDrawer.objects.filter(branch=branch).order_by('-opened_at')
-
-    paginator = Paginator(drawers, 20)
-    page = request.GET.get('page', 1)
-    drawers = paginator.get_page(page)
-
-    return render(request, 'pos/drawer_history.html', {'drawers': drawers})
+from .models import Sale, SaleItem, Payment, Refund
+from .forms import RefundForm
 
 
 # =============================================================================

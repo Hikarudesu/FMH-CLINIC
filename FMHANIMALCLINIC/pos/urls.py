@@ -6,10 +6,6 @@ from . import views
 app_name = 'pos'
 
 urlpatterns = [
-    # Cash drawer management
-    path('drawer/', views.drawer_status, name='drawer_status'),
-    path('drawer/history/', views.drawer_history, name='drawer_history'),
-
     # Main POS checkout
     path('', views.checkout, name='checkout'),
     path('checkout/', views.checkout, name='checkout_alt'),

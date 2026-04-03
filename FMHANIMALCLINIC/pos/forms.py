@@ -11,47 +11,7 @@ from inventory.models import Product
 from patients.models import Pet
 from accounts.models import User
 
-from .models import CashDrawer, Sale, SaleItem, Payment, Refund
-
-
-class CashDrawerOpenForm(AdminInputMixin, forms.ModelForm):
-    """Form for opening a cash drawer."""
-
-    class Meta:
-        model = CashDrawer
-        fields = ['opening_amount', 'notes']
-        widgets = {
-            'opening_amount': forms.NumberInput(attrs={
-                'placeholder': '0.00',
-                'step': '0.01',
-                'min': '0'
-            }),
-            'notes': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'Opening notes (optional)'
-            }),
-        }
-
-
-class CashDrawerCloseForm(AdminInputMixin, forms.Form):
-    """Form for closing a cash drawer."""
-
-    actual_cash = forms.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        widget=forms.NumberInput(attrs={
-            'placeholder': '0.00',
-            'step': '0.01',
-            'min': '0'
-        })
-    )
-    notes = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            'rows': 2,
-            'placeholder': 'Closing notes (optional)'
-        })
-    )
+from .models import Sale, SaleItem, Payment, Refund
 
 
 class SaleForm(AdminInputMixin, forms.ModelForm):

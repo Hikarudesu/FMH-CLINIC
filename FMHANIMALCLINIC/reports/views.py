@@ -14,7 +14,7 @@ from django.http import HttpResponse
 
 from accounts.decorators import module_permission_required
 from accounts.models import User
-from pos.models import Sale, SaleItem, Payment, CashDrawer, Refund
+from pos.models import Sale, SaleItem, Payment, Refund
 from appointments.models import Appointment
 from inventory.models import Product, StockAdjustment
 from patients.models import Pet
@@ -349,11 +349,6 @@ def daily_sales_report(request):
         revenue=Sum(ExpressionWrapper(F('unit_price') * F('quantity'), output_field=DecimalField()))
     ).order_by('-revenue')
 
-    # Cash drawer summary
-    drawers = CashDrawer.objects.filter(opened_at__date=report_date)
-    if branch:
-        drawers = drawers.filter(branch=branch)
-
     context = {
         'report_date': report_date,
         'summary': summary,
@@ -361,7 +356,6 @@ def daily_sales_report(request):
         'hourly_sales': hourly_sales,
         'items_sold': items_sold,
         'sales': sales_qs.order_by('-created_at'),
-        'drawers': drawers,
     }
     return render(request, 'reports/daily_sales_report.html', context)
 
@@ -539,42 +533,6 @@ def operations_dashboard(request):
         'new_patients_month': new_patients_month,
     }
     return render(request, 'reports/operations_dashboard.html', context)
-
-
-# =============================================================================
-# Cash Drawer Report
-# =============================================================================
-
-@login_required
-@module_permission_required('reports', 'VIEW')
-def cash_drawer_report(request):
-    """Cash drawer reconciliation report."""
-    branch = request.user.branch
-    date_str = request.GET.get('date')
-
-    if date_str:
-        report_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-    else:
-        report_date = timezone.now().date()
-
-    drawers = CashDrawer.objects.filter(opened_at__date=report_date)
-    if request.user.is_branch_restricted() and branch:
-        drawers = drawers.filter(branch=branch)
-
-    # Calculate totals
-    summary = {
-        'total_opening': sum(d.opening_amount for d in drawers),
-        'total_expected': sum(d.expected_cash for d in drawers),
-        'total_actual': sum(d.actual_cash or Decimal('0') for d in drawers if d.status == 'CLOSED'),
-        'total_variance': sum(d.variance or Decimal('0') for d in drawers if d.status == 'CLOSED'),
-    }
-
-    context = {
-        'report_date': report_date,
-        'drawers': drawers,
-        'summary': summary,
-    }
-    return render(request, 'reports/cash_drawer_report.html', context)
 
 
 # =============================================================================

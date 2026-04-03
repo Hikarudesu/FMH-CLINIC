@@ -17,9 +17,6 @@ urlpatterns = [
     path('daily/', views.daily_sales_report, name='daily_sales_report'),
     path('sales/', views.sales_by_period, name='sales_by_period'),
 
-    # Cash Drawer
-    path('cash-drawer/', views.cash_drawer_report, name='cash_drawer_report'),
-
     # Finance Reports
     path('gross-profit/', views.gross_profit_report, name='gross_profit_report'),
     path('discounts/', views.discount_report, name='discount_report'),

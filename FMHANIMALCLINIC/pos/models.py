@@ -21,68 +21,6 @@ from inventory.models import Product, StockAdjustment
 from patients.models import Pet
 
 
-class CashDrawer(models.Model):
-    """
-    Represents a cash drawer session for a specific branch.
-    Each shift opens a drawer with starting cash and closes with ending cash.
-    """
-
-    class Status(models.TextChoices):
-        OPEN = 'OPEN', 'Open'
-        CLOSED = 'CLOSED', 'Closed'
-
-    branch = models.ForeignKey(
-        Branch, on_delete=models.CASCADE, related_name='cash_drawers')
-    opened_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
-        related_name='opened_drawers')
-    closed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
-        blank=True, related_name='closed_drawers')
-
-    status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.OPEN)
-
-    opening_amount = models.DecimalField(
-        max_digits=12, decimal_places=2, default=Decimal('0.00'),
-        help_text='Starting cash in drawer')
-    expected_cash = models.DecimalField(
-        max_digits=12, decimal_places=2, default=Decimal('0.00'),
-        help_text='Expected cash based on transactions')
-    actual_cash = models.DecimalField(
-        max_digits=12, decimal_places=2, null=True, blank=True,
-        help_text='Actual cash counted at closing')
-
-    opened_at = models.DateTimeField(auto_now_add=True)
-    closed_at = models.DateTimeField(null=True, blank=True)
-
-    notes = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ['-opened_at']
-        verbose_name = 'Cash Drawer'
-        verbose_name_plural = 'Cash Drawers'
-
-    def __str__(self):
-        return f"Drawer #{self.pk} - {self.branch.name} ({self.status})"
-
-    @property
-    def variance(self):
-        """Calculate the difference between expected and actual cash."""
-        if self.actual_cash is not None:
-            return self.actual_cash - self.expected_cash
-        return None
-
-    def close_drawer(self, user, actual_cash, notes=''):
-        """Close the drawer with the actual cash count."""
-        self.closed_by = user
-        self.closed_at = timezone.now()
-        self.actual_cash = actual_cash
-        self.notes = notes
-        self.status = self.Status.CLOSED
-        self.save()
-
-
 class Sale(models.Model):
     """
     Represents a completed sale transaction.
@@ -106,9 +44,6 @@ class Sale(models.Model):
 
     branch = models.ForeignKey(
         Branch, on_delete=models.CASCADE, related_name='sales')
-    cash_drawer = models.ForeignKey(
-        CashDrawer, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='sales')
 
     # Customer info - either linked to a registered user or guest info
     customer_type = models.CharField(
@@ -213,13 +148,6 @@ class Sale(models.Model):
                         reason=f"POS Sale {self.transaction_id}"
                     )
 
-            # Update drawer expected cash
-            if self.cash_drawer:
-                cash_payments = self.payments.filter(method='CASH')
-                cash_received = sum(p.amount for p in cash_payments)
-                self.cash_drawer.expected_cash += cash_received
-                self.cash_drawer.save(update_fields=['expected_cash'])
-
             self.status = self.Status.COMPLETED
             self.completed_at = timezone.now()
             self.save(update_fields=['status', 'completed_at'])
@@ -244,13 +172,6 @@ class Sale(models.Model):
                             cost_per_unit=item.product.unit_cost,
                             reason=f"Voided sale {self.transaction_id}: {reason}"
                         )
-
-                # Adjust drawer expected cash
-                if self.cash_drawer:
-                    cash_payments = self.payments.filter(method='CASH')
-                    cash_received = sum(p.amount for p in cash_payments)
-                    self.cash_drawer.expected_cash -= cash_received
-                    self.cash_drawer.save(update_fields=['expected_cash'])
 
             self.status = self.Status.VOIDED
             self.voided_by = user
