@@ -17,7 +17,7 @@ from inventory.models import Product
 from patients.models import Pet
 from accounts.models import User
 
-from .models import CashDrawer, Sale, SaleItem, Payment
+from .models import Sale, SaleItem, Payment
 
 logger = logging.getLogger('fmh')
 
@@ -320,8 +320,7 @@ class SaleService:
         sale: Sale,
         method: str,
         amount: Decimal,
-        reference: str = '',
-        cash_drawer: Optional[CashDrawer] = None
+        reference: str = ''
     ) -> Payment:
         """
         Process a payment for the sale.
@@ -331,7 +330,6 @@ class SaleService:
             method: Payment method code.
             amount: Payment amount.
             reference: Payment reference number.
-            cash_drawer: Optional cash drawer for cash payments.
             
         Returns:
             Created Payment instance.
@@ -341,11 +339,6 @@ class SaleService:
         """
         if sale.status != Sale.Status.PENDING:
             raise POSServiceError("Cannot process payment for non-pending sale")
-
-        # Link cash drawer if not set
-        if not sale.cash_drawer and cash_drawer:
-            sale.cash_drawer = cash_drawer
-            sale.save(update_fields=['cash_drawer'])
 
         # Create payment record
         payment = Payment.objects.create(
@@ -367,78 +360,6 @@ class SaleService:
                        sale.transaction_id, payment.pk)
 
         return payment
-
-
-class CashDrawerService:
-    """Service class for cash drawer operations."""
-
-    @staticmethod
-    def get_open_drawer(branch: Branch) -> Optional[CashDrawer]:
-        """Get the currently open drawer for a branch."""
-        return CashDrawer.objects.filter(
-            branch=branch,
-            status=CashDrawer.Status.OPEN
-        ).first()
-
-    @staticmethod
-    def open_drawer(
-        branch: Branch,
-        user: User,
-        opening_amount: Decimal
-    ) -> CashDrawer:
-        """
-        Open a new cash drawer.
-        
-        Args:
-            branch: The branch.
-            user: The user opening the drawer.
-            opening_amount: Starting cash amount.
-            
-        Returns:
-            New CashDrawer instance.
-            
-        Raises:
-            POSServiceError: If drawer already open.
-        """
-        existing = CashDrawerService.get_open_drawer(branch)
-        if existing:
-            raise POSServiceError("A drawer is already open for this branch")
-
-        drawer = CashDrawer.objects.create(
-            branch=branch,
-            opened_by=user,
-            opening_amount=opening_amount,
-            expected_cash=opening_amount
-        )
-        
-        logger.info("Opened cash drawer %s for branch %s", drawer.pk, branch.pk)
-        return drawer
-
-    @staticmethod
-    def close_drawer(
-        drawer: CashDrawer,
-        user: User,
-        actual_cash: Decimal,
-        notes: str = ''
-    ) -> CashDrawer:
-        """
-        Close a cash drawer.
-        
-        Args:
-            drawer: The drawer to close.
-            user: The user closing.
-            actual_cash: Actual cash counted.
-            notes: Closing notes.
-            
-        Returns:
-            Updated CashDrawer instance.
-        """
-        drawer.close_drawer(user, actual_cash, notes)
-        logger.info(
-            "Closed cash drawer %s. Variance: %s",
-            drawer.pk, drawer.variance
-        )
-        return drawer
 
 
 class InventoryService:
