@@ -1365,6 +1365,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const branchAppointmentData = {{ branch_appointment_data|safe }};
     const totalAppointments = branchAppointmentData.reduce((sum, item) => sum + item.appointments, 0);
     
+    // Center text plugin
+    const centerTextPlugin = {
+      id: 'centerText',
+      afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+        const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+        
+        ctx.save();
+        ctx.font = 'bold 28px Inter, sans-serif';
+        ctx.fillStyle = '#1e293b';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(totalAppointments, centerX, centerY - 8);
+        
+        ctx.font = '500 12px Inter, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText('Total', centerX, centerY + 16);
+        ctx.restore();
+      }
+    };
+    
     new Chart(branchAppointmentCtx, {
       type: 'doughnut',
       data: {
@@ -1373,16 +1395,14 @@ document.addEventListener('DOMContentLoaded', function() {
           label: 'Appointments',
           data: branchAppointmentData.map(item => item.appointments),
           backgroundColor: branchColors,
-          borderColor: '#fff',
-          borderWidth: 3,
-          hoverOffset: 12,
-          hoverBorderWidth: 4
+          borderWidth: 0,
+          hoverOffset: 8
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '40%',
+        cutout: '70%',
         layout: {
           padding: {
             top: 0,
@@ -1437,7 +1457,8 @@ document.addEventListener('DOMContentLoaded', function() {
           duration: 1500,
           easing: 'easeInOutCubic'
         }
-      }
+      },
+      plugins: [centerTextPlugin]
     });
   }
   {% else %}

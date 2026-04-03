@@ -6,35 +6,45 @@
 {% block content %}
 
 <!-- Back Button -->
-<a href="{% url 'appointments:admin_list' %}" class="back-pill">
+<a href="{% url 'appointments:admin_list' %}" class="back-pill" style="margin-bottom: 24px; display: inline-flex;">
   <i class='bx bx-chevron-left'></i>
   <span>Appointments</span>
 </a>
 
-<!-- Edit Form Card -->
-<div class="ae-card">
-  <div class="ae-header">
-    <div class="ae-avatar">{{ appointment.owner_name|make_list|first|upper }}</div>
-    <div class="ae-header-info">
-      <h1>Edit Appointment</h1>
-      <p>{{ appointment.pet_name }} — {{ appointment.owner_name }}</p>
-    </div>
-    <span class="ae-status ae-status--{{ appointment.status|lower }}">{{ appointment.get_status_display }}</span>
-  </div>
+<form method="POST" class="ae-form ae-layout">
+  {% csrf_token %}
 
-  <form method="POST" class="ae-form">
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-    <div class="ae-errors">
-      {% for error in form.non_field_errors %}
-      <p><i class='bx bx-error-circle'></i> {{ error }}</p>
-      {% endfor %}
+  <!-- Main Column -->
+  <div class="ae-main">
+    
+    <!-- Header Summary Card -->
+    <div class="ae-card" style="padding-bottom: 0;">
+      <div class="ae-header" style="border-bottom: none;">
+        <div class="ae-avatar">
+          {% if appointment.user and appointment.user.profile_picture %}
+            <img src="{{ appointment.user.profile_picture.url }}" alt="{{ appointment.owner_name }}">
+          {% else %}
+            {{ appointment.owner_name|make_list|first|upper }}
+          {% endif %}
+        </div>
+        <div class="ae-header-info">
+          <h1>Edit Appointment</h1>
+          <p>{{ appointment.pet_name }} — {{ appointment.owner_name }}</p>
+        </div>
+        <span class="ae-status ae-status--{{ appointment.status|lower }}">{{ appointment.get_status_display }}</span>
+      </div>
+      
+      {% if form.non_field_errors %}
+      <div class="ae-errors" style="margin-bottom: 24px;">
+        {% for error in form.non_field_errors %}
+        <p><i class='bx bx-error-circle'></i> {{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
 
     <!-- Owner Information -->
-    <div class="ae-section">
+    <div class="ae-card ae-section">
       <h2 class="ae-section-title"><i class='bx bx-user'></i> Owner Information</h2>
       <div class="ae-grid">
         <div class="ae-group">
@@ -57,14 +67,14 @@
     </div>
 
     <!-- Pet Information -->
-    <div class="ae-section">
+    <div class="ae-card ae-section">
       <h2 class="ae-section-title"><i class='bx bx-paw'></i> Pet Information</h2>
 
       <!-- Pet Selector (if user has multiple pets) -->
       {% if user_pets %}
-      <div class="ae-group ae-full" style="margin-bottom: 1rem;">
+      <div class="ae-group ae-full" style="margin-bottom: 20px;">
         <label>Select Existing Pet (Optional)</label>
-        <select id="petSelector" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;">
+        <select id="petSelector" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.95rem; background: var(--bg);">
           <option value="">-- Keep Current / Manual Entry --</option>
           {% for pet in user_pets %}
           <option value="{{ pet.id }}"
@@ -78,8 +88,8 @@
           </option>
           {% endfor %}
         </select>
-        <small style="color: #666; display: block; margin-top: 0.5rem;">
-          <i class='bx bx-info-circle'></i> Select a pet from the owner's account to auto-fill the fields below
+        <small style="color: var(--text-3); display: flex; align-items: center; gap: 4px; margin-top: 6px;">
+          <i class='bx bx-info-circle'></i> Select a pet to auto-fill the fields below
         </small>
       </div>
       {% endif %}
@@ -117,7 +127,7 @@
     </div>
 
     <!-- Appointment Details -->
-    <div class="ae-section">
+    <div class="ae-card ae-section">
       <h2 class="ae-section-title"><i class='bx bx-calendar'></i> Appointment Details</h2>
       <div class="ae-grid">
         <div class="ae-group">
@@ -142,10 +152,6 @@
           <small class="ae-time-hint" id="aeTimeHint" style="color: #666; display: block; margin-top: 0.25rem;"></small>
         </div>
         <div class="ae-group">
-          <label>Status *</label>
-          {{ form.status }}
-        </div>
-        <div class="ae-group">
           <label>Source</label>
           {{ form.source }}
         </div>
@@ -157,7 +163,7 @@
     </div>
 
     <!-- Follow-up Schedule (Optional) -->
-    <div class="ae-section">
+    <div class="ae-card ae-section">
       <h2 class="ae-section-title"><i class='bx bx-revision'></i> Follow-up Visit (Optional)</h2>
       <div class="ae-followup-toggle">
         <label class="ae-checkbox">
@@ -165,7 +171,7 @@
           <span>Schedule a follow-up visit for this pet</span>
         </label>
       </div>
-      <div id="followUpFields" style="display: none; margin-top: 1rem;">
+      <div id="followUpFields" style="display: none; margin-top: 16px;">
         <div class="ae-grid">
           <div class="ae-group">
             <label>Follow-up Start Date *</label>
@@ -184,9 +190,48 @@
       </div>
     </div>
 
+  </div> <!-- End ae-main -->
+
+  <!-- Sidebar Column -->
+  <div class="ae-sidebar">
+    
+    <div class="ae-card ae-section">
+      <h2 class="ae-section-title"><i class='bx bx-pulse'></i> Status & Metadata</h2>
+      
+      <div class="ae-group" style="margin-bottom: 20px;">
+        <label>Appointment Status *</label>
+        {{ form.status }}
+      </div>
+
+      <div class="ae-meta" style="flex-direction: column; gap: 16px; border-top: none; padding: 0; background: transparent;">
+        <div class="ae-meta-item">
+          <span class="ae-meta-label">Booked On</span>
+          <span class="ae-meta-value">{{ appointment.created_at|date:"M d, Y · g:i A" }}</span>
+        </div>
+        <div class="ae-meta-item">
+          <span class="ae-meta-label">Returning Client</span>
+          <span class="ae-meta-value">{% if appointment.is_returning_customer %}Yes{% else %}No{% endif %}</span>
+        </div>
+        {% if appointment.user %}
+        <div class="ae-meta-item">
+          <span class="ae-meta-label">Linked Account</span>
+          <span class="ae-meta-value">{{ appointment.user.username }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="ae-card ae-section" style="display: flex; flex-direction: column; gap: 12px; background: var(--bg);">
+      <button type="submit" class="ae-btn-save" style="width: 100%; justify-content: center; font-size: 1rem; padding: 12px;">
+        <i class='bx bx-check'></i> Save Changes
+      </button>
+      <a href="{% url 'appointments:admin_list' %}" class="ae-btn-cancel" style="width: 100%; text-align: center; border-color: transparent; background: rgba(0,0,0,0.05);">Cancel</a>
+    </div>
+
     <!-- Existing Follow-ups -->
     {% if follow_ups %}
-    <div class="ae-section">
+    <div class="ae-card ae-section">
       <h2 class="ae-section-title"><i class='bx bx-history'></i> Existing Follow-ups</h2>
       <div class="ae-followup-list">
         {% for followup in follow_ups %}
@@ -209,46 +254,14 @@
               on {{ followup.created_at|date:"M d, Y" }}
             </div>
           </div>
-          <div class="ae-followup-status">
-            {% if followup.is_completed %}
-              <span class="ae-badge ae-badge-success">Completed</span>
-            {% else %}
-              <span class="ae-badge ae-badge-warning">Pending</span>
-            {% endif %}
-          </div>
         </div>
         {% endfor %}
       </div>
     </div>
     {% endif %}
 
-    <!-- Metadata (Read-only) -->
-    <div class="ae-section ae-meta">
-      <div class="ae-meta-item">
-        <span class="ae-meta-label">Booked On</span>
-        <span class="ae-meta-value">{{ appointment.created_at|date:"M d, Y · g:i A" }}</span>
-      </div>
-      <div class="ae-meta-item">
-        <span class="ae-meta-label">Returning Client</span>
-        <span class="ae-meta-value">{% if appointment.is_returning_customer %}Yes{% else %}No{% endif %}</span>
-      </div>
-      {% if appointment.user %}
-      <div class="ae-meta-item">
-        <span class="ae-meta-label">Linked Account</span>
-        <span class="ae-meta-value">{{ appointment.user.username }}</span>
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- Actions -->
-    <div class="ae-footer">
-      <button type="submit" class="ae-btn-save">
-        <i class='bx bx-check'></i> Save Changes
-      </button>
-      <a href="{% url 'appointments:admin_list' %}" class="ae-btn-cancel">Cancel</a>
-    </div>
-  </form>
-</div>
+  </div> <!-- End ae-sidebar -->
+</form>
 
 <!-- Pet Selector Auto-fill Script -->
 {% if user_pets %}

@@ -1223,8 +1223,9 @@
   /* Content Area */
   .portal-content {
     margin-left: 0 !important;
+    margin-top: 0;
     padding: 16px;
-    padding-top: calc(var(--topbar-h) + 16px);
+    padding-top: calc(var(--topbar-h) + 12px);
   }
   
   /* Stats Grid */
@@ -1296,8 +1297,9 @@
 /* Mobile Landscape / Small Tablets */
 @media (max-width: 640px) {
   .portal-content {
+    margin-top: 0;
     padding: 12px;
-    padding-top: calc(var(--topbar-h) + 12px);
+    padding-top: calc(var(--topbar-h) + 10px);
   }
   
   .stats-grid {
@@ -1345,8 +1347,9 @@
 /* Small Mobile */
 @media (max-width: 480px) {
   .portal-content {
+    margin-top: 0;
     padding: 10px;
-    padding-top: calc(var(--topbar-h) + 10px);
+    padding-top: calc(var(--topbar-h) + 8px);
   }
   
   .stats-grid {

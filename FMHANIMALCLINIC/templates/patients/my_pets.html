@@ -106,7 +106,8 @@
   .premium-hero-btn.primary {
     background: #ffffff;
     color: var(--primary);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   }
   
   .premium-hero-btn.outline {
@@ -177,7 +178,8 @@
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--primary);
-    text-decoration: none;
+    overflow: hidden;
+text-decoration: none;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -211,7 +213,8 @@
     transform: translateY(-6px);
     box-shadow: var(--shadow-card-hover);
     border-color: var(--primary);
-  }
+    overflow: hidden;
+}
   
   /* Decorative Card Header */
   .card-top-accent {
@@ -265,7 +268,7 @@
     font-weight: 800;
     color: var(--primary);
     overflow: hidden;
-    z-index: 2;
+z-index: 2;
   }
   
   .premium-pet-avatar img {
@@ -327,7 +330,8 @@
     font-size: 1.4rem;
     font-weight: 800;
     color: var(--primary);
-    margin-bottom: 2px;
+    overflow: hidden;
+margin-bottom: 2px;
   }
   
   .premium-stat-lbl {
@@ -361,7 +365,8 @@
   .premium-tag i {
     font-size: 1rem;
     color: var(--primary);
-  }
+    overflow: hidden;
+}
 
   /* Actions */
   .premium-card-actions {
@@ -396,8 +401,10 @@
   .premium-action-btn.edit {
     background: transparent;
     border-color: var(--primary);
-    color: var(--primary);
-    flex: 0 0 auto;
+    overflow: hidden;
+color: var(--primary);
+    overflow: hidden;
+flex: 0 0 auto;
     padding: 12px 14px;
   }
   .premium-action-btn.edit:hover {
@@ -479,7 +486,8 @@
   .premium-activity-item:hover {
     background: var(--surface-light);
     border-color: var(--primary);
-    transform: translateY(-2px);
+    overflow: hidden;
+transform: translateY(-2px);
     box-shadow: var(--shadow-card-hover);
   }
   
@@ -539,7 +547,8 @@
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--primary);
-    background: rgba(0, 150, 136, 0.08);
+    overflow: hidden;
+background: rgba(0, 150, 136, 0.08);
     border: 1px solid rgba(0, 150, 136, 0.2);
     text-decoration: none;
     transition: all 0.2s ease;
@@ -550,7 +559,8 @@
     background: var(--primary);
     color: white;
     border-color: var(--primary);
-    box-shadow: 0 3px 10px rgba(0, 150, 136, 0.25);
+    overflow: hidden;
+box-shadow: 0 3px 10px rgba(0, 150, 136, 0.25);
   }
 
   /* ── Empty State ── */
@@ -572,7 +582,8 @@
     justify-content: center;
     font-size: 4rem;
     color: var(--primary);
-    margin: 0 auto 24px;
+    overflow: hidden;
+margin: 0 auto 24px;
     position: relative;
   }
   
@@ -679,7 +690,11 @@
       </div>
       <h3 style="font-size: 1.5rem; color: var(--text-2); margin-bottom: 8px;">No pets found</h3>
       <p style="font-size: 1rem; color: var(--text-3);">Try adjusting your filters or search query.</p>
-      <a href="{% url 'patients:my_pets' %}" class="premium-hero-btn outline" style="margin-top: 16px; color: var(--primary); border-color: var(--primary);">Clear Filters</a>
+      <a href="{% url 'patients:my_pets' %}" class="premium-hero-btn outline" style="margin-top: 16px; color: var(--primary);
+    overflow: hidden;
+border-color: var(--primary);
+    overflow: hidden;
+">Clear Filters</a>
     </div>
   {% endif %}
 
@@ -729,7 +744,9 @@
         
         <div class="premium-stats-wrap">
           <div class="premium-stat">
-            <span class="premium-stat-val" style="{% if pet.is_active %}color: var(--primary);{% else %}color: #9e9e9e;{% endif %}">
+            <span class="premium-stat-val" style="{% if pet.is_active %}color: var(--primary);
+    overflow: hidden;
+{% else %}color: #9e9e9e;{% endif %}">
               {% if pet.is_active %}Active{% else %}Inactive{% endif %}
             </span>
             <span class="premium-stat-lbl">Status</span>
@@ -1142,7 +1159,9 @@
     } else {
       searchDropdown.innerHTML = filtered.map(pet => `
         <div class="search-dropdown-item" data-url="${pet.profileUrl}">
-          <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #eee; font-weight: bold; font-size: 14px; color: var(--primary);">
+          <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; justify-content: center; align-items: center; background: #eee; font-weight: bold; font-size: 14px; color: var(--primary);
+    overflow: hidden;
+">
             ${pet.avatarHtml}
           </div>
           <div class="item-info" style="margin-left: 12px; flex: 1;">

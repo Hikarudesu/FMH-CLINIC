@@ -350,7 +350,7 @@ def admin_calendar_api(request):
     appointments = Appointment.objects.filter(
         appointment_date__gte=start,
         appointment_date__lte=end,
-    ).select_related('branch', 'preferred_vet', 'pet').exclude(status='CANCELLED')
+    ).select_related('branch', 'preferred_vet', 'pet', 'user').exclude(status='CANCELLED')
 
     # Apply filters
     branch_id = request.GET.get('branch')
@@ -396,6 +396,7 @@ def admin_calendar_api(request):
             'ownerName': a.owner_name or '',
             'ownerEmail': a.owner_email or '',
             'ownerPhone': a.owner_phone or '',
+            'ownerProfilePicture': a.user.profile_picture.url if a.user and a.user.profile_picture else None,
             'date': (
                 getattr(a, 'appointment_date').isoformat()
                 if getattr(a, 'appointment_date', None) else ''

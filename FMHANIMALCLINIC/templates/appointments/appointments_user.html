@@ -227,26 +227,28 @@
       <div class="appt-card">
         <div class="appt-card-accent followup"></div>
         <div class="appt-card-inner">
-          <div class="appt-card-icon followup">
-            <i class='bx bx-plus-medical'></i>
-          </div>
-          <div class="appt-card-body">
-            <div class="appt-card-top">
-              <h3>{{ followup.pet_name }} <span class="appt-card-breed">· Return Visit</span></h3>
-              {% if followup.is_completed %}
-                <span class="appt-status-pill completed">Completed</span>
-              {% else %}
-                <span class="appt-status-pill followup">Pending Follow-up</span>
+          <div class="appt-card-header" style="cursor: default;">
+            <div class="appt-card-icon followup">
+              <i class='bx bx-plus-medical'></i>
+            </div>
+            <div class="appt-card-summary">
+              <div class="appt-card-top">
+                <h3>{{ followup.pet_name }} <span class="appt-card-breed">· Return Visit</span></h3>
+                {% if followup.is_completed %}
+                  <span class="appt-status-pill completed">Completed</span>
+                {% else %}
+                  <span class="appt-status-pill followup">Pending Follow-up</span>
+                {% endif %}
+              </div>
+              <div class="appt-card-meta">
+                <span><i class='bx bx-calendar'></i> {{ followup.follow_up_date|date:"M j, Y" }}{% if followup.follow_up_end_date and followup.follow_up_end_date != followup.follow_up_date %} – {{ followup.follow_up_end_date|date:"M j, Y" }}{% endif %}</span>
+              </div>
+              {% if followup.reason %}
+              <div class="appt-card-notes followup">
+                <i class='bx bx-info-circle'></i> <strong>Reason:</strong> {{ followup.reason }}
+              </div>
               {% endif %}
             </div>
-            <div class="appt-card-meta">
-              <span><i class='bx bx-calendar'></i> {{ followup.follow_up_date|date:"M j, Y" }}{% if followup.follow_up_end_date and followup.follow_up_end_date != followup.follow_up_date %} – {{ followup.follow_up_end_date|date:"M j, Y" }}{% endif %}</span>
-            </div>
-            {% if followup.reason %}
-            <div class="appt-card-notes followup">
-              <i class='bx bx-info-circle'></i> <strong>Reason:</strong> {{ followup.reason }}
-            </div>
-            {% endif %}
           </div>
         </div>
       </div>

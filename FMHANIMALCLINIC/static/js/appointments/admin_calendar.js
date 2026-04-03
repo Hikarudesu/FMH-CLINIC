@@ -485,10 +485,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // Set styling colors based on vet
     const vetCol = getVetColor(eventData.vetId);
 
-    // Owner avatar — first letter of owner name
+    // Owner avatar — show profile picture or first letter of owner name
     const ownerAv = document.getElementById("detailOwnerAvatar");
     if (ownerAv) {
-      ownerAv.textContent = (eventData.ownerName || "?").charAt(0).toUpperCase();
+      if (eventData.ownerProfilePicture) {
+        ownerAv.innerHTML = `<img src="${eventData.ownerProfilePicture}" alt="${eventData.ownerName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+      } else {
+        ownerAv.innerHTML = '';
+        ownerAv.textContent = (eventData.ownerName || "?").charAt(0).toUpperCase();
+      }
     }
 
     // Setup Top Text - Pet Name with Clinical Status

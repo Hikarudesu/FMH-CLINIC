@@ -325,96 +325,86 @@
     }
     .rec-hero-actions {
         display: flex;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
         align-items: center;
+        justify-content: flex-end;
     }
-    /* Ghost back button */
-    .rec-hero-btn-back {
+    /* Unified Button Base */
+    .rec-hero-btn {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
+        justify-content: center;
+        gap: 8px;
         padding: 9px 18px;
-        background: rgba(255,255,255,0.12);
-        backdrop-filter: blur(8px);
-        border: 1.5px solid rgba(255,255,255,0.25);
-        color: rgba(255,255,255,0.85);
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         font-weight: 600;
-        border-radius: 10px;
+        border-radius: 12px;
         text-decoration: none;
-        transition: all 0.25s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(8px);
+        line-height: normal;
+        box-sizing: border-box;
     }
-    .rec-hero-btn-back:hover {
+    .rec-hero-btn i {
+        font-size: 1.15rem;
+        margin-top: -1px;
+    }
+    
+    /* Ghost back button */
+    .rec-hero-btn.btn-back {
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: rgba(255,255,255,0.9);
+    }
+    .rec-hero-btn.btn-back:hover {
         background: rgba(255,255,255,0.22);
         color: #fff;
         border-color: rgba(255,255,255,0.45);
         transform: translateY(-1px);
     }
-    /* Edit button */
-    .rec-hero-btn-edit {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 9px 20px;
+    /* Action button */
+    .rec-hero-btn.btn-action {
         background: rgba(255,255,255,0.18);
-        backdrop-filter: blur(8px);
         border: 1.5px solid rgba(255,255,255,0.35);
         color: #fff;
-        font-size: 0.85rem;
-        font-weight: 700;
-        border-radius: 12px;
-        text-decoration: none;
-        transition: all 0.25s ease;
     }
-    .rec-hero-btn-edit:hover {
+    .rec-hero-btn.btn-action:hover {
         background: rgba(255,255,255,0.30);
-        color: #fff;
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
     }
-    /* Add Entry button */
-    .rec-hero-btn-add {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 9px 22px;
-        background: rgba(255,255,255,0.18);
-        backdrop-filter: blur(8px);
-        border: 1.5px solid rgba(255,255,255,0.35);
+    /* AI Diagnosis Button */
+    .rec-hero-btn.btn-ai {
+        background: rgba(102,126,234,0.25);
+        border: 1.5px solid rgba(102,126,234,0.4);
         color: #fff;
-        font-size: 0.85rem;
-        font-weight: 700;
-        border-radius: 12px;
-        text-decoration: none;
-        transition: all 0.25s ease;
     }
-    .rec-hero-btn-add:hover {
-        background: rgba(255,255,255,0.30);
-        color: #fff;
+    .rec-hero-btn.btn-ai:hover {
+        background: rgba(102,126,234,0.4);
+        border-color: rgba(102,126,234,0.6);
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 6px 16px rgba(102,126,234,0.25);
     }
     /* Download PDF — solid white */
-    .rec-hero-btn-pdf {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        padding: 9px 22px;
+    .rec-hero-btn.btn-pdf {
         background: #fff;
         border: 1.5px solid #fff;
         color: var(--primary);
-        font-size: 0.85rem;
         font-weight: 700;
-        border-radius: 12px;
-        text-decoration: none;
-        transition: all 0.25s ease;
     }
-    .rec-hero-btn-pdf:hover {
-        background: rgba(255,255,255,0.88);
-        color: var(--primary);
+    .rec-hero-btn.btn-pdf:hover {
+        background: rgba(255,255,255,0.9);
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    .rec-hero-divider {
+        width: 1px;
+        height: 22px;
+        background: rgba(255,255,255,0.25);
+        margin: 0 4px;
+        border-radius: 2px;
     }
     .rec-hero-badge {
         display: inline-flex;
@@ -629,24 +619,30 @@
             </span>
         </div>
         <div class="rec-hero-actions">
-            <a href="{% url 'records:admin_list' %}" class="rec-hero-btn-back">
+            <a href="{% url 'records:admin_list' %}" class="rec-hero-btn btn-back">
                 <i class='bx bx-arrow-back'></i> Back
             </a>
-            <a href="{% url 'records:admin_edit' record.pk %}" class="rec-hero-btn-edit">
+            
+            <div class="rec-hero-divider"></div>
+            
+            <a href="{% url 'records:admin_edit' record.pk %}" class="rec-hero-btn btn-action">
                 <i class='bx bx-edit-alt'></i> Edit Record
             </a>
-            <a href="{% url 'records:admin_add_entry' record.pk %}" class="rec-hero-btn-add">
+            <a href="{% url 'records:admin_add_entry' record.pk %}" class="rec-hero-btn btn-action">
                 <i class='bx bx-plus-circle'></i> Add Visit Entry
             </a>
-            <a href="{% url 'diagnostics:run_diagnosis' record.pet.pk %}" class="rec-hero-btn-add" style="background: rgba(102,126,234,0.25); border-color: rgba(102,126,234,0.4);">
+            <a href="{% url 'diagnostics:run_diagnosis' record.pet.pk %}" class="rec-hero-btn btn-ai">
                 <i class='bx bx-brain'></i> AI Diagnosis
             </a>
+            
+            <div class="rec-hero-divider"></div>
+            
             {% if missing_fields %}
-            <span class="rec-hero-btn-pdf" style="opacity:0.6;cursor:not-allowed;" title="Complete all required fields before downloading PDF">
+            <span class="rec-hero-btn btn-pdf" style="opacity:0.6;cursor:not-allowed;" title="Complete all required fields before downloading PDF">
                 <i class='bx bx-download'></i> Download PDF
             </span>
             {% else %}
-            <a href="{% url 'records:download_pdf' record.pk %}" class="rec-hero-btn-pdf">
+            <a href="{% url 'records:download_pdf' record.pk %}" class="rec-hero-btn btn-pdf">
                 <i class='bx bx-download'></i> Download PDF
             </a>
             {% endif %}
@@ -797,10 +793,15 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: all 0.3s var(--ease);
+        }
+        .ai-dx-panel:hover {
+            box-shadow: var(--shadow-card-hover);
         }
         .ai-dx-head {
-            padding: 16px 20px;
-            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+            padding: 18px 24px;
+            background: var(--primary-light);
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -812,72 +813,107 @@
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #667eea;
+            gap: 10px;
+            color: var(--primary-dark);
+        }
+        .ai-dx-head h3 i {
+            font-size: 1.25rem;
+            color: var(--primary);
         }
         .ai-dx-run-btn {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 18px;
+            background: var(--primary-gradient);
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-size: 0.85rem;
             font-weight: 600;
             text-decoration: none;
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s;
+            transition: all 0.3s var(--ease);
+            box-shadow: var(--shadow-xs);
         }
         .ai-dx-run-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102,126,234,0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.3);
+            background: var(--primary-dark);
+        }
+        .ai-dx-run-btn:active {
+            transform: translateY(0);
         }
         .ai-dx-list {
             padding: 0;
         }
         .ai-dx-item {
-            padding: 14px 20px;
+            padding: 16px 24px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: all 0.2s var(--ease);
             text-decoration: none;
             color: inherit;
         }
-        .ai-dx-item:hover { background: var(--bg); }
+        .ai-dx-item:hover { 
+            background: var(--surface-light);
+            padding-left: 28px;
+        }
         .ai-dx-item:last-child { border-bottom: none; }
         .ai-dx-icon {
-            width: 42px; height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%);
+            width: 48px; 
+            height: 48px;
+            border-radius: var(--radius);
+            background: var(--primary-light);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #667eea;
-            font-size: 20px;
+            color: var(--primary);
+            font-size: 24px;
+            transition: all 0.3s var(--ease);
+            flex-shrink: 0;
         }
-        .ai-dx-info { flex: 1; }
+        .ai-dx-item:hover .ai-dx-icon {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.05);
+        }
+        .ai-dx-info { 
+            flex: 1; 
+            min-width: 0;
+        }
         .ai-dx-condition {
             font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 2px;
+            color: var(--text-1);
+            margin-bottom: 4px;
+            font-size: 0.95rem;
         }
         .ai-dx-meta {
             font-size: 0.8rem;
-            color: var(--text-secondary);
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .ai-dx-meta i {
+            font-size: 0.85rem;
         }
         .ai-dx-empty {
-            padding: 30px;
+            padding: 48px 24px;
             text-align: center;
-            color: var(--text-secondary);
+            color: var(--text-3);
         }
         .ai-dx-empty i {
-            font-size: 36px;
-            margin-bottom: 8px;
-            opacity: 0.3;
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.2;
+            color: var(--text-3);
+        }
+        .ai-dx-empty p {
+            margin: 0;
+            font-size: 0.9rem;
         }
     </style>
     <div class="ai-dx-panel">

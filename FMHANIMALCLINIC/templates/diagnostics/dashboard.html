@@ -272,8 +272,12 @@
       {% if pets %}
         {% for pet in pets %}
         <a href="{% url 'diagnostics:run_diagnosis' pet.pk %}" class="pet-card">
-          <div class="pet-card-avatar">
-            <i class="bx {% if pet.species == 'Dog' %}bxs-dog{% elif pet.species == 'Cat' %}bxs-cat{% else %}bx-paw{% endif %}"></i>
+          <div class="pet-card-avatar" {% if pet.photo %}style="background: transparent;"{% endif %}>
+            {% if pet.photo %}
+              <img src="{{ pet.photo.url }}" alt="{{ pet.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            {% else %}
+              {{ pet.name|make_list|first|upper }}
+            {% endif %}
           </div>
           <div class="pet-card-info">
             <div class="pet-card-name">{{ pet.name }}</div>

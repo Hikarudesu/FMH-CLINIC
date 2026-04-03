@@ -1074,6 +1074,62 @@
     color: var(--text-3);
     margin: 0;
   }
+  
+  /* ═══════════════════════════════════════════════ */
+  /* GLASS BUTTONS (ACTIVITY) */
+  /* ═══════════════════════════════════════════════ */
+  .btn-glass-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .btn-glass-clear:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+  }
+  
+  .btn-glass-delete-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  
+  .btn-glass-delete-icon:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    transform: scale(1.1);
+  }
+  
+  .activity-item-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+  }
+  
 
   /* ═══════════════════════════════════════════════ */
   /* PAGINATION */
@@ -1084,7 +1140,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
+    margin-top: 24px;
     padding-top: 20px;
     border-top: 1px solid var(--border);
   }
@@ -1093,25 +1149,44 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
+    min-width: 36px;
     height: 36px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 0 12px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--text-2);
-    background: var(--bg);
+    background: var(--surface);
+    border: 1px solid var(--border);
     text-decoration: none;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
   
   .page-btn:hover {
-    background: var(--primary);
-    color: white;
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(0, 150, 136, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 150, 136, 0.1);
   }
   
   .page-btn.active {
     background: var(--primary);
     color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 150, 136, 0.25);
+  }
+  
+  .page-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    background: var(--bg);
+    box-shadow: none;
+  }
+  
+  .page-btn i {
+    font-size: 18px;
   }
 
   /* Branch Badge */
@@ -1131,6 +1206,55 @@
   
   .branch-badge-modern i {
     font-size: 16px;
+  }
+
+  /* ═══════════════════════════════════════════════ */
+  /* RESPONSIVE - SCHEDULE ITEMS (Mobile Fix)       */
+  /* ═══════════════════════════════════════════════ */
+  
+  @media (max-width: 576px) {
+    .schedule-item {
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+    
+    .schedule-avatar {
+      width: 42px;
+      height: 42px;
+      font-size: 16px;
+    }
+    
+    .schedule-info {
+      flex: 1;
+      min-width: calc(100% - 60px);
+    }
+    
+    .schedule-meta {
+      width: 100%;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding-left: 54px;
+      gap: 12px;
+    }
+    
+    .schedule-datetime {
+      text-align: left;
+    }
+    
+    .schedule-date {
+      font-size: 12px;
+    }
+    
+    .schedule-time {
+      font-size: 10px;
+    }
+    
+    .status-badge-modern {
+      padding: 5px 10px;
+      font-size: 10px;
+    }
   }
 </style>
 
@@ -1478,7 +1602,7 @@
 
 <!-- SCHEDULE SECTION -->
 <div class="schedule-section">
-  <div class="charts-row equal">
+  <div class="charts-row equal" id="dashboard-activity-section">
     <!-- Upcoming Appointments -->
     <div class="chart-card-modern dash-fade fade-up stagger-1">
       <div class="chart-header">
@@ -1490,7 +1614,7 @@
           View All <i class='bx bx-right-arrow-alt'></i>
         </a>
       </div>
-      <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
+      <div style="padding: 24px;">
         {% if upcoming_appointments %}
         <div class="schedule-list-modern">
           {% for appt in upcoming_appointments %}
@@ -1516,6 +1640,35 @@
           </div>
           {% endfor %}
         </div>
+        
+        <!-- Pagination for Upcoming Appointments -->
+        {% if upcoming_appointments.has_other_pages %}
+        <div class="pagination-modern">
+          {% if upcoming_appointments.has_previous %}
+            <a href="?upcoming_page=1{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}#dashboard-activity-section" class="page-btn" title="First"><i class='bx bx-chevrons-left'></i></a>
+            <a href="?upcoming_page={{ upcoming_appointments.previous_page_number }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}#dashboard-activity-section" class="page-btn"><i class='bx bx-chevron-left'></i></a>
+          {% else %}
+            <span class="page-btn disabled"><i class='bx bx-chevrons-left'></i></span>
+            <span class="page-btn disabled"><i class='bx bx-chevron-left'></i></span>
+          {% endif %}
+          
+          {% for num in upcoming_appointments.paginator.page_range %}
+            {% if upcoming_appointments.number == num %}
+              <span class="page-btn active">{{ num }}</span>
+            {% elif num > upcoming_appointments.number|add:'-2' and num < upcoming_appointments.number|add:'2' %}
+              <a href="?upcoming_page={{ num }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}#dashboard-activity-section" class="page-btn">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          
+          {% if upcoming_appointments.has_next %}
+            <a href="?upcoming_page={{ upcoming_appointments.next_page_number }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}#dashboard-activity-section" class="page-btn"><i class='bx bx-chevron-right'></i></a>
+            <a href="?upcoming_page={{ upcoming_appointments.paginator.num_pages }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}#dashboard-activity-section" class="page-btn" title="Last"><i class='bx bx-chevrons-right'></i></a>
+          {% else %}
+            <span class="page-btn disabled"><i class='bx bx-chevron-right'></i></span>
+            <span class="page-btn disabled"><i class='bx bx-chevrons-right'></i></span>
+          {% endif %}
+        </div>
+        {% endif %}
         {% else %}
         <div class="empty-state-modern">
           <i class='bx bx-calendar-x'></i>
@@ -1533,8 +1686,16 @@
           <i class='bx bx-history'></i>
           <span>Recent Activity</span>
         </div>
+        {% if recent_activities %}
+        <form method="POST" action="{% url 'accounts:clear_all_activities' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-glass-clear" onclick="return confirm('Are you sure you want to clear all activities?');">
+            <i class='bx bx-trash'></i> Clear All
+          </button>
+        </form>
+        {% endif %}
       </div>
-      <div style="padding: 20px; max-height: 400px; overflow-y: auto;">
+      <div style="padding: 24px;">
         {% if recent_activities %}
         <div class="activity-list-modern">
           {% for activity in recent_activities %}
@@ -1542,11 +1703,19 @@
             <div class="activity-icon-modern {% if 'Created' in activity.action %}teal{% elif 'Updated' in activity.action %}blue{% else %}orange{% endif %}">
               <i class='bx {% if 'Created' in activity.action %}bx-plus{% elif 'Updated' in activity.action %}bx-edit-alt{% else %}bx-trash{% endif %}'></i>
             </div>
-            <div class="activity-content">
+            <div class="activity-content" style="flex: 1;">
               <div class="activity-action">{{ activity.action }}</div>
               <div class="activity-object">{{ activity.object_name }}</div>
             </div>
-            <div class="activity-time">{{ activity.timestamp|timesince }} ago</div>
+            <div class="activity-time" style="padding-right: 8px;">{{ activity.timestamp|timesince }} ago</div>
+            <div class="activity-item-actions">
+              <form method="POST" action="{% url 'accounts:delete_activity' activity.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-glass-delete-icon" title="Delete" onclick="return confirm('Delete this activity?');">
+                  <i class='bx bx-x'></i>
+                </button>
+              </form>
+            </div>
           </div>
           {% empty %}
           <div class="activity-item-modern">
@@ -1565,21 +1734,27 @@
         {% if recent_activities.has_other_pages %}
         <div class="pagination-modern">
           {% if recent_activities.has_previous %}
-            <a href="?page=1" class="page-btn" title="First"><i class='bx bx-chevrons-left'></i></a>
-            <a href="?page={{ recent_activities.previous_page_number }}" class="page-btn"><i class='bx bx-chevron-left'></i></a>
+            <a href="?page=1{% if request.GET.upcoming_page %}&upcoming_page={{ request.GET.upcoming_page }}{% endif %}#dashboard-activity-section" class="page-btn" title="First"><i class='bx bx-chevrons-left'></i></a>
+            <a href="?page={{ recent_activities.previous_page_number }}{% if request.GET.upcoming_page %}&upcoming_page={{ request.GET.upcoming_page }}{% endif %}#dashboard-activity-section" class="page-btn"><i class='bx bx-chevron-left'></i></a>
+          {% else %}
+            <span class="page-btn disabled"><i class='bx bx-chevrons-left'></i></span>
+            <span class="page-btn disabled"><i class='bx bx-chevron-left'></i></span>
           {% endif %}
           
           {% for num in recent_activities.paginator.page_range %}
             {% if recent_activities.number == num %}
               <span class="page-btn active">{{ num }}</span>
-            {% elif num > recent_activities.number|add:'-3' and num < recent_activities.number|add:'3' %}
-              <a href="?page={{ num }}" class="page-btn">{{ num }}</a>
+            {% elif num > recent_activities.number|add:'-2' and num < recent_activities.number|add:'2' %}
+              <a href="?page={{ num }}{% if request.GET.upcoming_page %}&upcoming_page={{ request.GET.upcoming_page }}{% endif %}#dashboard-activity-section" class="page-btn">{{ num }}</a>
             {% endif %}
           {% endfor %}
           
           {% if recent_activities.has_next %}
-            <a href="?page={{ recent_activities.next_page_number }}" class="page-btn"><i class='bx bx-chevron-right'></i></a>
-            <a href="?page={{ recent_activities.paginator.num_pages }}" class="page-btn"><i class='bx bx-chevrons-right'></i></a>
+            <a href="?page={{ recent_activities.next_page_number }}{% if request.GET.upcoming_page %}&upcoming_page={{ request.GET.upcoming_page }}{% endif %}#dashboard-activity-section" class="page-btn"><i class='bx bx-chevron-right'></i></a>
+            <a href="?page={{ recent_activities.paginator.num_pages }}{% if request.GET.upcoming_page %}&upcoming_page={{ request.GET.upcoming_page }}{% endif %}#dashboard-activity-section" class="page-btn" title="Last"><i class='bx bx-chevrons-right'></i></a>
+          {% else %}
+            <span class="page-btn disabled"><i class='bx bx-chevron-right'></i></span>
+            <span class="page-btn disabled"><i class='bx bx-chevrons-right'></i></span>
           {% endif %}
         </div>
         {% endif %}

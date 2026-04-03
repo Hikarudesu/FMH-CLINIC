@@ -362,8 +362,12 @@
     <div class="result-header">
       <div class="result-header-top">
         <div class="result-pet">
-          <div class="result-pet-avatar">
-            <i class="bx {% if diagnosis.pet.species == 'Dog' %}bxs-dog{% elif diagnosis.pet.species == 'Cat' %}bxs-cat{% else %}bx-paw{% endif %}"></i>
+          <div class="result-pet-avatar" {% if diagnosis.pet.photo %}style="background: transparent;"{% endif %}>
+            {% if diagnosis.pet.photo %}
+              <img src="{{ diagnosis.pet.photo.url }}" alt="{{ diagnosis.pet.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            {% else %}
+              {{ diagnosis.pet.name|make_list|first|upper }}
+            {% endif %}
           </div>
           <div>
             <div class="result-pet-name">{{ diagnosis.pet.name }}</div>

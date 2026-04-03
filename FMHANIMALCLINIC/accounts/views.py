@@ -9,6 +9,7 @@ from django.db.models.functions import TruncDate
 from django.core.serializers.json import DjangoJSONEncoder
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -115,6 +116,25 @@ def logout_view(request):
     messages.success(request, 'You have been successfully logged out.')
     return redirect('landing_page')
 
+
+@login_required
+def delete_activity_view(request, activity_id):
+    """Delete a specific activity."""
+    if request.method == 'POST':
+        from accounts.models import UserActivity
+        activity = get_object_or_404(UserActivity, id=activity_id, user=request.user)
+        activity.delete()
+        messages.success(request, 'Activity deleted successfully.')
+    return redirect(f"{reverse('accounts:user_dashboard')}#dashboard-activity-section")
+
+@login_required
+def clear_all_activities_view(request):
+    """Clear all activities for the current user."""
+    if request.method == 'POST':
+        from accounts.models import UserActivity
+        UserActivity.objects.filter(user=request.user).delete()
+        messages.success(request, 'All recent activities have been cleared.')
+    return redirect(f"{reverse('accounts:user_dashboard')}#dashboard-activity-section")
 
 @login_required
 def user_dashboard_view(request):
@@ -356,10 +376,15 @@ def user_dashboard_view(request):
         status='COMPLETED'
     ).select_related('branch', 'preferred_vet', 'pet').order_by('-appointment_date')[:5]
 
+    # Upcoming appointments pagination
+    paginator_upcoming = Paginator(upcoming_appointments, 3)
+    upcoming_page_number = request.GET.get('upcoming_page')
+    paginated_upcoming = paginator_upcoming.get_page(upcoming_page_number)
+
     return render(request, 'accounts/user_dashboard.html', {
         # Basic stats
         'pet_count': pet_count,
-        'upcoming_appointments': upcoming_appointments[:5],
+        'upcoming_appointments': paginated_upcoming,
         'upcoming_count': upcoming_count,
         'upcoming_confirmed': upcoming_confirmed,
         'upcoming_pending': upcoming_pending,

@@ -167,12 +167,12 @@ class PublicAppointmentForm(FormControlMixin, forms.ModelForm):
             'owner_address': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Your full address',
             }),
-            'pet_name': forms.TextInput(attrs={'placeholder': "Your pet's name"}),
-            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat, Bird'}),
-            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Golden Retriever'}),
+            'pet_name': forms.TextInput(attrs={'placeholder': "Your pet's name", 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat, Bird', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Golden Retriever', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_dob': forms.DateInput(attrs={'type': 'date'}),
             'pet_sex': forms.Select(choices=PET_SEX_CHOICES),
-            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown, White'}),
+            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown, White', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_symptoms': forms.Textarea(attrs={
                 'rows': 3,
                 'placeholder': 'Please describe any symptoms or reasons for visit',
@@ -353,19 +353,19 @@ class PortalAppointmentForm(FormControlMixin, forms.ModelForm):
                 'oninput': "this.value=this.value.replace(/\\D/g,'')",
             }),
             'owner_address': forms.Textarea(attrs={'rows': 2, 'placeholder': ' '}),
-            'pet_name': forms.TextInput(attrs={'placeholder': ' ', 'list': 'petNames'}),
-            'pet_species': forms.TextInput(attrs={'placeholder': ' '}),
-            'pet_breed': forms.TextInput(attrs={'placeholder': ' '}),
+            'pet_name': forms.TextInput(attrs={'placeholder': ' ', 'list': 'petNames', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_species': forms.TextInput(attrs={'placeholder': ' ', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_breed': forms.TextInput(attrs={'placeholder': ' ', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_dob': forms.DateInput(attrs={'type': 'date'}),
             'pet_sex': forms.Select(choices=PET_SEX_CHOICES),
-            'pet_color': forms.TextInput(attrs={'placeholder': ' '}),
+            'pet_color': forms.TextInput(attrs={'placeholder': ' ', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_symptoms': forms.Textarea(attrs={'rows': 2, 'placeholder': ' '}),
             # reason widget is defined in the field declaration above
             'branch': forms.Select(),
             'preferred_vet': forms.Select(),
             'appointment_date': forms.DateInput(attrs={'type': 'date'}),
             'appointment_time': forms.Select(choices=[('', '-- Select a time slot --')]),
-            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': ' '}),
+            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': ' ', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -563,12 +563,12 @@ class AdminQuickCreateForm(FormControlMixin, forms.ModelForm):
             'owner_address': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Full address',
             }),
-            'pet_name': forms.TextInput(attrs={'placeholder': "Pet's name"}),
-            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat'}),
-            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Poodle'}),
+            'pet_name': forms.TextInput(attrs={'placeholder': "Pet's name", 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Poodle', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_dob': forms.DateInput(attrs={'type': 'date'}),
             'pet_sex': forms.Select(choices=PET_SEX_CHOICES),
-            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown'}),
+            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             # reason widget is defined in the field declaration above
             'branch': forms.Select(),
             'preferred_vet': forms.Select(),
@@ -578,6 +578,7 @@ class AdminQuickCreateForm(FormControlMixin, forms.ModelForm):
             'source': forms.Select(),
             'notes': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Walk-in / phone call notes...',
+                'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'
             }),
         }
 
@@ -698,12 +699,12 @@ class AppointmentEditForm(FormControlMixin, forms.ModelForm):
             'owner_address': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Full address',
             }),
-            'pet_name': forms.TextInput(attrs={'placeholder': "Pet's name"}),
-            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat'}),
-            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Poodle'}),
+            'pet_name': forms.TextInput(attrs={'placeholder': "Pet's name", 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_species': forms.TextInput(attrs={'placeholder': 'e.g. Dog, Cat', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'pet_breed': forms.TextInput(attrs={'placeholder': 'e.g. Poodle', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_dob': forms.DateInput(attrs={'type': 'date'}),
             'pet_sex': forms.Select(choices=PET_SEX_CHOICES),
-            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown'}),
+            'pet_color': forms.TextInput(attrs={'placeholder': 'e.g. Brown', 'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'pet_symptoms': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Current symptoms',
             }),
@@ -716,6 +717,7 @@ class AppointmentEditForm(FormControlMixin, forms.ModelForm):
             'source': forms.Select(),
             'notes': forms.Textarea(attrs={
                 'rows': 2, 'placeholder': 'Additional notes...',
+                'oninput': 'if(this.value.length === 1) this.value = this.value.toUpperCase(); else if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'
             }),
         }
 

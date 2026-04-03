@@ -18,10 +18,10 @@ class PetForm(forms.ModelForm):
                 'class': 'pf-input', 'placeholder': ' ',
             }),
             'species': forms.TextInput(attrs={
-                'class': 'pf-input', 'placeholder': ' ',
+                'class': 'pf-input', 'placeholder': ' ', 'oninput': 'if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'
             }),
             'breed': forms.TextInput(attrs={
-                'class': 'pf-input', 'placeholder': ' ',
+                'class': 'pf-input', 'placeholder': ' ', 'oninput': 'if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'
             }),
             'date_of_birth': forms.DateInput(attrs={
                 'class': 'pf-input', 'type': 'date',
@@ -47,7 +47,17 @@ class AdminPetForm(forms.ModelForm):
     - WALKIN: guest owner plain-text fields are filled in instead.
     """
     
+    def clean_species(self):
+        species = self.cleaned_data.get('species')
+        if species:
+            return species[0].upper() + species[1:]
+        return species
 
+    def clean_breed(self):
+        breed = self.cleaned_data.get('breed')
+        if breed:
+            return breed[0].upper() + breed[1:]
+        return breed
 
     class Meta:
         model = Pet
@@ -79,8 +89,8 @@ class AdminPetForm(forms.ModelForm):
             'guest_owner_address': forms.Textarea(attrs={'class': 'pf-input', 'rows': 2, 'placeholder': 'Full address'}),
             'photo': forms.ClearableFileInput(attrs={'class': 'pf-input', 'accept': 'image/*'}),
             'name': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'Pet name'}),
-            'species': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Dog, Cat, Bird'}),
-            'breed': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Labrador'}),
+            'species': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Dog, Cat, Bird', 'oninput': 'if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
+            'breed': forms.TextInput(attrs={'class': 'pf-input', 'placeholder': 'e.g. Labrador', 'oninput': 'if(this.value.length > 0) this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);'}),
             'date_of_birth': forms.DateInput(attrs={'class': 'pf-input', 'type': 'date'}),
             'sex': forms.Select(attrs={'class': 'pf-input'}),
             'clinical_status': forms.Select(attrs={'class': 'pf-input'}),
@@ -133,6 +143,18 @@ class AdminPetForm(forms.ModelForm):
             elif self.instance.source == Pet.Source.WALKIN:
                 # Disable owner field for walk-in patients
                 self.fields['owner'].disabled = True
+
+    def clean_species(self):
+        species = self.cleaned_data.get('species')
+        if species:
+            return species[0].upper() + species[1:]
+        return species
+
+    def clean_breed(self):
+        breed = self.cleaned_data.get('breed')
+        if breed:
+            return breed[0].upper() + breed[1:]
+        return breed
 
     def clean(self):
         cleaned = super().clean()
