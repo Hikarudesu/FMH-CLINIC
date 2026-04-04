@@ -1190,6 +1190,22 @@
   padding: 12px 0;
 }
 
+/* Calendar Container Wrapper for mobile scroll */
+.cal-container-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Ensure calendar content container allows overflow */
+#calendarContent {
+  width: 100%;
+  overflow-x: visible;
+}
+
+#calendarView .card-body {
+  overflow-x: visible !important;
+}
+
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(120px, 1fr));
@@ -1293,6 +1309,296 @@
   color: var(--text-3);
   font-style: italic;
   background: none;
+}
+
+/* ===================== CALENDAR RESPONSIVE ===================== */
+/* Tablet and below */
+@media (max-width: 992px) {
+  .cal-grid {
+    grid-template-columns: repeat(7, minmax(100px, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+  
+  .cal-day {
+    min-height: 100px;
+    padding: 10px;
+  }
+  
+  .cal-day-number {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+  
+  .cal-weekdays {
+    grid-template-columns: repeat(7, minmax(100px, 1fr));
+  }
+  
+  .cal-weekdays div {
+    font-size: 0.72rem;
+    padding: 10px 0;
+  }
+}
+
+/* Mobile Landscape / Small Tablets */
+@media (max-width: 768px) {
+  /* Ensure parent containers don't clip overflow */
+  #calendarView .dashboard-card,
+  #calendarView .card-body,
+  #calendarContent {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+  }
+  
+  .cal-container-wrapper {
+    position: relative;
+    overflow: visible;
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+  
+  /* Scroll indicator shadows */
+  .cal-container-wrapper::before,
+  .cal-container-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+  }
+  
+  .cal-container-wrapper::before {
+    left: 12px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.95), transparent);
+  }
+  
+  .cal-container-wrapper::after {
+    right: 12px;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.95), transparent);
+  }
+  
+  .cal-weekdays {
+    grid-template-columns: repeat(7, 1fr);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+    display: grid;
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .cal-weekdays::-webkit-scrollbar {
+    height: 5px;
+  }
+  
+  .cal-weekdays::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  .cal-weekdays::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+  }
+  
+  .cal-weekdays div {
+    min-width: 75px;
+    font-size: 0.65rem;
+    padding: 8px 0;
+    letter-spacing: 0.3px;
+  }
+  
+  .cal-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) #f3f5f7;
+    display: grid;
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .cal-grid::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .cal-grid::-webkit-scrollbar-track {
+    background: #e5e7eb;
+    border-radius: 3px;
+  }
+  
+  .cal-grid::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+  }
+  
+  .cal-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+  }
+  
+  .cal-day {
+    min-width: 80px;
+    min-height: 85px;
+    padding: 8px 6px;
+  }
+  
+  .cal-day-number {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  
+  /* Simplify events display on smaller screens */
+  .weekly-event {
+    padding: 4px 5px !important;
+  }
+  
+  .weekly-event strong {
+    font-size: 0.72rem !important;
+  }
+  
+  .weekly-event span:not(.status-dot):not(.source-badge) {
+    font-size: 0.62rem !important;
+  }
+  
+  .source-badge {
+    font-size: 0.55rem !important;
+    padding: 1px 3px !important;
+  }
+}
+
+/* Mobile Portrait */
+@media (max-width: 640px) {
+  .cal-weekdays div {
+    min-width: 65px;
+    font-size: 0.6rem;
+    padding: 6px 0;
+    letter-spacing: 0.2px;
+  }
+  
+  .cal-grid {
+    gap: 3px;
+    padding: 3px;
+  }
+  
+  .cal-day {
+    min-width: 65px;
+    min-height: 75px;
+    padding: 6px 4px;
+  }
+  
+  .cal-day-number {
+    font-size: 0.8rem;
+    margin-bottom: 3px;
+  }
+  
+  /* Hide branch info on mobile to save space */
+  .cal-day-events .weekly-event span[style*="bx-building"] {
+    display: none;
+  }
+  
+  .weekly-event {
+    padding: 3px 4px !important;
+  }
+  
+  .weekly-event strong {
+    font-size: 0.68rem !important;
+  }
+  
+  .weekly-event span:not(.status-dot):not(.source-badge) {
+    font-size: 0.58rem !important;
+  }
+  
+  .source-badge {
+    font-size: 0.52rem !important;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+  .cal-weekdays div {
+    min-width: 52px;
+    font-size: 0.55rem;
+    padding: 5px 0;
+    letter-spacing: 0;
+  }
+  
+  .cal-grid {
+    gap: 2px;
+    padding: 2px;
+  }
+  
+  .cal-day {
+    min-width: 52px;
+    min-height: 65px;
+    padding: 4px 2px;
+  }
+  
+  .cal-day-number {
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+    text-align: center;
+  }
+  
+  /* Show only first event on very small screens */
+  .cal-day-events .weekly-event:not(:first-child) {
+    display: none;
+  }
+  
+  .cal-day-events .weekly-event {
+    padding: 2px 3px !important;
+    border-left-width: 2px !important;
+  }
+  
+  .cal-day-events .weekly-event strong {
+    font-size: 0.62rem !important;
+  }
+  
+  .cal-day-events .weekly-event span:not(.status-dot):not(.source-badge) {
+    display: none !important;
+  }
+  
+  .source-badge {
+    display: none !important;
+  }
+  
+  .status-dot {
+    width: 6px !important;
+    height: 6px !important;
+  }
+  
+  /* Make "View All" button more compact */
+  .cal-event.more {
+    font-size: 0.6rem !important;
+    padding: 2px 3px !important;
+  }
+}
+
+/* Extra Small Mobile - Ensure minimum width */
+@media (max-width: 380px) {
+  .cal-weekdays {
+    min-width: 100%;
+  }
+  
+  .cal-weekdays div {
+    min-width: 50px;
+  }
+  
+  .cal-grid {
+    min-width: 100%;
+  }
+  
+  .cal-day {
+    min-width: 50px;
+  }
 }
 
 /* ===================== SCHEDULE MODAL ===================== */

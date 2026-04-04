@@ -69,6 +69,19 @@
                 min-height: 80px;
                 resize: vertical;
             }
+            
+            @media (max-width: 768px) {
+                .dashboard-card { padding: 24px 20px !important; }
+                .form-grid { gap: 12px; }
+                .section-title { font-size: 13px; }
+            }
+            @media (max-width: 576px) {
+                .dashboard-card { padding: 18px 16px !important; border-radius: var(--radius) !important; }
+                .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
+                .form-label { font-size: 11px; }
+                .form-control-custom { padding: 10px; font-size: 14px; }
+                .section-title { font-size: 12px; padding-bottom: 6px; margin-bottom: 12px; }
+            }
         </style>
 
         <!-- Owner & Contact Information -->

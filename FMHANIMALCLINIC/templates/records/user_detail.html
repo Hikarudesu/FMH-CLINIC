@@ -226,12 +226,263 @@
     .rv-hero-stat i { font-size: 17px; color: rgba(255,255,255,0.8); }
     .rv-hero-stat-label { font-size: 10px; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .rv-hero-stat-value { font-size: 13px; font-weight: 700; color: #fff; margin-top: 1px; }
+
+    /* User record hero overrides */
+    .records-hero-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+        min-width: 230px;
+    }
+    .records-hero-btn {
+        min-width: 190px;
+        justify-content: center;
+    }
+    .records-hero-btn.is-disabled {
+        background: rgba(255,255,255,0.4);
+        color: rgba(255,255,255,0.6);
+        cursor: not-allowed;
+        border-color: rgba(255,255,255,0.3);
+    }
+    .records-hero-btn.is-primary {
+        background: rgba(255,255,255,0.95);
+        color: #009688;
+        border-color: rgba(255,255,255,0.95);
+    }
+    .page-hero-stat {
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+    .page-hero-stat > div {
+        min-width: 0;
+    }
+    .page-hero-stat-label,
+    .page-hero-stat-value {
+        line-height: 1.2;
+        word-break: break-word;
+    }
+    
+    /* ══════════════════════════════════════════════════════════════════════════ */
+    /* RESPONSIVE STYLES                                                          */
+    /* ══════════════════════════════════════════════════════════════════════════ */
+    
+    /* Table scroll wrapper */
+    .rv-records-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-50) #e2e8f0;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 4px;
+    }
+    
+    .rv-records-table-wrap::-webkit-scrollbar-thumb {
+        background: var(--primary-50);
+        border-radius: 4px;
+    }
+    
+    /* Tablet */
+    @media (max-width: 992px) {
+        .page-hero {
+            padding: 26px 22px 22px;
+        }
+        .page-hero-inner {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+        .page-hero-text {
+            width: 100%;
+        }
+        .page-hero-text h1 {
+            font-size: 1.25rem;
+            line-height: 1.3;
+        }
+        .page-hero-text p {
+            font-size: 0.85rem;
+        }
+        .page-hero-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-top: 14px;
+        }
+        .page-hero-stat {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 9px 12px;
+        }
+        .records-hero-actions {
+            width: 100%;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: stretch;
+            min-width: 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .records-hero-btn {
+            min-width: 170px;
+            flex: 1;
+        }
+        .rv-info-grid { grid-template-columns: 90px 1fr 90px 1fr; }
+        .rv-info-grid.cols-6 { grid-template-columns: 80px 1fr 80px 1fr; }
+        .rv-records-table { min-width: 800px; }
+    }
+    
+    /* Small tablets / Mobile landscape */
+    @media (max-width: 768px) {
+        .page-hero {
+            padding: 22px 18px 18px;
+            margin-bottom: 16px;
+        }
+        .page-hero-text h1 {
+            font-size: 1.12rem;
+            flex-wrap: wrap;
+        }
+        .page-hero-text h1 i {
+            font-size: 1.25rem;
+        }
+        .page-hero-text p {
+            font-size: 0.78rem;
+        }
+        .page-hero-stats {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .page-hero-stat {
+            justify-content: flex-start;
+            padding: 9px 11px;
+        }
+        .records-hero-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .records-hero-btn {
+            width: 100%;
+            min-width: 0;
+            padding: 9px 12px;
+            font-size: 0.8rem;
+            justify-content: center;
+        }
+        .rv-info-grid { grid-template-columns: 85px 1fr; }
+        .rv-info-grid.cols-6 { grid-template-columns: 85px 1fr; }
+        .rv-info-grid .val[style*="span 3"] { grid-column: span 1 !important; }
+        .rv-header { padding: 16px 18px 14px; }
+        .rv-header-logo { width: 50px; height: 50px; }
+        .rv-header-title { font-size: 16px; }
+        .rv-actions { padding: 10px 16px; flex-wrap: wrap; }
+        .rv-footer { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .rv-signature-section { justify-content: center; padding: 20px 16px 10px; }
+        .rv-records-table { min-width: 750px; }
+        .rv-records-table th { font-size: 10px; padding: 8px 6px; }
+        .rv-records-table td { font-size: 11px; padding: 10px 8px; }
+    }
+    
+    /* Mobile */
     @media (max-width: 640px) {
-        .rv-info-grid        { grid-template-columns: 80px 1fr; }
-        .rv-info-grid.cols-6 { grid-template-columns: 80px 1fr; }
-        .rv-header { padding: 14px 16px; }
-        .rv-actions { padding: 10px 16px; }
+        .page-hero {
+            padding: 18px 14px 16px;
+            border-radius: var(--radius);
+        }
+        .page-hero-text h1 {
+            font-size: 1rem;
+            line-height: 1.3;
+        }
+        .page-hero-text p {
+            font-size: 0.74rem;
+        }
+        .page-hero-stats {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .page-hero-stat {
+            justify-content: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+        }
+        .page-hero-stat i {
+            font-size: 1.1rem;
+        }
+        .page-hero-stat-label {
+            font-size: 9px;
+        }
+        .page-hero-stat-value {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .records-hero-actions {
+            grid-template-columns: 1fr;
+        }
+        .records-hero-btn {
+            font-size: 0.85rem;
+            padding: 10px 12px;
+        }
+        .rv-info-grid, .rv-info-grid.cols-6 { grid-template-columns: 1fr; }
+        .rv-info-grid .lbl { border-right: none; background: #f1f5f9; font-size: 10px; padding: 5px 10px; }
+        .rv-info-grid .val { border-right: none; padding: 8px 10px; }
+        .rv-info-grid .val[style*="span"] { grid-column: span 1 !important; }
+        .rv-section-hd { font-size: 10px; padding: 5px 10px; }
+        .rv-vet-banner { flex-direction: column; gap: 8px; padding: 10px; font-size: 11px; }
+        .rv-header { padding: 14px 16px 12px; }
+        .rv-header-logo { width: 45px; height: 45px; }
+        .rv-header-title { font-size: 14px; }
+        .rv-header-sub { font-size: 11px; }
+        .rv-warnings-banner { padding: 12px 14px; margin-bottom: 14px; }
+        .rv-warnings-list { flex-direction: column; gap: 6px; }
+        .rv-signature-section { padding: 16px 12px 8px; }
+        .rv-records-table { min-width: 650px; }
         .rv-records-table th, .rv-records-table td { font-size: 10px; padding: 6px 4px; }
+        .rv-actions { padding: 10px 16px; }
+    }
+    
+    /* Very small mobile */
+    @media (max-width: 480px) {
+        .page-hero {
+            padding: 16px 12px 14px;
+        }
+        .page-hero-text h1 {
+            font-size: 0.94rem;
+        }
+        .page-hero-text p {
+            font-size: 0.7rem;
+        }
+        .page-hero-stat {
+            padding: 8px 10px;
+        }
+        .page-hero-stat-label {
+            font-size: 9px;
+        }
+        .page-hero-stat-value {
+            font-size: 11px;
+        }
+        .records-hero-btn {
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+        .rv-header { padding: 12px 14px 10px; }
+        .rv-header-logo { width: 40px; height: 40px; }
+        .rv-header-title { font-size: 13px; }
+        .rv-records-table { min-width: 550px; }
+        .rv-records-table th { font-size: 9px; padding: 5px 3px; }
+        .rv-records-table td { font-size: 10px; padding: 6px 4px; }
+        .rv-section-hd { font-size: 9px; }
+        .rv-info-grid .lbl { font-size: 9px; }
+        .rv-info-grid .val { font-size: 11px; }
+        .rv-footer { padding: 10px; }
+        .rv-footer-text { font-size: 10px; }
     }
 </style>
 
@@ -280,17 +531,17 @@
         </div>
       </div>
     </div>
-    <div class="page-hero-actions" style="flex-direction:column;align-items:flex-end;">
-      <a href="{% url 'patients:my_pets' %}" class="page-hero-btn">
-        <i class='bx bx-arrow-back'></i> Back to My Pets
+    <div class="page-hero-actions records-hero-actions">
+      <a href="{% url 'patients:my_pets' %}" class="page-hero-btn records-hero-btn">
+        <i class='bx bx-arrow-back'></i> <span>Back to My Pets</span>
       </a>
       {% if missing_fields %}
-      <span class="page-hero-btn" style="background:rgba(255,255,255,0.4);color:rgba(255,255,255,0.6);cursor:not-allowed;border-color:rgba(255,255,255,0.3);" title="Complete all required fields before downloading PDF">
-        <i class='bx bx-download'></i> Download PDF
+      <span class="page-hero-btn records-hero-btn is-disabled" title="Complete all required fields before downloading PDF">
+        <i class='bx bx-download'></i> <span>Download PDF</span>
       </span>
       {% else %}
-      <a href="{% url 'records:download_pdf' record.pk %}" class="page-hero-btn" style="background:rgba(255,255,255,0.95);color:#009688;border-color:rgba(255,255,255,0.95);">
-        <i class='bx bx-download'></i> Download PDF
+      <a href="{% url 'records:download_pdf' record.pk %}" class="page-hero-btn records-hero-btn is-primary">
+        <i class='bx bx-download'></i> <span>Download PDF</span>
       </a>
       {% endif %}
     </div>
@@ -360,7 +611,7 @@
     </div>
 
     <!-- Clinical Data Table -->
-    <div style="overflow-x: auto;">
+    <div class="rv-records-table-wrap">
         <table class="rv-records-table">
             <thead>
                 <tr>
